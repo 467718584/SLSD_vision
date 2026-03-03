@@ -27,7 +27,10 @@ init_database()
 
 def dict_to_js(obj, indent=0):
     """将Python对象转换为JavaScript对象字面量格式"""
-    if isinstance(obj, dict):
+    # 注意：bool 必须在 int 之前检查，因为 bool 是 int 的子类
+    if isinstance(obj, bool):
+        return "true" if obj else "false"
+    elif isinstance(obj, dict):
         if not obj:
             return "{}"
         items = []
@@ -45,8 +48,6 @@ def dict_to_js(obj, indent=0):
         return str(obj)
     elif obj is None:
         return "null"
-    elif isinstance(obj, bool):
-        return "true" if obj else "false"
     else:
         return f'"{obj}"'
 
@@ -114,6 +115,7 @@ def index():
             "maintainDate": ds.get('maintain_date', ''),
             "maintainer": ds.get('maintainer', ''),
             "previewCount": ds.get('preview_count', 8),
+            # 使用 JavaScript 布尔值格式
             "hasFolder": file_status["hasFolder"],
             "hasZip": file_status["hasZip"]
         })
@@ -138,23 +140,30 @@ def index():
     js_datasets = dict_to_js(datasets_data)
     js_models = dict_to_js(models_data)
 
-    # 替换DATASETS数组 - 需要移除旧的完整数组包括结尾的 ];
+    # 替换DATASETS数组
     import re
-    # 匹配 const DATASETS=[ 到 ]; 之间的所有内容
-    html_content = re.sub(
-        r'const DATASETS=\[.*?\];',
-        f'const DATASETS={js_datasets};',
-        html_content,
-        flags=re.DOTALL
-    )
+    # 先尝试匹配增强版格式 DATASETS=[xxx];
+    if 'DATASETS_PLACEHOLDER' in html_content:
+        html_content = html_content.replace('DATASETS_PLACEHOLDER', js_datasets)
+    else:
+        # 原版格式 const DATASETS=[...];
+        html_content = re.sub(
+            r'const DATASETS=\[.*?\];',
+            f'const DATASETS={js_datasets};',
+            html_content,
+            flags=re.DOTALL
+        )
 
     # 替换MODELS数组
-    html_content = re.sub(
-        r'const MODELS=\[.*?\];',
-        f'const MODELS={js_models};',
-        html_content,
-        flags=re.DOTALL
-    )
+    if 'MODELS_PLACEHOLDER' in html_content:
+        html_content = html_content.replace('MODELS_PLACEHOLDER', js_models)
+    else:
+        html_content = re.sub(
+            r'const MODELS=\[.*?\];',
+            f'const MODELS={js_models};',
+            html_content,
+            flags=re.DOTALL
+        )
 
     # 添加 "其他" 到 ALGO_COLORS 如果不存在
     # 注意：需要检查ALGO_COLORS中是否有"其他"，而不是检查整个HTML（因为数据中可能有"其他"）
