@@ -22,8 +22,8 @@ const C={primary:"#1462A8",primaryBg:"#EBF3FC",primaryBd:"#BFDBF7",success:"#2E8
 const ALGO_COLORS={"路面积水检测":{bg:C.primaryBg,border:C.primaryBd,text:C.primary},"漂浮物检测":{bg:C.successBg,border:"#A8D5C0",text:C.success},"墙面裂缝检测":{bg:C.warningBg,border:"#F9D9B0",text:C.warning},"游泳检测":{bg:"#FDE9E9",border:"#F5BCBC",text:"#C0392B"},"其他":{bg:C.gray6,border:C.border,text:C.gray2}};
 const MODEL_CAT_COLORS={"多标签实例分割模型（双标签）":{bg:C.primaryBg,border:C.primaryBd,text:C.primary},"多标签实例分割模型（三标签）":{bg:"#E8F4FE",border:"#A8D0F5",text:"#0A4D8C"},"单标签实例分割模型（背景负样本）":{bg:C.successBg,border:"#A8D5C0",text:C.success},"单标签实例分割模型":{bg:"#EDF6E8",border:"#B0D9A0",text:"#276B27"},"单标签目标检测模型":{bg:C.orangeBg,border:"#F5C8A8",text:C.orange},"其他":{bg:C.gray6,border:C.border,text:C.gray2},"YOLO":{bg:C.primaryBg,border:C.primaryBd,text:C.primary}};
 
-DATASETS=[DATASETS_PLACEHOLDER];
-MODELS=[MODELS_PLACEHOLDER];
+const DATASETS=DATASETS_PLACEHOLDER;
+const MODELS=MODELS_PLACEHOLDER;
 
 function Tag({label,colors}){
   const c=colors||{bg:C.gray6,border:C.border,text:C.gray2};
