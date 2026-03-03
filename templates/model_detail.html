@@ -1,0 +1,234 @@
+<!-- 模型详情模板 -->
+<div class="detail-header-bar">
+    <button class="back-btn" onclick="showModelList()">← 返回模型列表</button>
+    <span class="breadcrumb">/ {{model.name}}</span>
+</div>
+
+<!-- 头部卡片 -->
+<div class="detail-card">
+    <div class="detail-main">
+        <div class="detail-tags">
+            <span class="tag" style="{{model.algo_tag_style}}">{{model.algo_name}}</span>
+            <span class="tag" style="{{model.cat_tag_style}}">{{model.category}}</span>
+            <span class="detail-id">#{{model.id}}</span>
+        </div>
+        <h2 class="detail-title">{{model.name}}</h2>
+        <p class="detail-desc">{{model.description}}</p>
+    </div>
+    <div class="accuracy-display {{model.acc_level}}">
+        <div class="acc-value">{{model.accuracy}}%</div>
+        <div class="acc-label">模型精度 mAP</div>
+    </div>
+</div>
+<div class="detail-meta">
+    <span>维护日期：<b>{{model.maintain_date}}</b></span>
+    <span>维护人员：<b>{{model.maintainer}}</b></span>
+    <span>使用数据集：<b class="dataset-link">{{model.dataset}}</b></span>
+</div>
+
+<!-- 内容区 -->
+<div class="detail-content">
+    <div class="card">
+        <div class="section-title">模型详细精度曲线</div>
+        <div class="curves-grid">
+            {% for curve in model.curves %}
+            <div class="curve-item">
+                <div class="curve-viz">{{curve.svg}}</div>
+                <div class="curve-label">{{curve.name}}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="card">
+        <div class="section-title">模型识别结果预览</div>
+        <div class="preview-grid">
+            {% for i in range(model.preview_count) %}
+            <div class="preview-item">
+                <div class="preview-placeholder">#{{i+1}}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<style>
+.detail-header-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+.back-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 14px;
+    color: var(--gray2);
+    cursor: pointer;
+    font-size: 13px;
+    font-family: inherit;
+}
+.back-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+.breadcrumb {
+    color: var(--gray4);
+}
+.detail-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+.detail-main {
+    flex: 1;
+    min-width: 280px;
+}
+.detail-tags {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+.detail-id {
+    color: var(--gray4);
+    font-size: 13px;
+}
+.detail-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--gray1);
+    margin: 0 0 10px 0;
+}
+.detail-desc {
+    font-size: 13px;
+    color: var(--gray2);
+    line-height: 1.8;
+    margin: 0;
+}
+.accuracy-display {
+    text-align: center;
+    padding: 16px 28px;
+    border-radius: 12px;
+    flex-shrink: 0;
+}
+.accuracy-display.high {
+    background: rgba(46, 139, 87, 0.08);
+    border: 2px solid var(--success);
+}
+.accuracy-display.medium {
+    background: rgba(20, 98, 168, 0.08);
+    border: 2px solid var(--primary);
+}
+.accuracy-display.low {
+    background: rgba(230, 126, 34, 0.08);
+    border: 2px solid var(--warning);
+}
+.acc-value {
+    font-size: 36px;
+    font-weight: 800;
+    font-family: monospace;
+}
+.accuracy-display.high .acc-value { color: var(--success); }
+.accuracy-display.medium .acc-value { color: var(--primary); }
+.accuracy-display.low .acc-value { color: var(--warning); }
+.acc-label {
+    font-size: 12px;
+    color: var(--gray3);
+    margin-top: 2px;
+}
+.detail-meta {
+    display: flex;
+    gap: 20px;
+    font-size: 13px;
+    color: var(--gray3);
+    border-top: 1px solid var(--gray6);
+    padding-top: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+.detail-meta b {
+    color: var(--gray2);
+}
+.dataset-link {
+    color: var(--primary);
+}
+.detail-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+.card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+}
+.section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--gray1);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+.section-title::before {
+    content: '';
+    width: 3px;
+    height: 14px;
+    background: var(--primary);
+    border-radius: 2px;
+}
+.curves-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+.curve-item {
+    background: var(--gray7);
+    border-radius: 8px;
+    padding: 10px;
+    text-align: center;
+}
+.curve-viz {
+    display: flex;
+    justify-content: center;
+}
+.curve-label {
+    font-size: 11px;
+    color: var(--gray3);
+    margin-top: 5px;
+}
+.preview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
+    gap: 8px;
+}
+.preview-item {
+    aspect-ratio: 1;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--gray7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.preview-placeholder {
+    font-size: 11px;
+    color: var(--gray4);
+}
+@media (max-width: 768px) {
+    .detail-content {
+        grid-template-columns: 1fr;
+    }
+}
+</style>

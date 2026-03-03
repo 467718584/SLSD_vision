@@ -1,0 +1,244 @@
+<!-- 数据集详情模板 -->
+<div class="detail-header-bar">
+    <button class="back-btn" onclick="showDatasetList()">← 返回数据集列表</button>
+    <span class="breadcrumb">/ {{dataset.name}}</span>
+</div>
+
+<!-- 头部卡片 -->
+<div class="detail-card">
+    <div class="detail-main">
+        <div class="detail-tags">
+            <span class="tag" style="{{dataset.tag_style}}">{{dataset.algo_type}}</span>
+            <span class="detail-id">编号 #{{dataset.id}}</span>
+        </div>
+        <h2 class="detail-title">{{dataset.name}}</h2>
+        <p class="detail-desc">{{dataset.description}}</p>
+    </div>
+    <div class="detail-stats">
+        <div class="stat-box">
+            <div class="stat-value" style="color:var(--primary)">{{dataset.total}}</div>
+            <div class="stat-label">样本数量</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-value">{{dataset.label_count}}</div>
+            <div class="stat-label">标签数量</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-value">{{dataset.split}}</div>
+            <div class="stat-label">分配比例</div>
+        </div>
+    </div>
+</div>
+<div class="detail-meta">
+    <span>维护日期：<b>{{dataset.maintain_date}}</b></span>
+    <span>维护人员：<b>{{dataset.maintainer}}</b></span>
+</div>
+
+<!-- 内容区 -->
+<div class="detail-content">
+    <div class="detail-left">
+        <div class="card">
+            <div class="section-title">各标签数量</div>
+            {% for label_name, label_count in dataset.labels.items() %}
+            <div class="label-item">
+                <div class="label-header">
+                    <span class="label-name">{{label_name}}</span>
+                    <span class="label-count" style="color:{{loop.index0|colors}}">{{label_count}}</span>
+                </div>
+                <div class="label-bar">
+                    <div class="label-bar-fill" style="width:{{label_count|dataset.total*100}}%;background:{{loop.index0|colors}}"></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="detail-right">
+        <div class="card">
+            <div class="section-title">数据集预览</div>
+            <div class="preview-grid">
+                {% for i in range(dataset.preview_images) %}
+                <div class="preview-item">
+                    <div class="preview-placeholder">#{{i+1}}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.detail-header-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+.back-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 14px;
+    color: var(--gray2);
+    cursor: pointer;
+    font-size: 13px;
+    font-family: inherit;
+}
+.back-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+.breadcrumb {
+    color: var(--gray4);
+}
+.detail-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+.detail-main {
+    flex: 1;
+    min-width: 280px;
+}
+.detail-tags {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+.detail-id {
+    color: var(--gray4);
+    font-size: 13px;
+}
+.detail-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--gray1);
+    margin: 0 0 10px 0;
+}
+.detail-desc {
+    font-size: 13px;
+    color: var(--gray2);
+    line-height: 1.8;
+    margin: 0;
+}
+.detail-stats {
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+}
+.stat-box {
+    text-align: center;
+    padding: 12px 18px;
+    background: var(--gray7);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+.stat-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--gray1);
+}
+.stat-label {
+    font-size: 11px;
+    color: var(--gray3);
+    margin-top: 2px;
+}
+.detail-meta {
+    display: flex;
+    gap: 20px;
+    font-size: 13px;
+    color: var(--gray3);
+    border-top: 1px solid var(--gray6);
+    padding-top: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+.detail-meta b {
+    color: var(--gray2);
+}
+.detail-content {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 16px;
+}
+.card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+}
+.section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--gray1);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+.section-title::before {
+    content: '';
+    width: 3px;
+    height: 14px;
+    background: var(--primary);
+    border-radius: 2px;
+}
+.label-item {
+    margin-bottom: 12px;
+}
+.label-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+}
+.label-name {
+    font-size: 13px;
+    color: var(--gray2);
+    font-weight: 500;
+}
+.label-count {
+    font-size: 13px;
+    font-weight: 600;
+}
+.label-bar {
+    height: 5px;
+    background: var(--gray6);
+    border-radius: 3px;
+    overflow: hidden;
+}
+.label-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+}
+.preview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 8px;
+}
+.preview-item {
+    aspect-ratio: 16/10;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--gray7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.preview-placeholder {
+    font-size: 12px;
+    color: var(--gray4);
+}
+@media (max-width: 768px) {
+    .detail-content {
+        grid-template-columns: 1fr;
+    }
+}
+</style>

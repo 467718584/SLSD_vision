@@ -1,0 +1,206 @@
+<!-- 模型列表模板 -->
+<div class="page-header">
+    <div>
+        <h2 class="page-title">算法模型管理</h2>
+        <p class="page-desc">共 {{model_count}} 个模型</p>
+    </div>
+</div>
+
+<!-- 搜索和筛选 -->
+<div class="filter-bar">
+    <input type="text" class="search-input" placeholder="搜索模型名称..." id="m-search" value="{{search_query}}">
+    <div class="filter-tags">
+        {{filter_btns}}
+    </div>
+    <span class="filter-count">显示 {{filter_count}} 条</span>
+</div>
+
+<!-- 模型表格 -->
+<div class="data-table-wrapper">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width:48px;text-align:center;">编号</th>
+                <th style="width:98px;text-align:center;">算法名称</th>
+                <th style="width:180px;">模型名称</th>
+                <th style="width:140px;text-align:center;">模型类别</th>
+                <th style="width:120px;">模型精度</th>
+                <th style="width:280px;">模型详细精度</th>
+                <th style="width:160px;">识别结果预览</th>
+                <th style="width:160px;">模型概述</th>
+                <th style="width:150px;">使用数据集</th>
+                <th style="width:86px;text-align:center;">维护日期</th>
+                <th style="width:72px;text-align:center;">维护人员</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{model_rows}}
+        </tbody>
+    </table>
+</div>
+
+<!-- 空状态 -->
+{% if model_count == 0 %}
+<div class="empty-state">
+    <div class="empty-icon">🤖</div>
+    <h3>暂无模型</h3>
+    <p>请在左侧上传模型</p>
+</div>
+{% endif %}
+
+<style>
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 16px 0;
+}
+.page-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--gray1);
+    margin: 0;
+}
+.page-desc {
+    font-size: 13px;
+    color: var(--gray3);
+    margin: 2px 0 0 0;
+}
+.filter-bar {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.search-input {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 13px;
+    color: var(--gray1);
+    background: var(--gray7);
+    width: 220px;
+    outline: none;
+}
+.search-input:focus {
+    border-color: var(--primary);
+}
+.filter-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+.filter-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 3px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--gray3);
+    transition: all 0.15s;
+}
+.filter-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+.filter-btn.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+.filter-count {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--gray4);
+}
+.data-table-wrapper {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+}
+.data-table-wrapper {
+    overflow-x: auto;
+}
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1400px;
+}
+.data-table th {
+    background: var(--gray7);
+    padding: 10px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--gray1);
+    text-align: left;
+    white-space: nowrap;
+    border-bottom: 2px solid var(--border);
+}
+.data-table td {
+    padding: 9px 12px;
+    font-size: 12px;
+    color: var(--gray2);
+    border-bottom: 1px solid var(--gray6);
+    vertical-align: middle;
+}
+.data-table tr {
+    background: var(--white);
+    cursor: pointer;
+    transition: background 0.1s;
+}
+.data-table tr:nth-child(even) {
+    background: #FAFCFE;
+}
+.data-table tr:hover {
+    background: var(--primary-bg);
+}
+.id-num {
+    font-weight: 600;
+    color: var(--gray4);
+}
+.name-cell {
+    color: var(--primary);
+    font-weight: 500;
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 170px;
+}
+.desc-cell {
+    font-size: 11px;
+    color: var(--gray2);
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.dataset-link {
+    color: var(--primary);
+    font-size: 11px;
+}
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    background: var(--white);
+    border-radius: 16px;
+    border: 2px dashed var(--border);
+}
+.empty-icon {
+    font-size: 3rem;
+}
+.empty-state h3 {
+    color: var(--primary);
+    margin: 15px 0 8px;
+}
+.empty-state p {
+    color: var(--gray3);
+}
+</style>
