@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>机器视觉管理平台</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:#F0F4F8;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:#F4F7FA;}
+::-webkit-scrollbar-thumb{background:#C8D6E1;border-radius:3px;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const C={primary:"#1462A8",primaryBg:"#EBF3FC",primaryBd:"#BFDBF7",success:"#2E8B57",successBg:"#E8F5EE",warning:"#E67E22",warningBg:"#FEF5E7",orange:"#E8631A",orangeBg:"#FDF0E7",gray1:"#1A2332",gray2:"#3D5166",gray3:"#6B8299",gray4:"#9EAFBE",gray5:"#C8D6E1",gray6:"#E8F0F5",gray7:"#F4F7FA",bg:"#F0F4F8",white:"#FFFFFF",border:"#D8E4EE"};
+const ALGO_COLORS={"路面积水检测":{bg:C.primaryBg,border:C.primaryBd,text:C.primary},"漂浮物检测":{bg:C.successBg,border:"#A8D5C0",text:C.success},"墙面裂缝检测":{bg:C.warningBg,border:"#F9D9B0",text:C.warning},"游泳检测":{bg:"#FDE9E9",border:"#F5BCBC",text:"#C0392B"},"其他":{bg:C.gray6,border:C.border,text:C.gray2}};
+const MODEL_CAT_COLORS={"多标签实例分割模型（双标签）":{bg:C.primaryBg,border:C.primaryBd,text:C.primary},"多标签实例分割模型（三标签）":{bg:"#E8F4FE",border:"#A8D0F5",text:"#0A4D8C"},"单标签实例分割模型（背景负样本）":{bg:C.successBg,border:"#A8D5C0",text:C.success},"单标签实例分割模型":{bg:"#EDF6E8",border:"#B0D9A0",text:"#276B27"},"单标签目标检测模型":{bg:C.orangeBg,border:"#F5C8A8",text:C.orange},"其他":{bg:C.gray6,border:C.border,text:C.gray2},"YOLO":{bg:C.primaryBg,border:C.primaryBd,text:C.primary}};
+
+DATASETS=[DATASETS_PLACEHOLDER];
+MODELS=[MODELS_PLACEHOLDER];
+
+function Tag({label,colors}){
+  const c=colors||{bg:C.gray6,border:C.border,text:C.gray2};
+  return React.createElement('span',{style:{display:"inline-block",padding:"2px 8px",borderRadius:"4px",fontSize:"11px",fontWeight:500,background:c.bg,border:`1px solid ${c.border}`,color:c.text,whiteSpace:"nowrap"}},label);
+}
+function AlgoTag({type}){return React.createElement(Tag,{label:type,colors:ALGO_COLORS[type]});}
+function ModelCatTag({cat}){return React.createElement(Tag,{label:cat,colors:MODEL_CAT_COLORS[cat]});}
+
+function MiniHeatmap({seed,size=52}){
+  const cells=6,s=size;
+  const rects=[];
+  for(let r=0;r<cells;r++)for(let c=0;c<cells;c++){
+    const v=Math.abs(Math.sin(seed*17+r*5+c*7));
+    const intensity=Math.round(v*200);
+    const fill=r===c?C.primary:`rgb(${255-Math.round(intensity*0.3)},${255-Math.round(intensity*0.6)},255)`;
+    rects.push(React.createElement('rect',{key:`${r}-${c}`,x:c*(s/cells),y:r*(s/cells),width:s/cells-0.5,height:s/cells-0.5,fill,opacity:r===c?0.85:0.4+v*0.5}));
+  }
+  return React.createElement('svg',{width:size,height:size,style:{borderRadius:"3px",flexShrink:0}},rects);
+}
+function MiniDistChart({seed,size=52}){
+  const bars=8;
+  const heights=Array.from({length:bars},(_,i)=>Math.max(0.12,Math.exp(-Math.pow((i-bars/2)/2,2))*0.85+Math.abs(Math.sin(seed*13.7+i*2.3))*0.15));
+  return React.createElement('svg',{width:size,height:size,style:{borderRadius:"3px",flexShrink:0}},
+    React.createElement('rect',{width:size,height:size,fill:"#F0F7FF",rx:"2"}),
+    ...heights.map((h,i)=>{const bw=size/bars-1,bh=h*(size-6);return React.createElement('rect',{key:i,x:i*(size/bars)+0.5,y:size-bh-3,width:bw,height:bh,fill:C.primary,opacity:0.55+i*0.05,rx:"1"});})
+  );
+}
+function MiniCurve({seed,size=48,color=C.primary}){
+  const pts=Array.from({length:10},(_,i)=>Math.min(0.98,Math.max(0.1,1-Math.exp(-i*0.4)+Math.sin(seed*11+i*3.7)*0.03)));
+  const w=size,h=size-4;
+  const coords=pts.map((v,i)=>`${(i/(pts.length-1))*(w-4)+2},${h-v*(h-4)+2}`).join(" ");
+  return React.createElement('svg',{width:size,height:size,style:{borderRadius:"3px",flexShrink:0}},
+    React.createElement('rect',{width:size,height:size,fill:"#F4F8FC",rx:"2"}),
+    React.createElement('polyline',{points:coords,fill:"none",stroke:color,strokeWidth:"1.5",strokeLinecap:"round",strokeLinejoin:"round"})
+  );
+}
+function MiniPreviewGrid({seed,count=8,algoType}){
+  const col=(ALGO_COLORS[algoType]||{text:C.primary}).text;
+  const total=Math.min(count,8);
+  return React.createElement('div',{style:{display:"flex",flexWrap:"wrap",gap:"2px"}},
+    Array.from({length:total},(_,i)=>{
+      const hasBox=Math.sin(seed*5+i)>0.1;
+      return React.createElement('div',{key:i,style:{width:"26px",height:"19px",background:`hsl(${205+(seed+i*7)%40},${28+i%12}%,${84-i}%)`,borderRadius:"2px",position:"relative",overflow:"hidden",border:`1px solid ${C.border}`,flexShrink:0}},
+        hasBox&&React.createElement('div',{style:{position:"absolute",left:"15%",top:"10%",width:"55%",height:"65%",border:`1.5px solid ${col}`,borderRadius:"1px",opacity:0.85}})
+      );
+    })
+  );
+}
+function AccuracyBar({value,width=90}){
+  const col=value>=95?C.success:value>=85?C.primary:C.warning;
+  return React.createElement('div',{style:{display:"flex",alignItems:"center",gap:"8px"}},
+    React.createElement('div',{style:{width,height:"6px",background:C.gray6,borderRadius:"3px",overflow:"hidden"}},
+      React.createElement('div',{style:{width:`${value}%`,height:"100%",background:col,borderRadius:"3px"}})
+    ),
+    React.createElement('span',{style:{fontSize:"13px",fontWeight:700,color:col,minWidth:"46px"}},`${value}%`)
+  );
+}
+function SectionTitle({children}){
+  return React.createElement('div',{style:{fontSize:"13px",fontWeight:600,color:C.gray1,marginBottom:"14px",display:"flex",alignItems:"center",gap:"7px"}},
+    React.createElement('div',{style:{width:"3px",height:"14px",background:C.primary,borderRadius:"2px"}}),
+    children
+  );
+}
+function Card({children,style={}}){
+  return React.createElement('div',{style:{background:C.white,border:`1px solid ${C.border}`,borderRadius:"10px",padding:"18px",...style}},children);
+}
+
+// ========== 上传弹窗组件 ==========
+function UploadModal({isOpen,onClose,onSuccess}){
+  const [name,setName]=React.useState("");
+  const [algoType,setAlgoType]=React.useState("其他");
+  const [description,setDescription]=React.useState("");
+  const [maintainer,setMaintainer]=React.useState("管理员");
+  const [file,setFile]=React.useState(null);
+  const [uploading,setUploading]=React.useState(false);
+  const [error,setError]=React.useState("");
+  const [progress,setProgress]=React.useState(0);
+
+  const algoTypes=["路面积水检测","漂浮物检测","墙面裂缝检测","游泳检测","其他"];
+
+  const handleFileChange=(e)=>{
+    const f=e.target.files[0];
+    if(f){
+      setFile(f);
+      if(!name){
+        setName(f.name.replace(/\.(zip|tar|gz)$/i,""));
+      }
+    }
+  };
+
+  const handleSubmit=async ()=>{
+    if(!name.trim()){setError("请输入数据集名称");return;}
+    if(!file){setError("请选择文件或文件夹");return;}
+    setError("");
+    setUploading(true);
+    setProgress(10);
+
+    const formData=new FormData();
+    formData.append("file",file);
+    formData.append("name",name);
+    formData.append("algoType",algoType);
+    formData.append("description",description);
+    formData.append("maintainer",maintainer);
+
+    try{
+      setProgress(30);
+      const response=await fetch("/api/dataset/upload",{
+        method:"POST",
+        body:formData
+      });
+      setProgress(70);
+      const data=await response.json();
+      if(data.success){
+        setProgress(100);
+        setTimeout(()=>{
+          onSuccess();
+          onClose();
+          setName("");setFile(null);setDescription("");
+        },500);
+      }else{
+        setError(data.error||"上传失败");
+        setUploading(false);
+      }
+    }catch(e){
+      setError("上传失败: "+e.message);
+      setUploading(false);
+    }
+  };
+
+  if(!isOpen)return null;
+
+  return React.createElement('div',{style:{
+    position:"fixed",top:0,left:0,right:0,bottom:0,
+    background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",
+    zIndex:9999
+  }},onClick=onClose,
+    React.createElement('div',{style:{
+      background:C.white,borderRadius:"12px",width:"480px",maxHeight:"90vh",overflow:"auto",
+      boxShadow:"0 20px 60px rgba(0,0,0,0.3)"
+    },onClick:e=>e.stopPropagation()},
+      // 标题
+      React.createElement('div',{style:{
+        padding:"20px 24px",borderBottom:`1px solid ${C.border}`,
+        display:"flex",justifyContent:"space-between",alignItems:"center"
+      }},
+        React.createElement('h3',{fontSize:"16px",fontWeight:600,color:C.gray1},"新建数据集"),
+        React.createElement('button',{onClick:onClose,style:{
+          background:"none",border:"none",cursor:"pointer",fontSize:"20px",color:C.gray3
+        }},"×")
+      ),
+      // 表单
+      React.createElement('div',{style:{padding:"20px 24px"}},
+        // 名称
+        React.createElement('div',{style:{marginBottom:"16px"}},
+          React.createElement('label',{style:{display:"block",fontSize:"13px",fontWeight:500,color:C.gray2,marginBottom:"6px"}},"数据集名称 *"),
+          React.createElement('input',{value:name,onChange:e=>setName(e.target.value),placeholder:"请输入数据集名称",
+            style:{width:"100%",padding:"10px 12px",border:`1px solid ${C.border}`,borderRadius:"6px",fontSize:"13px",outline:"none"}})
+        ),
+        // 算法类型
+        React.createElement('div',{style:{marginBottom:"16px"}},
+          React.createElement('label',{style:{display:"block",fontSize:"13px",fontWeight:500,color:C.gray2,marginBottom:"6px"}},"算法类型"),
+          React.createElement('select',{value:algoType,onChange:e=>setAlgoType(e.target.value),
+            style:{width:"100%",padding:"10px 12px",border:`1px solid ${C.border}`,borderRadius:"6px",fontSize:"13px",outline:"none",background:"white"}},
+            ...algoTypes.map(t=>React.createElement('option',{key:t,value:t},t))
+          )
+        ),
+        // 描述
+        React.createElement('div',{style:{marginBottom:"16px"}},
+          React.createElement('label',{style:{display:"block",fontSize:"13px",fontWeight:500,color:C.gray2,marginBottom:"6px"}},"描述"),
+          React.createElement('textarea',{value:description,onChange:e=>setDescription(e.target.value),placeholder:"请输入数据集描述",
+            style:{width:"100%",padding:"10px 12px",border:`1px solid ${C.border}`,borderRadius:"6px",fontSize:"13px",outline:"none",minHeight:"80px",resize:"vertical"}})
+        ),
+        // 维护人员
+        React.createElement('div',{style:{marginBottom:"16px"}},
+          React.createElement('label',{style:{display:"block",fontSize:"13px",fontWeight:500,color:C.gray2,marginBottom:"6px"}},"维护人员"),
+          React.createElement('input',{value:maintainer,onChange:e=>setMaintainer(e.target.value),
+            style:{width:"100%",padding:"10px 12px",border:`1px solid ${C.border}`,borderRadius:"6px",fontSize:"13px",outline:"none"}})
+        ),
+        // 文件上传
+        React.createElement('div',{style:{marginBottom:"16px"}},
+          React.createElement('label',{style:{display:"block",fontSize:"13px",fontWeight:500,color:C.gray2,marginBottom:"6px"}},"上传文件 *",React.createElement('span',{style:{fontWeight:400,color:C.gray3,marginLeft:"8px"}},"支持 ZIP 压缩包或文件夹")),
+          React.createElement('div',{style:{border:`2px dashed ${C.border}`,borderRadius:"8px",padding:"30px",textAlign:"center",cursor:"pointer",background:C.gray7},
+            onClick:()=>document.getElementById('fileInput').click()},
+            file?React.createElement('div',null,
+              React.createElement('div',{style:{fontSize:"24px",marginBottom:"8px"}},"📦"),
+              React.createElement('div',{style:{color:C.primary,fontWeight:500,fontSize:"13px"}},file.name),
+              React.createElement('div',{style:{color:C.gray3,fontSize:"11px",marginTop:"4px"}},"点击更换文件")
+            ):React.createElement('div',null,
+              React.createElement('div',{style:{fontSize:"24px",marginBottom:"8px"}},"📁"),
+              React.createElement('div',{style:{color:C.gray2,fontSize:"13px"}},"点击选择文件或拖拽到此处"),
+              React.createElement('div',{style:{color:C.gray3,fontSize:"11px",marginTop:"4px"}})
+            )
+          ),
+          React.createElement('input',{id:"fileInput",type:"file",onChange:handleFileChange,style:{display:"none"},
+            webkitdirectory:""})
+        ),
+        // 错误提示
+        error&&React.createElement('div',{style:{color:"#E74C3C",fontSize:"12px",marginBottom:"12px",padding:"8px",background:"#FDF2F2",borderRadius:"4px"}},error),
+        // 进度条
+        uploading&&React.createElement('div',{style:{marginBottom:"16px"}},
+          React.createElement('div',{style:{height:"6px",background:C.gray6,borderRadius:"3px",overflow:"hidden"}},
+            React.createElement('div',{style:{width:`${progress}%`,height:"100%",background:C.primary,transition:"width 0.3s"}})
+          ),
+          React.createElement('div',{style:{fontSize:"11px",color:C.gray3,marginTop:"4px",textAlign:"center"}},`${progress === 100 ? "处理中..." : "上传中..."}`)
+        )
+      ),
+      // 按钮
+      React.createElement('div',{style:{padding:"16px 24px",borderTop:`1px solid ${C.border}`,display:"flex",justifyContent:"flex-end",gap:"12px"}},
+        React.createElement('button',{onClick:onClose,disabled:uploading,
+          style:{padding:"10px 20px",border:`1px solid ${C.border}`,borderRadius:"6px",background:C.white,color:C.gray2,cursor:uploading?"not-allowed":"pointer",fontSize:"13px"}},"取消"),
+        React.createElement('button',{onClick:handleSubmit,disabled:uploading,
+          style:{padding:"10px 24px",border:"none",borderRadius:"6px",background:C.primary,color:"white",cursor:uploading?"not-allowed":"pointer",fontSize:"13px",fontWeight:500,opacity:uploading?0.7:1}},"上传")
+      )
+    )
+  );
+}
+
+// ========== 数据集详情 ==========
+function DatasetDetail({ds,onBack,onRefresh}){
+  const [images,setImages]=React.useState([]);
+  const [loading,setLoading]=React.useState(true);
+  const [deleting,setDeleting]=React.useState(false);
+  const [showDeleteConfirm,setShowDeleteConfirm]=React.useState(false);
+
+  React.useEffect(()=>{
+    fetch(`/api/dataset/${encodeURIComponent(ds.name)}/images`)
+      .then(r=>r.json())
+      .then(data=>{setImages(data.images||[]);setLoading(false);})
+      .catch(()=>{setLoading(false);});
+  },[ds.name]);
+
+  const handleDelete=async ()=>{
+    setDeleting(true);
+    try{
+      const res=await fetch(`/api/dataset/${encodeURIComponent(ds.name)}`,{method:"DELETE"});
+      const data=await res.json();
+      if(data.success){
+        onRefresh();
+        onBack();
+      }else{
+        alert("删除失败: "+data.error);
+      }
+    }catch(e){
+      alert("删除失败");
+    }
+    setDeleting(false);
+    setShowDeleteConfirm(false);
+  };
+
+  const palette=[C.primary,"#E8631A",C.success,"#8E44AD","#C0392B"];
+  const totalLabels=Object.values(ds.labels).reduce((a,b)=>a+(typeof b==="number"?b:0),0)||1;
+  const splitParts=ds.split.split(":").map(Number);
+  const splitTotal=splitParts.reduce((a,b)=>a+b,0);
+  const splitNames=splitParts.length===3?["训练集","验证集","测试集"]:["训练集","验证集"];
+  const splitColors=[C.primary,"#E8631A",C.success];
+
+  return React.createElement('div',null,
+    // 面包屑
+    React.createElement('div',{style:{display:"flex",alignItems:"center",gap:"8px",marginBottom:"20px"}},
+      React.createElement('button',{onClick:onBack,style:{background:"none",border:`1px solid ${C.border}`,borderRadius:"6px",padding:"5px 14px",color:C.gray2,cursor:"pointer",fontSize:"13px",fontFamily:"inherit"}},"← 返回数据集列表"),
+      React.createElement('span',{style:{color:C.gray4}},"/"),
+      React.createElement('span',{style:{color:C.primary,fontSize:"13px"}},ds.name)
+    ),
+    // 头部卡片
+    React.createElement(Card,{style:{marginBottom:"16px",padding:"20px 24px"}},
+      React.createElement('div',{style:{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:"16px",flexWrap:"wrap"}},
+        React.createElement('div',{style:{flex:1,minWidth:"280px"}},
+          React.createElement('div',{style:{display:"flex",alignItems:"center",gap:"10px",marginBottom:"8px"}},
+            React.createElement(AlgoTag,{type:ds.algoType}),
+            React.createElement('span',{style:{fontSize:"13px",color:C.gray4}},`编号 #${ds.id}`)
+          ),
+          React.createElement('div',{style:{fontSize:"18px",fontWeight:700,color:C.gray1,marginBottom:"10px"}},ds.name),
+          React.createElement('div',{style:{fontSize:"13px",color:C.gray2,lineHeight:1.8}},ds.desc)
+        ),
+        React.createElement('div',{style:{display:"flex",gap:"10px",flexWrap:"wrap"}},
+          ...[["样本数量",ds.total.toLocaleString(),C.primary],["标签数量",ds.labelCount,C.gray1],["分配比例",ds.split,C.gray1]].map(([l,v,c])=>
+            React.createElement('div',{key:l,style:{textAlign:"center",padding:"12px 18px",background:C.gray7,borderRadius:"8px",border:`1px solid ${C.border}`}},
+              React.createElement('div',{style:{fontSize:"20px",fontWeight:700,color:c}},v),
+              React.createElement('div',{style:{fontSize:"11px",color:C.gray3,marginTop:"2px"}},l)
+            )
+          )
+        )
+      ),
+      React.createElement('div',{style:{marginTop:"14px",display:"flex",gap:"20px",fontSize:"13px",color:C.gray3,borderTop:`1px solid ${C.gray6}`,paddingTop:"12px",flexWrap:"wrap"}},
+        React.createElement('span',null,"维护日期：",React.createElement('b',{style:{color:C.gray2}},ds.maintainDate)),
+        React.createElement('span',null,"维护人员：",React.createElement('b',{style:{color:C.gray2}},ds.maintainer))
+      ),
+      // 操作按钮
+      React.createElement('div',{style:{marginTop:"16px",display:"flex",gap:"12px"}},
+        React.createElement('button',{style:{display:"flex",alignItems:"center",gap:"6px",padding:"8px 16px",background:C.primaryBg,border:`1px solid ${C.primaryBd}`,borderRadius:"6px",color:C.primary,cursor:"pointer",fontSize:"13px"}},
+          React.createElement('span',null,"📥"),"下载数据集"
+        ),
+        React.createElement('button',{onClick:()=>setShowDeleteConfirm(true),style:{display:"flex",alignItems:"center",gap:"6px",padding:"8px 16px",background:"#FDF2F2",border:`1px solid #F5BCBC`,borderRadius:"6px",color:"#C0392B",cursor:"pointer",fontSize:"13px"}},
+          React.createElement('span',null,"🗑️"),"删除数据集"
+        )
+      ),
+      // 文件状态
+      React.createElement('div',{style:{marginTop:"12px",display:"flex",gap:"12px",flexWrap:"wrap"}},
+        ds.hasFolder&&React.createElement('span',{style:{fontSize:"11px",padding:"4px 10px",background:C.successBg,color:C.success,borderRadius:"12px",border:`1px solid #A8D5C0`}},"📁 已上传文件夹"),
+        ds.hasZip&&React.createElement('span',{style:{fontSize:"11px",padding:"4px 10px",background:C.primaryBg,color:C.primary,borderRadius:"12px",border:`1px solid ${C.primaryBd}`}},"📦 已上传压缩包")
+      )
+    ),
+    // 内容
+    React.createElement('div',{style:{display:"grid",gridTemplateColumns:"240px 1fr",gap:"16px"}},
+      // 左
+      React.createElement('div',{style:{display:"flex",flexDirection:"column",gap:"16px"}},
+        React.createElement(Card,null,
+          React.createElement(SectionTitle,null,"各标签数量"),
+          ...Object.entries(ds.labels).map(([k,v],i)=>{
+            const col=palette[i%palette.length];
+            const pct=typeof v==="number"?Math.round(v/totalLabels*100):0;
+            return React.createElement('div',{key:k,style:{marginBottom:"12px"}},
+              React.createElement('div',{style:{display:"flex",justifyContent:"space-between",marginBottom:"5px"}},
+                React.createElement('span',{style:{fontSize:"13px",color:C.gray2,fontWeight:500}},k),
+                React.createElement('span',{style:{fontSize:"13px",color:col,fontWeight:600}},typeof v==="number"?v.toLocaleString():"—")
+              ),
+              typeof v==="number"&&React.createElement('div',{style:{height:"5px",background:C.gray6,borderRadius:"3px",overflow:"hidden"}},
+                React.createElement('div',{style:{width:`${pct}%`,height:"100%",background:col,borderRadius:"3px"}})
+              )
+            );
+          })
+        ),
+        React.createElement(Card,null,
+          React.createElement(SectionTitle,null,"数据集划分"),
+          ...splitNames.map((name,i)=>{
+            const pct=Math.round(splitParts[i]/splitTotal*100);
+            return React.createElement('div',{key:name,style:{marginBottom:"10px"}},
+              React.createElement('div',{style:{display:"flex",justifyContent:"space-between",marginBottom:"5px"}},
+                React.createElement('span',{style:{fontSize:"13px",color:C.gray2}},name),
+                React.createElement('span',{style:{fontSize:"13px",color:splitColors[i],fontWeight:600}},`${pct}%`)
+              ),
+              React.createElement('div',{style:{height:"5px",background:C.gray6,borderRadius:"3px",overflow:"hidden"}},
+                React.createElement('div',{style:{width:`${pct}%`,height:"100%",background:splitColors[i],borderRadius:"3px"}})
+              )
+            );
+          })
+        )
+      ),
+      // 右
+      React.createElement('div',{style:{display:"flex",flexDirection:"column",gap:"16px"}},
+        React.createElement(Card,null,
+          React.createElement(SectionTitle,null,"数据集预览"),
+          loading?React.createElement('div',{style:{textAlign:"center",padding:"40px",color:C.gray3}},"加载中..."):
+          images.length===0?React.createElement('div',{style:{textAlign:"center",padding:"40px",color:C.gray3}},"暂无图片"):
+          React.createElement('div',{style:{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(110px,1fr))",gap:"8px"}},
+            ...images.slice(0,ds.previewCount*2).map((img,i)=>
+              React.createElement('div',{key:i,style:{aspectRatio:"16/10",background:`hsl(${207+(ds.id*10+i*7)%35},${28+i%18}%,${86-i*1.2}%)`,borderRadius:"6px",border:`1px solid ${C.border}`,position:"relative",overflow:"hidden"}},
+                React.createElement('div',{style:{position:"absolute",bottom:"4px",right:"4px",background:"rgba(0,0,0,0.35)",borderRadius:"3px",padding:"1px 5px",fontSize:"9px",color:"#fff"}},`#${i+1}`)
+              )
+            )
+          )
+        )
+      )
+    ),
+    // 删除确认弹窗
+    showDeleteConfirm&&React.createElement('div',{style:{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:10000}},
+      React.createElement('div',{style:{background:C.white,borderRadius:"12px",width:"360px",padding:"24px"}},
+        React.createElement('div',{style:{fontSize:"16px",fontWeight:600,color:C.gray1,marginBottom:"12px"}},"确认删除"),
+        React.createElement('div',{style:{fontSize:"13px",color:C.gray2,marginBottom:"20px"}},"确定要删除数据集「"+ds.name+"」吗？此操作不可恢复。"),
+        React.createElement('div',{style:{display:"flex",justifyContent:"flex-end",gap:"12px"}},
+          React.createElement('button',{onClick:()=>setShowDeleteConfirm(false),disabled:deleting,style:{padding:"8px 16px",border:`1px solid ${C.border}`,borderRadius:"6px",background:C.white,color:C.gray2,cursor:"pointer"}},"取消"),
+          React.createElement('button',{onClick:handleDelete,disabled:deleting,style:{padding:"8px 16px",border:"none",borderRadius:"6px",background:"#C0392B",color:"white",cursor:deleting?"not-allowed":"pointer",opacity:deleting?0.7:1}},deleting?"删除中...":"确认删除")
+        )
+      )
+    )
+  );
+}
+
+function ModelDetail({model,onBack,onGotoDataset,onRefresh}){
+  const ds=DATASETS.find(d=>d.name===model.dataset);
+  const col=model.accuracy>=95?C.success:model.accuracy>=85?C.primary:C.warning;
+  const curves=["P曲线","R曲线","PR曲线","F1曲线","混淆矩阵","val_loss"];
+  const curveColors=[C.primary,"#E8631A",C.success,"#8E44AD","#C0392B",C.primary];
+
+  return React.createElement('div',null,
+    React.createElement('div',{style:{display:"flex",alignItems:"center",gap:"8px",marginBottom:"20px"}},
+      React.createElement('button',{onClick:onBack,style:{background:"none",border:`1px solid ${C.border}`,borderRadius:"6px",padding:"5px 14px",color:C.gray2,cursor:"pointer",fontSize:"13px",fontFamily:"inherit"}},"← 返回模型列表"),
+      React.createElement('span',{style:{color:C.gray4}},"/"),
+      React.createElement('span',{style:{color:C.primary,fontSize:"13px"}},model.name)
+    ),
+    React.createElement(Card,{style:{marginBottom:"16px",padding:"20px 24px"}},
+      React.createElement('div',{style:{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:"16px",flexWrap:"wrap"}},
+        React.createElement('div',{style:{flex:1,minWidth:"280px"}},
+          React.createElement('div',{style:{display:"flex",alignItems:"center",gap:"8px",marginBottom:"8px",flexWrap:"wrap"}},
+            React.createElement(AlgoTag,{type:model.algoName}),
+            React.createElement(ModelCatTag,{cat:model.category}),
+            React.createElement('span',{style:{fontSize:"13px",color:C.gray4}},`#${model.id}`)
+          ),
+          React.createElement('div',{style:{fontSize:"18px",fontWeight:700,color:C.gray1,marginBottom:"10px"}},model.name),
+          React.createElement('div',{style:{fontSize:"13px",color:C.gray2,lineHeight:1.8}},model.desc)
+        ),
+        React.createElement('div',{style:{textAlign:"center",padding:"16px 28px",background:`${col}12`,border:`2px solid ${col}`,borderRadius:"12px",flexShrink:0}},
+          React.createElement('div',{style:{fontSize:"36px",fontWeight:800,color:col,fontFamily:"monospace"}},`${model.accuracy}%`),
+          React.createElement('div',{style:{fontSize:"12px",color:C.gray3,marginTop:"2px"}},"模型精度 mAP")
+        )
+      ),
+      React.createElement('div',{style:{marginTop:"14px",display:"flex",gap:"20px",fontSize:"13px",color:C.gray3,borderTop:`1px solid ${C.gray6}`,paddingTop:"12px",flexWrap:"wrap"}},
+        React.createElement('span',null,"使用数据集：",React.createElement('b',{style:{color:C.primary,cursor:"pointer"},onClick:()=>ds&&onGotoDataset(ds)},model.dataset)),
+        React.createElement('span',null,"维护日期：",React.createElement('b',{style:{color:C.gray2}},model.maintainDate)),
+        React.createElement('span',null,"维护人员：",React.createElement('b',{style:{color:C.gray2}},model.maintainer))
+      )
+    ),
+    React.createElement('div',{style:{display:"grid",gridTemplateColumns:"1fr",gap:"16px"}},
+      React.createElement(Card,null,
+        React.createElement(SectionTitle,null,"训练指标曲线"),
+        React.createElement('div',{style:{display:"flex",gap:"20px",flexWrap:"wrap"}},
+          ...curves.map((name,i)=>
+            React.createElement('div',{key:name,style:{textAlign:"center"}},
+              React.createElement(MiniCurve,{seed:model.id*7+i,size:80,color:curveColors[i]}),
+              React.createElement('div',{style:{fontSize:"11px",color:C.gray3,marginTop:"6px"}},name)
+            )
+          )
+        )
+      )
+    )
+  );
+}
+
+function App(){
+  const [tab,setTab]=React.useState("datasets");
+  const [selDs,setSelDs]=React.useState(null);
+  const [selModel,setSelModel]=React.useState(null);
+  const [dsSearch,setDsSearch]=React.useState("");
+  const [dsFilter,setDsFilter]=React.useState("全部");
+  const [mSearch,setMSearch]=React.useState("");
+  const [mFilter,setMFilter]=React.useState("全部");
+  const [showUpload,setShowUpload]=React.useState(false);
+  const [refreshKey,setRefreshKey]=React.useState(0);
+
+  // 重新获取数据
+  const refreshData=async ()=>{
+    try{
+      const [dsRes, mRes] = await Promise.all([
+        fetch("/api/datasets"),
+        fetch("/api/models")
+      ]);
+      const newDatasets = await dsRes.json();
+      const newModels = await mRes.json();
+      window.DATASETS = newDatasets;
+      window.MODELS = newModels;
+      setRefreshKey(k=>k+1);
+    }catch(e){
+      console.error("Refresh failed:", e);
+    }
+  };
+
+  const algoTypes=["全部",...new Set(DATASETS.map(d=>d.algoType))];
+  const modelAlgos=["全部",...new Set(MODELS.map(m=>m.algoName))];
+  const filtDs=DATASETS.filter(d=>(dsFilter==="全部"||d.algoType===dsFilter)&&d.name.toLowerCase().includes(dsSearch.toLowerCase()));
+  const filtMs=MODELS.filter(m=>(mFilter==="全部"||m.algoName===mFilter)&&m.name.toLowerCase().includes(mSearch.toLowerCase()));
+  const gotoDs=(ds)=>{setSelDs(ds);setSelModel(null);setTab("datasets");};
+
+  const th=(w,center=false)=>({padding:"10px 12px",fontSize:"12px",fontWeight:600,color:C.gray1,textAlign:center?"center":"left",background:"transparent",whiteSpace:"nowrap",width:w||"auto",letterSpacing:"0.2px"});
+  const td=(w,center=false)=>({padding:"9px 12px",fontSize:"12px",textAlign:center?"center":"left",color:C.gray2,borderBottom:`1px solid ${C.gray6}`,width:w||"auto",verticalAlign:"middle"});
+
+  const navBtn=(key,label)=>React.createElement('button',{key,onClick:()=>{setTab(key);setSelDs(null);setSelModel(null);},style:{background:tab===key?"rgba(255,255,255,0.2)":"transparent",border:"none",borderRadius:"6px",padding:"7px 16px",color:"white",cursor:"pointer",fontSize:"14px",fontWeight:tab===key?600:400,fontFamily:"inherit",opacity:tab===key?1:0.8}},label);
+
+  // 重新渲染
+  React.useEffect(()=>{
+    window.DATASETS = DATASETS;
+    window.MODELS = MODELS;
+  },[refreshKey]);
+
+  return React.createElement('div',{style:{fontFamily:"'PingFang SC','Microsoft YaHei',sans-serif",background:C.bg,minHeight:"100vh",display:"flex",flexDirection:"column"}},
+    // Nav
+    React.createElement('div',{style:{background:C.primary,padding:"0 24px",display:"flex",alignItems:"center",height:"52px",gap:"4px",flexShrink:0,boxShadow:"0 2px 10px rgba(20,98,168,0.3)"}},
+      React.createElement('div',{style:{display:"flex",alignItems:"center",gap:"10px",marginRight:"32px"}},
+        React.createElement('div',{style:{width:"32px",height:"32px",background:"rgba(255,255,255,0.15)",borderRadius:"8px",display:"flex",alignItems:"center",justifyContent:"center",border:"1.5px solid rgba(255,255,255,0.3)"}},
+          React.createElement('svg',{width:"18",height:"18",viewBox:"0 0 18 18",fill:"none"},
+            React.createElement('circle',{cx:"9",cy:"9",r:"3.5",fill:"none",stroke:"white",strokeWidth:"1.5"}),
+            React.createElement('line',{x1:"9",y1:"1",x2:"9",y2:"4.5",stroke:"white",strokeWidth:"1.5",strokeLinecap:"round"}),
+            React.createElement('line',{x1:"9",y1:"13.5",x2:"9",y2:"17",stroke:"white",strokeWidth:"1.5",strokeLinecap:"round"}),
+            React.createElement('line',{x1:"1",y1:"9",x2:"4.5",y2:"9",stroke:"white",strokeWidth:"1.5",strokeLinecap:"round"}),
+            React.createElement('line',{x1:"13.5",y1:"9",x2:"17",y2:"9",stroke:"white",strokeWidth:"1.5",strokeLinecap:"round"})
+          )
+        ),
+        React.createElement('span',{style:{fontWeight:700,fontSize:"16px",color:"white",letterSpacing:"0.5px"}},"机器视觉管理平台")
+      ),
+      navBtn("datasets","数据集管理"),
+      navBtn("models","算法模型管理"),
+      React.createElement('div',{style:{marginLeft:"auto",display:"flex",alignItems:"center",gap:"8px"}},
+        React.createElement('div',{style:{width:"30px",height:"30px",borderRadius:"50%",background:"rgba(255,255,255,0.2)",border:"2px solid rgba(255,255,255,0.4)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"12px",fontWeight:700,color:"white"}},"管"),
+        React.createElement('span',{style:{fontSize:"13px",color:"rgba(255,255,255,0.85)"}},"管理员")
+      )
+    ),
+
+    // Content
+    React.createElement('div',{style:{flex:1,overflow:"auto",padding:"20px 24px"}},
+
+      // ===== Dataset List =====
+      tab==="datasets"&&!selDs&&React.createElement('div',null,
+        React.createElement('div',{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"16px"}},
+          React.createElement('div',null,
+            React.createElement('h2',{style:{fontSize:"18px",fontWeight:700,color:C.gray1}},"数据集管理"),
+            React.createElement('p',{style:{fontSize:"13px",color:C.gray3,marginTop:"2px"}},`共 ${DATASETS.length} 个数据集 · ${DATASETS.reduce((s,d)=>s+d.total,0).toLocaleString()} 个样本`)
+          ),
+          React.createElement('button',{onClick:()=>setShowUpload(true),style:{background:C.primary,color:"white",border:"none",borderRadius:"7px",padding:"8px 18px",cursor:"pointer",fontSize:"13px",fontWeight:500,fontFamily:"inherit"}},"+ 新建数据集")
+        ),
+        React.createElement('div',{style:{background:C.white,border:`1px solid ${C.border}`,borderRadius:"10px",padding:"14px 18px",marginBottom:"14px",display:"flex",alignItems:"center",gap:"12px",flexWrap:"wrap"}},
+          React.createElement('input',{value:dsSearch,onChange:e=>setDsSearch(e.target.value),placeholder:"搜索数据集名称...",style:{border:`1px solid ${C.border}`,borderRadius:"6px",padding:"6px 12px",fontSize:"13px",color:C.gray1,background:C.gray7,width:"220px",outline:"none"}}),
+          React.createElement('div',{style:{display:"flex",gap:"6px",flexWrap:"wrap"}},
+            ...algoTypes.map(t=>React.createElement('button',{key:t,onClick:()=>setDsFilter(t),style:{background:dsFilter===t?C.primary:"none",border:`1px solid ${dsFilter===t?C.primary:C.border}`,borderRadius:"20px",padding:"3px 12px",fontSize:"12px",cursor:"pointer",color:dsFilter===t?"white":C.gray3,fontFamily:"inherit",transition:"all .15s"}},t))
+          ),
+          React.createElement('span',{style:{marginLeft:"auto",fontSize:"12px",color:C.gray4}},`显示 ${filtDs.length} 条`)
+        ),
+        React.createElement('div',{style:{background:C.white,border:`1px solid ${C.border}`,borderRadius:"10px",overflow:"hidden"}},
+          React.createElement('div',{style:{overflowX:"auto"}},
+            React.createElement('table',{style:{width:"100%",borderCollapse:"collapse",minWidth:"1180px"}},
+              React.createElement('thead',null,
+                React.createElement('tr',{style:{background:C.gray7,borderBottom:`2px solid ${C.border}`}},
+                  ...[["编号","48px",true],["算法类型","110px",true],["数据集名称","210px",false],["分配比例","70px",true],["样本数量","72px",true],["详情图","84px",true],["分布图","84px",true],["标签数","64px",true],["各标签数量","145px",false],["数据集预览","160px",false],["数据集概述","185px",false],["维护日期","86px",true],["维护人员","72px",true]].map(([l,w,c])=>
+                    React.createElement('th',{key:l,style:th(w,c)},l)
+                  )
+                )
+              ),
+              React.createElement('tbody',null,
+                ...filtDs.map((ds,idx)=>React.createElement('tr',{key:ds.id,onClick:()=>setSelDs(ds),
+                  onMouseEnter:e=>{e.currentTarget.style.background=C.primaryBg;},
+                  onMouseLeave:e=>{e.currentTarget.style.background=idx%2===0?C.white:"#FAFCFE";},
+                  style:{cursor:"pointer",background:idx%2===0?C.white:"#FAFCFE",transition:"background .1s"}},
+                  React.createElement('td',{style:td("48px",true)},React.createElement('span',{style:{fontWeight:600,color:C.gray4}},ds.id)),
+                  React.createElement('td',{style:td("110px",true)},React.createElement(AlgoTag,{type:ds.algoType})),
+                  React.createElement('td',{style:td("210px")},
+                    React.createElement('div',{style:{color:C.primary,fontWeight:500,fontSize:"12px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"200px"},title:ds.name},ds.name),
+                    // 文件状态标签
+                    React.createElement('div',{style:{marginTop:"4px",display:"flex",gap:"4px"}},
+                      ds.hasFolder&&React.createElement('span',{key:"folder",style:{fontSize:"9px",padding:"1px 5px",background:C.successBg,color:C.success,borderRadius:"3px"}},"📁"),
+                      ds.hasZip&&React.createElement('span',{key:"zip",style:{fontSize:"9px",padding:"1px 5px",background:C.primaryBg,color:C.primary,borderRadius:"3px"}},"📦")
+                    )
+                  ),
+                  React.createElement('td',{style:td("70px",true)},React.createElement('span',{style:{background:C.primaryBg,color:C.primary,border:`1px solid ${C.primaryBd}`,borderRadius:"4px",padding:"2px 6px",fontSize:"11px",fontWeight:600}},ds.split)),
+                  React.createElement('td',{style:td("72px",true)},React.createElement('span',{style:{fontWeight:700,color:C.gray1,fontSize:"13px"}},ds.total.toLocaleString())),
+                  React.createElement('td',{style:td("84px",true)},React.createElement('div',{style:{display:"flex",justifyContent:"center"}},React.createElement(MiniHeatmap,{seed:ds.id*7,size:50}))),
+                  React.createElement('td',{style:td("84px",true)},React.createElement('div',{style:{display:"flex",justifyContent:"center"}},React.createElement(MiniDistChart,{seed:ds.id*11,size:50}))),
+                  React.createElement('td',{style:td("64px",true)},React.createElement('span',{style:{background:C.primaryBg,color:C.primary,border:`1px solid ${C.primaryBd}`,borderRadius:"12px",padding:"2px 8px",fontSize:"11px",fontWeight:600}},ds.labelCount)),
+                  React.createElement('td',{style:td("145px")},
+                    React.createElement('div',{style:{fontSize:"11px",color:C.gray2,lineHeight:1.7}},
+                      ...Object.entries(ds.labels).map(([k,v])=>React.createElement('div',{key:k},React.createElement('span',{style:{color:C.gray3}},`${k}: `),React.createElement('span',{style:{fontWeight:600}}, typeof v==="number"?v.toLocaleString():v)))
+                    )
+                  ),
+                  React.createElement('td',{style:td("160px")},React.createElement(MiniPreviewGrid,{seed:ds.id,count:8,algoType:ds.algoType})),
+                  React.createElement('td',{style:td("185px")},React.createElement('div',{style:{fontSize:"11px",color:C.gray2,lineHeight:1.6,display:"-webkit-box",WebkitLineClamp:3,WebkitBoxOrient:"vertical",overflow:"hidden"}},ds.desc)),
+                  React.createElement('td',{style:td("86px",true)},React.createElement('span',{style:{fontSize:"11px",color:C.gray3}},ds.maintainDate)),
+                  React.createElement('td',{style:td("72px",true)},React.createElement('span',{style:{fontSize:"11px",color:C.gray2,fontWeight:500}},ds.maintainer))
+                ))
+              )
+            )
+          )
+        )
+      ),
+
+      // ===== Dataset Detail =====
+      tab==="datasets"&&selDs&&React.createElement(DatasetDetail,{ds:selDs,onBack:()=>setSelDs(null),onRefresh:refreshData}),
+
+      // ===== Model List =====
+      tab==="models"&&!selModel&&React.createElement('div',null,
+        React.createElement('div',{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"16px"}},
+          React.createElement('div',null,
+            React.createElement('h2',{style:{fontSize:"18px",fontWeight:700,color:C.gray1}},"算法模型管理"),
+            React.createElement('p',{style:{fontSize:"13px",color:C.gray3,marginTop:"2px"}},`共 ${MODELS.length} 个模型`)
+          ),
+          React.createElement('button',{style:{background:C.primary,color:"white",border:"none",borderRadius:"7px",padding:"8px 18px",cursor:"pointer",fontSize:"13px",fontWeight:500,fontFamily:"inherit"}},"+ 新建训练")
+        ),
+        React.createElement('div',{style:{background:C.white,border:`1px solid ${C.border}`,borderRadius:"10px",padding:"14px 18px",marginBottom:"14px",display:"flex",alignItems:"center",gap:"12px",flexWrap:"wrap"}},
+          React.createElement('input',{value:mSearch,onChange:e=>setMSearch(e.target.value),placeholder:"搜索模型名称...",style:{border:`1px solid ${C.border}`,borderRadius:"6px",padding:"6px 12px",fontSize:"13px",color:C.gray1,background:C.gray7,width:"220px",outline:"none"}}),
+          React.createElement('div',{style:{display:"flex",gap:"6px",flexWrap:"wrap"}},
+            ...modelAlgos.map(t=>React.createElement('button',{key:t,onClick:()=>setMFilter(t),style:{background:mFilter===t?C.primary:"none",border:`1px solid ${mFilter===t?C.primary:C.border}`,borderRadius:"20px",padding:"3px 12px",fontSize:"12px",cursor:"pointer",color:mFilter===t?"white":C.gray3,fontFamily:"inherit"}},t))
+          ),
+          React.createElement('span',{style:{marginLeft:"auto",fontSize:"12px",color:C.gray4}},`显示 ${filtMs.length} 条`)
+        ),
+        React.createElement('div',{style:{background:C.white,border:`1px solid ${C.border}`,borderRadius:"10px",overflow:"hidden"}},
+          React.createElement('div',{style:{overflowX:"auto"}},
+            React.createElement('table',{style:{width:"100%",borderCollapse:"collapse",minWidth:"1350px"}},
+              React.createElement('thead',null,
+                React.createElement('tr',{style:{background:C.gray7,borderBottom:`2px solid ${C.border}`}},
+                  ...[["编号","48px",true],["算法名称","98px",true],["模型名称","200px",false],["模型类别","162px",false],["模型精度","145px",false],["模型详细精度","310px",false],["识别结果预览","185px",false],["模型概述","185px",false],["使用数据集","170px",false],["维护日期","86px",true],["维护人员","72px",true]].map(([l,w,c])=>
+                    React.createElement('th',{key:l,style:th(w,c)},l)
+                  )
+                )
+              ),
+              React.createElement('tbody',null,
+                ...filtMs.map((m,idx)=>{
+                  const col=m.accuracy>=95?C.success:m.accuracy>=85?C.primary:C.warning;
+                  return React.createElement('tr',{key:m.id,onClick:()=>setSelModel(m),
+                    onMouseEnter:e=>{e.currentTarget.style.background=C.primaryBg;},
+                    onMouseLeave:e=>{e.currentTarget.style.background=idx%2===0?C.white:"#FAFCFE";},
+                    style:{cursor:"pointer",background:idx%2===0?C.white:"#FAFCFE",transition:"background .1s"}},
+                    React.createElement('td',{style:td("48px",true)},React.createElement('span',{style:{fontWeight:600,color:C.gray4}},m.id)),
+                    React.createElement('td',{style:td("98px",true)},React.createElement(AlgoTag,{type:m.algoName})),
+                    React.createElement('td',{style:td("200px")},React.createElement('div',{style:{color:C.primary,fontWeight:500,fontSize:"12px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"190px"},title:m.name},m.name)),
+                    React.createElement('td',{style:td("162px")},React.createElement(ModelCatTag,{cat:m.category})),
+                    React.createElement('td',{style:td("145px")},React.createElement(AccuracyBar,{value:m.accuracy,width:76})),
+                    React.createElement('td',{style:td("310px")},
+                      React.createElement('div',{style:{display:"flex",gap:"4px",alignItems:"center"}},
+                        ...["P","R","PR","F1","CM","Loss"].map((name,i)=>{
+                          const cc=[C.primary,"#E8631A",C.success,"#8E44AD","#C0392B",C.primary];
+                          return React.createElement('div',{key:name,style:{textAlign:"center"}},
+                            React.createElement(MiniCurve,{seed:m.id*7+i,size:40,color:cc[i]}),
+                            React.createElement('div',{style:{fontSize:"9px",color:C.gray4,marginTop:"2px"}},name)
+                          );
+                        })
+                      )
+                    ),
+                    React.createElement('td',{style:td("185px")},React.createElement(MiniPreviewGrid,{seed:m.id*3,count:8,algoType:m.algoName})),
+                    React.createElement('td',{style:td("185px")},React.createElement('div',{style:{fontSize:"11px",color:C.gray2,lineHeight:1.6,display:"-webkit-box",WebkitLineClamp:3,WebkitBoxOrient:"vertical",overflow:"hidden"}},m.desc)),
+                    React.createElement('td',{style:td("170px")},
+                      React.createElement('span',{style:{color:C.primary,fontSize:"11px",cursor:"pointer",textDecoration:"underline",textDecorationColor:`${C.primary}50`,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",display:"block",maxWidth:"160px"},
+                        onClick:e=>{e.stopPropagation();const ds=DATASETS.find(d=>d.name===m.dataset);if(ds)gotoDs(ds);},title:m.dataset},m.dataset)
+                    ),
+                    React.createElement('td',{style:td("86px",true)},React.createElement('span',{style:{fontSize:"11px",color:C.gray3}},m.maintainDate)),
+                    React.createElement('td',{style:td("72px",true)},React.createElement('span',{style:{fontSize:"11px",color:C.gray2,fontWeight:500}},m.maintainer))
+                  );
+                })
+              )
+            )
+          )
+        )
+      ),
+
+      // ===== Model Detail =====
+      tab==="models"&&selModel&&React.createElement(ModelDetail,{model:selModel,onBack:()=>setSelModel(null),onGotoDataset:gotoDs})
+    ),
+    // 上传弹窗
+    React.createElement(UploadModal,{isOpen:showUpload,onClose:()=>setShowUpload(false),onSuccess:refreshData})
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+</script>
+</body>
+</html>

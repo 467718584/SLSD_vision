@@ -52,8 +52,14 @@ def dict_to_js(obj, indent=0):
 
 
 def load_reference_html():
-    """加载参考HTML文件"""
+    """加载增强版HTML文件"""
     import os
+    # 优先使用增强版模板
+    html_path = os.path.join(os.path.dirname(__file__), '参考资料', 'vision-platform-enhanced.html')
+    if os.path.exists(html_path):
+        with open(html_path, 'r', encoding='utf-8') as f:
+            return f.read()
+    # 回退到原版模板
     html_path = os.path.join(os.path.dirname(__file__), '参考资料', 'vision-platform-preview.html')
     if os.path.exists(html_path):
         with open(html_path, 'r', encoding='utf-8') as f:
@@ -72,6 +78,18 @@ def index():
     datasets = get_all_datasets()
     models = get_all_models()
 
+    # 检查数据集是否有上传的文件
+    def check_dataset_files(name):
+        """检查数据集是否有上传的文件"""
+        dataset_path = os.path.join(DATASETS_DIR, name)
+        has_folder = os.path.exists(dataset_path) and os.path.isdir(dataset_path)
+        # 检查是否有ZIP文件
+        has_zip = os.path.exists(os.path.join(dataset_path, f"{name}.zip"))
+        return {
+            "hasFolder": has_folder,
+            "hasZip": has_zip
+        }
+
     # 准备数据集数据
     datasets_data = []
     for ds in datasets:
@@ -80,6 +98,9 @@ def index():
         labels_processed = {}
         for k, v in labels.items():
             labels_processed[k] = v if isinstance(v, int) else "-"
+
+        # 检查文件状态
+        file_status = check_dataset_files(ds.get('name', ''))
 
         datasets_data.append({
             "id": ds.get('id', 0),
@@ -92,7 +113,9 @@ def index():
             "desc": ds.get('description', ''),
             "maintainDate": ds.get('maintain_date', ''),
             "maintainer": ds.get('maintainer', ''),
-            "previewCount": ds.get('preview_count', 8)
+            "previewCount": ds.get('preview_count', 8),
+            "hasFolder": file_status["hasFolder"],
+            "hasZip": file_status["hasZip"]
         })
 
     # 准备模型数据
