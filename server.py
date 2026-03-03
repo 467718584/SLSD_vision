@@ -289,17 +289,17 @@ def upload_dataset():
             json.dump(metadata, f, ensure_ascii=False, indent=2)
 
         # 保存到数据库
-        add_dataset(
-            name=dataset_name,
-            algo_type=algo_type,
-            description=description,
-            split="8:2",
-            total=image_count,
-            label_count=len(labels),
-            labels=json.dumps(labels),
-            maintain_date=datetime.now().strftime('%Y/%m/%d'),
-            maintainer=maintainer
-        )
+        add_dataset({
+            'name': dataset_name,
+            'algo_type': algo_type,
+            'description': description,
+            'split': "8:2",
+            'total': image_count,
+            'label_count': len(labels),
+            'labels': labels,
+            'maintain_date': datetime.now().strftime('%Y/%m/%d'),
+            'maintainer': maintainer
+        })
 
         return jsonify({
             "success": True,
@@ -398,16 +398,16 @@ def upload_model():
             json.dump(metadata, f, ensure_ascii=False, indent=2)
 
         # 保存到数据库
-        add_model(
-            name=model_name,
-            algo_name=algo_name,
-            category=category,
-            accuracy=accuracy,
-            description=description,
-            dataset=dataset,
-            maintain_date=datetime.now().strftime('%Y/%m/%d'),
-            maintainer=maintainer
-        )
+        add_model({
+            'name': model_name,
+            'algo_name': algo_name,
+            'category': category,
+            'accuracy': accuracy,
+            'description': description,
+            'dataset': dataset,
+            'maintain_date': datetime.now().strftime('%Y/%m/%d'),
+            'maintainer': maintainer
+        })
 
         return jsonify({
             "success": True,
