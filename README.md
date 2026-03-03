@@ -5,10 +5,11 @@
 ## 项目概述
 
 本系统是一个 Web 化管理平台，主要功能包括：
-- 数据集管理：上传、查看、删除数据集
+- 数据集管理：上传（支持ZIP压缩包和文件夹）、查看、删除数据集
 - 模型管理：上传、查看、删除训练模型
 - 数据预览：查看数据集图片和标注信息
 - 搜索筛选：通过算法类型、名称等条件筛选数据
+- 大文件上传：支持最大500MB的文件上传
 
 ## 技术栈
 
@@ -26,18 +27,15 @@ SLSD_vision/
 ├── config.py                   # 配置文件
 ├── requirements.txt            # Python 依赖
 ├── generate_test_data.py       # 测试数据生成脚本
-├── templates/                  # HTML 模板目录
-│   └── style.html             # CSS 样式定义
 ├── 参考资料/                    # 参考文档和资源
-│   └── vision-platform-preview.html  # 前端参考模板
+│   └── vision-platform-preview.html  # 前端模板（含上传功能）
 ├── modules/                    # 功能模块
 │   ├── __init__.py
 │   ├── database.py            # SQLite 数据库模块
 │   ├── dataset_manager.py     # 数据集管理模块
 │   ├── model_manager.py       # 模型管理模块
-│   ├── annotation_parser.py    # 标注格式解析
-│   ├── storage.py             # 文件存储管理
-│   └── template_renderer.py   # 模板渲染模块
+│   ├── annotation_parser.py   # 标注格式解析
+│   └── storage.py            # 文件存储管理
 └── data/                      # 数据存储目录
     ├── vision_platform.db     # SQLite 数据库文件
     ├── datasets/              # 数据集文件存储
@@ -45,7 +43,7 @@ SLSD_vision/
     │       ├── images/        # 图片文件
     │       ├── labels/        # 标注文件
     │       └── metadata.json  # 元数据
-    └── models/                # 模型文件存储
+    └── models/               # 模型文件存储
         └── [模型名称]/
             ├── weights/       # 权重文件
             └── config.json   # 模型配置
@@ -58,6 +56,7 @@ SLSD_vision/
 主入口服务器，负责：
 - 加载外部 HTML 模板并注入数据库数据
 - 提供 RESTful API 接口
+- 支持大文件上传（最大500MB）
 - 运行在 http://localhost:8501
 
 主要路由：
@@ -65,6 +64,9 @@ SLSD_vision/
 - `/api/datasets` - 数据集查询 API
 - `/api/models` - 模型查询 API
 - `/api/stats` - 统计信息 API
+- `/api/dataset/upload` - 上传数据集（支持ZIP和文件夹）
+- `/api/model/upload` - 上传模型
+- `/api/dataset/<name>/images` - 获取数据集图片
 
 ### 2. modules/database.py
 
@@ -111,8 +113,34 @@ SLSD_vision/
 项目配置文件，包含：
 - BASE_DIR - 项目根目录
 - DATA_DIR - 数据存储目录
+- DATASETS_DIR - 数据集存储目录
+- MODELS_DIR - 模型存储目录
 - SUPPORTED_ANNOTATION_FORMATS - 支持的标注格式
 - SUPPORTED_IMAGE_FORMATS - 支持的图片格式
+
+## v1.1 新增功能 (2026-03-04)
+
+### 1. 文件夹上传支持
+- 支持通过 `webkitdirectory` 属性上传整个文件夹
+- 自动保留文件夹结构
+- 支持ZIP压缩包和文件夹两种上传模式
+
+### 2. 数据集图片预览
+- 在数据集详情页面显示图片预览
+- 支持最多50张图片的预览
+- 点击图片可查看大图
+
+### 3. 大文件上传支持
+- 配置最大上传文件大小为500MB
+- 支持大型数据集和模型文件上传
+
+### 4. 服务器稳定性优化
+- 禁用 Flask 自动重载（`use_reloader=False`）
+- 防止上传文件时触发服务器重启
+
+### 5. 数据安全处理
+- 自动转义数据集描述中的特殊字符（换行符、制表符等）
+- 防止JavaScript注入导致的页面空白问题
 
 ## 数据模型
 
@@ -150,11 +178,14 @@ SLSD_vision/
 
 ## 启动方式
 
-### 方式一：Flask 服务器（推荐）
+### Flask 服务器（推荐）
 
 ```bash
 # 激活 conda 环境
 conda activate transformer-clip
+
+# 或使用 Anaconda Python
+/d/Anaconda/python.exe server.py
 
 # 启动服务器
 python server.py
@@ -162,7 +193,7 @@ python server.py
 # 访问 http://localhost:8501
 ```
 
-### 方式二：Streamlit 应用
+### 备用：Streamlit 应用
 
 ```bash
 # 激活 conda 环境
@@ -187,7 +218,13 @@ streamlit run app.py
   - 算法名称标签
   - 精度进度条
   - 精度百分比显示
-- 数据集/模型详情页面
+- 数据集/模型详情页面，包含：
+  - 图片预览功能
+  - 标签统计信息
+- 上传功能：
+  - 支持ZIP压缩包上传
+  - 支持文件夹上传
+  - 上传进度显示
 - 搜索和筛选功能
 
 ## 算法类型
@@ -202,11 +239,13 @@ streamlit run app.py
 ## 模型类别
 
 系统支持的模型类别（可在 MODEL_CAT_COLORS 中扩展）：
+- YOLO
 - 多标签实例分割模型（双标签）
 - 多标签实例分割模型（三标签）
 - 单标签实例分割模型（背景负样本）
 - 单标签实例分割模型
 - 单标签目标检测模型
+- 其他（默认灰色）
 
 ## 开发指南
 
@@ -231,16 +270,23 @@ flask>=2.0.0
 streamlit>=1.20.0
 pandas>=1.5.0
 Pillow>=9.0.0
+werkzeug>=2.0.0
 ```
 
-## 后续开发计划
+## 版本历史
 
-- [x] 数据集上传功能（ZIP 包或文件夹）
-- [x] 模型上传功能（.pt, .pth, .onnx）
-- [x] 标注文件解析和预览
-- [x] 数据集图片浏览
-- [ ] 用户认证和管理
-- [ ] 数据导出功能
+### v1.1 (2026-03-04)
+- 新增：文件夹上传支持（webkitdirectory）
+- 新增：数据集详情图片预览功能
+- 新增：大文件上传支持（500MB）
+- 优化：禁用Flask自动重载，提升上传稳定性
+- 修复：数据集描述特殊字符转义问题
+
+### v1.0 (初始版本)
+- 数据集和模型的基本CRUD功能
+- ZIP压缩包上传
+- 数据集和模型卡片展示
+- 搜索和筛选功能
 
 ### API 接口文档
 
@@ -272,17 +318,30 @@ Pillow>=9.0.0
 ### 上传示例
 
 ```javascript
-// 上传数据集
+// 上传ZIP压缩包
 const formData = new FormData();
 formData.append('file', fileInput.files[0]);
 formData.append('name', 'my_dataset');
 formData.append('algoType', '路面积水检测');
 formData.append('description', '数据集描述');
 formData.append('maintainer', '管理员');
+formData.append('uploadMode', 'zip');
 
 fetch('/api/dataset/upload', {
   method: 'POST',
   body: formData
+}).then(res => res.json()).then(data => console.log(data));
+
+// 上传文件夹
+const folderFormData = new FormData();
+folderFormData.append('files', fileInput.files); // 多个文件
+folderFormData.append('name', 'my_folder_dataset');
+folderFormData.append('algoType', '其他');
+folderFormData.append('uploadMode', 'folder');
+
+fetch('/api/dataset/upload', {
+  method: 'POST',
+  body: folderFormData
 }).then(res => res.json()).then(data => console.log(data));
 ```
 

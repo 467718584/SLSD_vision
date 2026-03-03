@@ -21,6 +21,9 @@ from config import DATASETS_DIR, MODELS_DIR
 
 app = Flask(__name__)
 
+# 配置上传文件大小限制为500MB
+app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024
+
 # 初始化数据库
 init_database()
 
@@ -43,7 +46,9 @@ def dict_to_js(obj, indent=0):
         items = [dict_to_js(item, indent + 1) for item in obj]
         return "[" + ", ".join(items) + "]"
     elif isinstance(obj, str):
-        return f'"{obj}"'
+        # 转义特殊字符
+        escaped = obj.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')
+        return f'"{escaped}"'
     elif isinstance(obj, (int, float)):
         return str(obj)
     elif obj is None:
@@ -53,14 +58,9 @@ def dict_to_js(obj, indent=0):
 
 
 def load_reference_html():
-    """加载增强版HTML文件"""
+    """加载HTML模板"""
     import os
-    # 优先使用增强版模板
-    html_path = os.path.join(os.path.dirname(__file__), '参考资料', 'vision-platform-enhanced.html')
-    if os.path.exists(html_path):
-        with open(html_path, 'r', encoding='utf-8') as f:
-            return f.read()
-    # 回退到原版模板
+    # 使用带上传功能的预览版模板
     html_path = os.path.join(os.path.dirname(__file__), '参考资料', 'vision-platform-preview.html')
     if os.path.exists(html_path):
         with open(html_path, 'r', encoding='utf-8') as f:
@@ -111,7 +111,7 @@ def index():
             "total": ds.get('total', 0),
             "labelCount": ds.get('label_count', 0),
             "labels": labels_processed,
-            "desc": ds.get('description', ''),
+            "desc": ds.get('description', '').replace('\n', ' ').replace('\r', ' '),
             "maintainDate": ds.get('maintain_date', ''),
             "maintainer": ds.get('maintainer', ''),
             "previewCount": ds.get('preview_count', 8),
@@ -233,60 +233,79 @@ def api_stats():
 @app.route('/api/dataset/upload', methods=['POST'])
 def upload_dataset():
     """上传数据集"""
-    if 'file' not in request.files:
-        return jsonify({"success": False, "error": "没有上传文件"}), 400
-
-    file = request.files['file']
+    upload_mode = request.form.get('uploadMode', 'zip')
     dataset_name = request.form.get('name', '').strip()
     algo_type = request.form.get('algoType', '其他')
     description = request.form.get('description', '')
     maintainer = request.form.get('maintainer', '管理员')
 
-    if not dataset_name:
-        # 如果没有提供名称，使用文件名
-        dataset_name = secure_filename(file.filename).replace('.zip', '')
-        if not dataset_name:
-            dataset_name = f"dataset_{datetime.now().strftime('%Y%m%d%H%M%S')}"
-
-    if file.filename == '':
-        return jsonify({"success": False, "error": "没有选择文件"}), 400
-
     try:
-        # 保存上传的文件
         dataset_dir = os.path.join(DATASETS_DIR, dataset_name)
         os.makedirs(dataset_dir, exist_ok=True)
 
-        filename = secure_filename(file.filename)
-        if filename.endswith('.zip'):
-            # 解压ZIP文件
-            import zipfile
-            zip_path = os.path.join(dataset_dir, filename)
-            file.save(zip_path)
+        if upload_mode == 'folder':
+            # 文件夹上传
+            files = request.files.getlist('files')
+            if not files or len(files) == 0:
+                return jsonify({"success": False, "error": "没有上传文件"}), 400
 
-            extract_dir = os.path.join(dataset_dir, 'temp_extract')
-            os.makedirs(extract_dir, exist_ok=True)
+            if not dataset_name:
+                dataset_name = f"dataset_{datetime.now().strftime('%Y%m%d%H%M%S')}"
 
-            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-                zip_ref.extractall(extract_dir)
-
-            # 处理解压内容
-            for item in os.listdir(extract_dir):
-                src = os.path.join(extract_dir, item)
-                dst = os.path.join(dataset_dir, item)
-                if os.path.exists(dst):
-                    if os.path.isdir(dst):
-                        import shutil
-                        shutil.rmtree(dst)
-                    else:
-                        os.remove(dst)
-                shutil.move(src, dst)
-
-            # 清理临时文件
-            os.remove(zip_path)
-            shutil.rmtree(extract_dir)
+            import shutil
+            for f in files:
+                if f.filename:
+                    relative_path = f.filename
+                    if hasattr(f, 'webkitRelativePath') and f.webkitRelativePath:
+                        relative_path = f.webkitRelativePath
+                    parts = relative_path.split('/')
+                    if len(parts) > 1:
+                        relative_path = '/'.join(parts[1:])
+                    if relative_path:
+                        target_path = os.path.join(dataset_dir, relative_path)
+                        os.makedirs(os.path.dirname(target_path), exist_ok=True)
+                        f.save(target_path)
         else:
-            # 直接保存文件夹
-            file.save(os.path.join(dataset_dir, filename))
+            # ZIP上传
+            if 'file' not in request.files:
+                return jsonify({"success": False, "error": "没有上传文件"}), 400
+
+            file = request.files['file']
+            if not dataset_name:
+                dataset_name = secure_filename(file.filename).replace('.zip', '')
+                if not dataset_name:
+                    dataset_name = f"dataset_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+
+            if file.filename == '':
+                return jsonify({"success": False, "error": "没有选择文件"}), 400
+
+            filename = secure_filename(file.filename)
+            if filename.endswith('.zip'):
+                import zipfile
+                zip_path = os.path.join(dataset_dir, filename)
+                file.save(zip_path)
+
+                extract_dir = os.path.join(dataset_dir, 'temp_extract')
+                os.makedirs(extract_dir, exist_ok=True)
+
+                with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                    zip_ref.extractall(extract_dir)
+
+                import shutil
+                for item in os.listdir(extract_dir):
+                    src = os.path.join(extract_dir, item)
+                    dst = os.path.join(dataset_dir, item)
+                    if os.path.exists(dst):
+                        if os.path.isdir(dst):
+                            shutil.rmtree(dst)
+                        else:
+                            os.remove(dst)
+                    shutil.move(src, dst)
+
+                os.remove(zip_path)
+                shutil.rmtree(extract_dir)
+            else:
+                file.save(os.path.join(dataset_dir, filename))
 
         # 统计图片数量
         from config import SUPPORTED_IMAGE_FORMATS
@@ -482,4 +501,5 @@ if __name__ == '__main__':
     print("启动机器视觉管理平台...")
     print("访问地址: http://localhost:8501")
     print("=" * 50)
-    app.run(host='0.0.0.0', port=8501, debug=True)
+    # 禁用自动重载，避免上传文件时触发重启
+    app.run(host='0.0.0.0', port=8501, debug=True, use_reloader=False)
