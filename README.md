@@ -235,12 +235,56 @@ Pillow>=9.0.0
 
 ## 后续开发计划
 
-- [ ] 数据集上传功能（ZIP 包或文件夹）
-- [ ] 模型上传功能（.pt, .pth, .onnx）
-- [ ] 标注文件解析和预览
-- [ ] 数据集图片浏览
+- [x] 数据集上传功能（ZIP 包或文件夹）
+- [x] 模型上传功能（.pt, .pth, .onnx）
+- [x] 标注文件解析和预览
+- [x] 数据集图片浏览
 - [ ] 用户认证和管理
 - [ ] 数据导出功能
+
+### API 接口文档
+
+#### 数据集 API
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/datasets` | 获取数据集列表 |
+| GET | `/api/datasets?q=xxx` | 搜索数据集 |
+| GET | `/api/dataset/<name>/images` | 获取数据集图片 |
+| POST | `/api/dataset/upload` | 上传数据集 |
+| DELETE | `/api/dataset/<name>` | 删除数据集 |
+
+#### 模型 API
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/models` | 获取模型列表 |
+| GET | `/api/models?q=xxx` | 搜索模型 |
+| POST | `/api/model/upload` | 上传模型 |
+| DELETE | `/api/model/<name>` | 删除模型 |
+
+#### 统计 API
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/stats` | 获取统计信息 |
+
+### 上传示例
+
+```javascript
+// 上传数据集
+const formData = new FormData();
+formData.append('file', fileInput.files[0]);
+formData.append('name', 'my_dataset');
+formData.append('algoType', '路面积水检测');
+formData.append('description', '数据集描述');
+formData.append('maintainer', '管理员');
+
+fetch('/api/dataset/upload', {
+  method: 'POST',
+  body: formData
+}).then(res => res.json()).then(data => console.log(data));
+```
 
 ## 许可证
 
