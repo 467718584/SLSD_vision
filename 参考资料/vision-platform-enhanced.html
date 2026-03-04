@@ -18,6 +18,15 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:#F0F4F8;}
 <body>
 <div id="root"></div>
 <script type="text/babel">
+// 全局错误捕获
+window.onerror = function(msg, url, line, col, error) {
+  console.error("Global Error:", msg, "Line:", line, "Col:", col);
+  document.getElementById('root').innerHTML = '<div style="padding:40px;text-align:center"><h2>页面出错</h2><p style="color:#666">'+msg+' (行'+line+')</p></div>';
+  return true;
+};
+window.addEventListener('unhandledrejection', function(e) {
+  console.error("Unhandled Promise Rejection:", e.reason);
+});
 const C={primary:"#1462A8",primaryBg:"#EBF3FC",primaryBd:"#BFDBF7",success:"#2E8B57",successBg:"#E8F5EE",warning:"#E67E22",warningBg:"#FEF5E7",orange:"#E8631A",orangeBg:"#FDF0E7",gray1:"#1A2332",gray2:"#3D5166",gray3:"#6B8299",gray4:"#9EAFBE",gray5:"#C8D6E1",gray6:"#E8F0F5",gray7:"#F4F7FA",bg:"#F0F4F8",white:"#FFFFFF",border:"#D8E4EE"};
 const ALGO_COLORS={"路面积水检测":{bg:C.primaryBg,border:C.primaryBd,text:C.primary},"漂浮物检测":{bg:C.successBg,border:"#A8D5C0",text:C.success},"墙面裂缝检测":{bg:C.warningBg,border:"#F9D9B0",text:C.warning},"游泳检测":{bg:"#FDE9E9",border:"#F5BCBC",text:"#C0392B"},"其他":{bg:C.gray6,border:C.border,text:C.gray2}};
 const MODEL_CAT_COLORS={"多标签实例分割模型（双标签）":{bg:C.primaryBg,border:C.primaryBd,text:C.primary},"多标签实例分割模型（三标签）":{bg:"#E8F4FE",border:"#A8D0F5",text:"#0A4D8C"},"单标签实例分割模型（背景负样本）":{bg:C.successBg,border:"#A8D5C0",text:C.success},"单标签实例分割模型":{bg:"#EDF6E8",border:"#B0D9A0",text:"#276B27"},"单标签目标检测模型":{bg:C.orangeBg,border:"#F5C8A8",text:C.orange},"其他":{bg:C.gray6,border:C.border,text:C.gray2},"YOLO":{bg:C.primaryBg,border:C.primaryBd,text:C.primary}};
@@ -105,12 +114,17 @@ function UploadModal({isOpen,onClose,onSuccess}){
   const algoTypes=["路面积水检测","漂浮物检测","墙面裂缝检测","游泳检测","其他"];
 
   const handleFileChange=(e)=>{
-    const f=e.target.files[0];
-    if(f){
-      setFile(f);
-      if(!name){
-        setName(f.name.replace(/\.(zip|tar|gz)$/i,""));
+    try{
+      const f=e.target.files && e.target.files[0];
+      if(f){
+        setFile(f);
+        const fileName = f.name || '';
+        if(!name && fileName){
+          setName(fileName.replace(/\.(zip|tar|gz)$/i,""));
+        }
       }
+    }catch(err){
+      console.error("File change error:", err);
     }
   };
 
@@ -159,7 +173,7 @@ function UploadModal({isOpen,onClose,onSuccess}){
     position:"fixed",top:0,left:0,right:0,bottom:0,
     background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",
     zIndex:9999
-  }},onClick=onClose,
+  }},onClick:onClose,
     React.createElement('div',{style:{
       background:C.white,borderRadius:"12px",width:"480px",maxHeight:"90vh",overflow:"auto",
       boxShadow:"0 20px 60px rgba(0,0,0,0.3)"
@@ -205,8 +219,11 @@ function UploadModal({isOpen,onClose,onSuccess}){
         // 文件上传
         React.createElement('div',{style:{marginBottom:"16px"}},
           React.createElement('label',{style:{display:"block",fontSize:"13px",fontWeight:500,color:C.gray2,marginBottom:"6px"}},"上传文件 *",React.createElement('span',{style:{fontWeight:400,color:C.gray3,marginLeft:"8px"}},"支持 ZIP 压缩包或文件夹")),
-          React.createElement('div',{style:{border:`2px dashed ${C.border}`,borderRadius:"8px",padding:"30px",textAlign:"center",cursor:"pointer",background:C.gray7},
-            onClick:()=>document.getElementById('fileInput').click()},
+          React.createElement('div',{className:"upload-click-area",style:{border:`2px dashed ${C.border}`,borderRadius:"8px",padding:"30px",textAlign:"center",cursor:"pointer",background:C.gray7},
+            onClick:()=>{
+              const input = document.getElementById('datasetFileInput');
+              if(input) input.click();
+            }},
             file?React.createElement('div',null,
               React.createElement('div',{style:{fontSize:"24px",marginBottom:"8px"}},"📦"),
               React.createElement('div',{style:{color:C.primary,fontWeight:500,fontSize:"13px"}},file.name),
@@ -217,8 +234,7 @@ function UploadModal({isOpen,onClose,onSuccess}){
               React.createElement('div',{style:{color:C.gray3,fontSize:"11px",marginTop:"4px"}})
             )
           ),
-          React.createElement('input',{id:"fileInput",type:"file",onChange:handleFileChange,style:{display:"none"},
-            webkitdirectory:""})
+          React.createElement('input',{id:"datasetFileInput",type:"file",onChange:handleFileChange,webkitdirectory:"",multiple:false,style:{display:"none"}})
         ),
         // 错误提示
         error&&React.createElement('div',{style:{color:"#E74C3C",fontSize:"12px",marginBottom:"12px",padding:"8px",background:"#FDF2F2",borderRadius:"4px"}},error),
@@ -651,7 +667,36 @@ function App(){
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+// 错误边界组件
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error("React Error:", error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return React.createElement('div', { style: { padding: 40, textAlign: 'center' }},
+        React.createElement('h2', null, '页面加载出错'),
+        React.createElement('p', { style: { color: '#666' }},
+          this.state.error ? this.state.error.toString() : '未知错误'
+        )
+      );
+    }
+    return this.props.children;
+  }
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  React.createElement(ErrorBoundary, null,
+    React.createElement(App)
+  )
+);
 </script>
 </body>
 </html>

@@ -91,6 +91,54 @@ function MiniPreviewGrid({seed,count=8,algoType}){
     })
   );
 }
+
+// 表格中的真实缩略图组件
+function TablePreviewGrid({datasetName,count=4,onPreview}){
+  const [images,setImages]=React.useState([]);
+  const [loading,setLoading]=React.useState(true);
+  const [error,setError]=React.useState(false);
+
+  React.useEffect(function(){
+    setLoading(true);
+    setError(false);
+    fetch("/api/dataset/"+encodeURIComponent(datasetName)+"/images")
+      .then(function(res){return res.json();})
+      .then(function(data){
+        if(data.images&&data.images.length>0){
+          setImages(data.images.slice(0,count));
+        }else{
+          setError(true);
+        }
+        setLoading(false);
+      })
+      .catch(function(){
+        setError(true);
+        setLoading(false);
+      });
+  },[datasetName,count]);
+
+  if(loading){
+    return React.createElement('div',{style:{display:"flex",gap:"2px",flexWrap:"wrap"}},
+      Array.from({length:count},(_,i)=>
+        React.createElement('div',{key:i,style:{width:"28px",height:"28px",background:C.gray6,borderRadius:"2px",border:`1px solid ${C.border}`}})
+      )
+    );
+  }
+
+  if(error||images.length===0){
+    return React.createElement(MiniPreviewGrid,{seed:datasetName.length,count:count,algoType:null});
+  }
+
+  return React.createElement('div',{style:{display:"flex",gap:"2px",flexWrap:"wrap"}},
+    images.map(function(img,i){
+      const imgUrl="/data/"+img.replace("SLSD_vision/data/","");
+      return React.createElement('img',{key:i,src:imgUrl,alt:"preview",style:{width:"28px",height:"28px",objectFit:"cover",borderRadius:"2px",border:`1px solid ${C.border}`,cursor:"pointer"},
+        onClick:function(e){e.stopPropagation();if(onPreview)onPreview(img);},
+        title:"点击查看大图"
+      });
+    })
+  );
+}
 function AccuracyBar({value,width=90}){
   const col=value>=95?C.success:value>=85?C.primary:C.warning;
   return React.createElement('div',{style:{display:"flex",alignItems:"center",gap:"8px"}},
@@ -110,7 +158,7 @@ function Card({children,style={}}){
   return React.createElement('div',{style:{background:C.white,border:`1px solid ${C.border}`,borderRadius:"10px",padding:"18px",...style}},children);
 }
 
-function DatasetDetail({ds,onBack}){
+function DatasetDetail({ds,onBack,onEditClassInfo}){
   const [images,setImages]=React.useState([]);
   const [loading,setLoading]=React.useState(true);
   const [previewImage,setPreviewImage]=React.useState(null);
@@ -130,10 +178,23 @@ function DatasetDetail({ds,onBack}){
 
   const palette=[C.primary,"#E8631A",C.success,"#8E44AD","#C0392B"];
   const totalLabels=Object.values(ds.labels).reduce((a,b)=>a+(typeof b==="number"?b:0),0)||1;
-  const splitParts=ds.split.split(":").map(Number);
+  const splitParts=(ds.splitRatio||ds.split||"8:2").split(":").map(Number);
   const splitTotal=splitParts.reduce((a,b)=>a+b,0);
   const splitNames=splitParts.length===3?["训练集","验证集","测试集"]:["训练集","验证集"];
   const splitColors=[C.primary,"#E8631A",C.success];
+
+  // 获取新字段或默认值
+  const storageType=ds.storageType||"folder";
+  const annotationType=ds.annotationType||"yolo";
+  const hasTest=ds.hasTest||false;
+  const bgCountTrain=ds.bgCountTrain||0;
+  const bgCountVal=ds.bgCountVal||0;
+  const bgCountTest=ds.bgCountTest||0;
+  const bgCountTotal=ds.bgCountTotal||0;
+  const imgCountTrain=ds.imgCountTrain||0;
+  const imgCountVal=ds.imgCountVal||0;
+  const imgCountTest=ds.imgCountTest||0;
+  const classInfo=ds.classInfo||{};
 
   return React.createElement('div',null,
     // 面包屑
@@ -146,15 +207,17 @@ function DatasetDetail({ds,onBack}){
     React.createElement(Card,{style:{marginBottom:"16px",padding:"20px 24px"}},
       React.createElement('div',{style:{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:"16px",flexWrap:"wrap"}},
         React.createElement('div',{style:{flex:1,minWidth:"280px"}},
-          React.createElement('div',{style:{display:"flex",alignItems:"center",gap:"10px",marginBottom:"8px"}},
+          React.createElement('div',{style:{display:"flex",alignItems:"center",gap:"10px",marginBottom:"8px",flexWrap:"wrap"}},
             React.createElement(AlgoTag,{type:ds.algoType}),
+            React.createElement('span',{style:{fontSize:"11px",padding:"2px 8px",background:storageType==="zip"?C.orangeBg:C.primaryBg,color:storageType==="zip"?C.orange:C.primary,borderRadius:"4px",border:`1px solid ${storageType==="zip"?C.orangeBd:C.primaryBd}`}},storageType==="zip"?"压缩包":"文件夹"),
+            React.createElement('span',{style:{fontSize:"11px",padding:"2px 8px",background:C.gray6,color:C.gray2,borderRadius:"4px",border:`1px solid ${C.border}`}},annotationType.toUpperCase()),
             React.createElement('span',{style:{fontSize:"13px",color:C.gray4}},`编号 #${ds.id}`)
           ),
           React.createElement('div',{style:{fontSize:"18px",fontWeight:700,color:C.gray1,marginBottom:"10px"}},ds.name),
           React.createElement('div',{style:{fontSize:"13px",color:C.gray2,lineHeight:1.8}},ds.desc)
         ),
         React.createElement('div',{style:{display:"flex",gap:"10px",flexShrink:0,flexWrap:"wrap"}},
-          ...[["样本数量",ds.total.toLocaleString(),C.primary],["标签数量",ds.labelCount,C.gray1],["分配比例",ds.split,C.gray1]].map(([l,v,c])=>
+          ...[["样本数量",ds.total.toLocaleString(),C.primary],["类别数",Object.keys(ds.classInfo||{}).length,C.gray1],["划分比例",ds.splitRatio||ds.split,C.gray1]].map(([l,v,c])=>
             React.createElement('div',{key:l,style:{textAlign:"center",padding:"12px 18px",background:C.gray7,borderRadius:"8px",border:`1px solid ${C.border}`}},
               React.createElement('div',{style:{fontSize:"20px",fontWeight:700,color:c}},v),
               React.createElement('div',{style:{fontSize:"11px",color:C.gray3,marginTop:"2px"}},l)
@@ -164,43 +227,95 @@ function DatasetDetail({ds,onBack}){
       ),
       React.createElement('div',{style:{marginTop:"14px",display:"flex",gap:"20px",fontSize:"13px",color:C.gray3,borderTop:`1px solid ${C.gray6}`,paddingTop:"12px",flexWrap:"wrap"}},
         React.createElement('span',null,"维护日期：",React.createElement('b',{style:{color:C.gray2}},ds.maintainDate)),
-        React.createElement('span',null,"维护人员：",React.createElement('b',{style:{color:C.gray2}},ds.maintainer))
+        React.createElement('span',null,"维护人员：",React.createElement('b',{style:{color:C.gray2}},ds.maintainer)),
+        hasTest?React.createElement('span',{style:{color:C.success}},`含测试集`):null
       )
     ),
     // 内容
-    React.createElement('div',{style:{display:"grid",gridTemplateColumns:"240px 1fr",gap:"16px"}},
+    React.createElement('div',{style:{display:"grid",gridTemplateColumns:"280px 1fr",gap:"16px"}},
       // 左
       React.createElement('div',{style:{display:"flex",flexDirection:"column",gap:"16px"}},
+        // 数据集基本信息
         React.createElement(Card,null,
-          React.createElement(SectionTitle,null,"各标签数量"),
-          ...Object.entries(ds.labels).map(([k,v],i)=>{
-            const col=palette[i%palette.length];
-            const pct=typeof v==="number"?Math.round(v/totalLabels*100):0;
-            return React.createElement('div',{key:k,style:{marginBottom:"12px"}},
-              React.createElement('div',{style:{display:"flex",justifyContent:"space-between",marginBottom:"5px"}},
-                React.createElement('span',{style:{fontSize:"13px",color:C.gray2,fontWeight:500}},k),
-                React.createElement('span',{style:{fontSize:"13px",color:col,fontWeight:600}},typeof v==="number"?v.toLocaleString():"—")
-              ),
-              typeof v==="number"&&React.createElement('div',{style:{height:"5px",background:C.gray6,borderRadius:"3px",overflow:"hidden"}},
-                React.createElement('div',{style:{width:`${pct}%`,height:"100%",background:col,borderRadius:"3px"}})
-              )
-            );
-          })
+          React.createElement(SectionTitle,null,"数据集信息"),
+          React.createElement('div',{style:{fontSize:"12px",color:C.gray2,lineHeight:1.8}},
+            React.createElement('div',{style:{display:"flex",justifyContent:"space-between",marginBottom:"6px"}},
+              React.createElement('span',null,"存储方式"),
+              React.createElement('b',{style:{color:C.gray1}},storageType==="zip"?"压缩包":"文件夹")
+            ),
+            React.createElement('div',{style:{display:"flex",justifyContent:"space-between",marginBottom:"6px"}},
+              React.createElement('span',null,"标注类型"),
+              React.createElement('b',{style:{color:C.gray1}},annotationType.toUpperCase())
+            ),
+            React.createElement('div',{style:{display:"flex",justifyContent:"space-between"}},
+              React.createElement('span',null,"背景图片"),
+              React.createElement('b',{style:{color:bgCountTotal>0?C.warning:C.gray1}},bgCountTotal.toLocaleString())
+            )
+          )
         ),
+        // 数据集划分详情
         React.createElement(Card,null,
           React.createElement(SectionTitle,null,"数据集划分"),
           ...splitNames.map((name,i)=>{
             const pct=Math.round(splitParts[i]/splitTotal*100);
+            const imgCount=i===0?imgCountTrain:i===1?imgCountVal:imgCountTest;
             return React.createElement('div',{key:name,style:{marginBottom:"10px"}},
               React.createElement('div',{style:{display:"flex",justifyContent:"space-between",marginBottom:"5px"}},
                 React.createElement('span',{style:{fontSize:"13px",color:C.gray2}},name),
-                React.createElement('span',{style:{fontSize:"13px",color:splitColors[i],fontWeight:600}},`${pct}%`)
+                React.createElement('span',{style:{fontSize:"13px",color:splitColors[i],fontWeight:600}},`${pct}% (${imgCount}张)`)
               ),
               React.createElement('div',{style:{height:"5px",background:C.gray6,borderRadius:"3px",overflow:"hidden"}},
                 React.createElement('div',{style:{width:`${pct}%`,height:"100%",background:splitColors[i],borderRadius:"3px"}})
               )
             );
           })
+        ),
+        // 类别统计
+        Object.keys(classInfo).length>0?React.createElement(Card,null,
+          React.createElement(SectionTitle,null,"类别统计"),
+          ...Object.entries(classInfo).map(([k,v],i)=>{
+            const col=palette[i%palette.length];
+            const itemCount=typeof v==="number"?v:(v&&v.count?v.count:0);
+            const itemName=typeof v==="number"?`类${k}`:(v&&v.name?v.name:`类${k}`);
+            const totalClassCount=Object.values(classInfo).reduce((a,b)=>a+(typeof b==="number"?b:(b&&b.count?b.count:0)),0)||1;
+            const pct=Math.round(itemCount/totalClassCount*100);
+            return React.createElement('div',{key:k,style:{marginBottom:"10px"}},
+              React.createElement('div',{style:{display:"flex",justifyContent:"space-between",marginBottom:"4px"}},
+                React.createElement('span',{style:{fontSize:"12px",color:C.gray2,fontWeight:500}},itemName),
+                React.createElement('span',{style:{fontSize:"12px",color:col,fontWeight:600}},itemCount.toLocaleString())
+              ),
+              itemCount>0&&React.createElement('div',{style:{height:"4px",background:C.gray6,borderRadius:"2px",overflow:"hidden"}},
+                React.createElement('div',{style:{width:`${pct}%`,height:"100%",background:col,borderRadius:"2px"}})
+              )
+            );
+          })
+        ):null,
+        React.createElement(Card,null,
+          React.createElement('div',{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"10px"}},
+            React.createElement(SectionTitle,null,"各标签数量（YOLO类别统计）"),
+            Object.keys(classInfo).length>0?React.createElement('button',{onClick:()=>onEditClassInfo&&onEditClassInfo(ds),style:{background:C.primary,color:"white",border:"none",borderRadius:"4px",padding:"4px 10px",fontSize:"11px",cursor:"pointer"}},"编辑标签"):null
+          ),
+          Object.keys(classInfo).length>0?
+            (()=>{
+              const items=Object.entries(classInfo).map(([k,v],i)=>{
+                const col=palette[i%palette.length];
+                const itemCount=typeof v==="number"?v:(v&&v.count?v.count:0);
+                const itemName=typeof v==="number"?`类${k}`:(v&&v.name?v.name:`类${k}`);
+                const totalClassCount=Object.values(classInfo).reduce((a,b)=>a+(typeof b==="number"?b:(b&&b.count?b.count:0)),0)||1;
+                const pct=Math.round(itemCount/totalClassCount*100);
+                return React.createElement('div',{key:k,style:{marginBottom:"12px"}},
+                  React.createElement('div',{style:{display:"flex",justifyContent:"space-between",marginBottom:"5px"}},
+                    React.createElement('span',{style:{fontSize:"13px",color:C.gray2,fontWeight:500}},itemName),
+                    React.createElement('span',{style:{fontSize:"13px",color:col,fontWeight:600}},itemCount.toLocaleString())
+                  ),
+                  itemCount>0&&React.createElement('div',{style:{height:"5px",background:C.gray6,borderRadius:"3px",overflow:"hidden"}},
+                    React.createElement('div',{style:{width:`${pct}%`,height:"100%",background:col,borderRadius:"3px"}})
+                  )
+                );
+              });
+              return items;
+            })():
+            React.createElement('div',{style:{fontSize:"12px",color:C.gray3,padding:"10px"}},"无类别信息（请检查labels目录结构是否正确）")
         )
       ),
       // 右
@@ -255,7 +370,7 @@ function DatasetDetail({ds,onBack}){
 }
 
 function ModelDetail({model,onBack,onGotoDataset}){
-  const ds=DATASETS.find(d=>d.name===model.dataset);
+  const ds=datasetsState.find(d=>d.name===model.dataset);
   const col=model.accuracy>=95?C.success:model.accuracy>=85?C.primary:C.warning;
   const curves=["P曲线","R曲线","PR曲线","F1曲线","混淆矩阵","val_loss"];
   const curveColors=[C.primary,"#E8631A",C.success,"#8E44AD","#C0392B",C.primary];
@@ -330,10 +445,15 @@ function UploadModal(props){
   const [file,setFile]=React.useState(null);
   const [files,setFiles]=React.useState(null);
   const [uploadMode,setUploadMode]=React.useState("zip");
+  const [annotationType,setAnnotationType]=React.useState("yolo");
+  const [skipValidation,setSkipValidation]=React.useState(false);
   const [uploading,setUploading]=React.useState(false);
   const [error,setError]=React.useState("");
   const [progress,setProgress]=React.useState(0);
+  const [showNameWarning,setShowNameWarning]=React.useState(false);
+  const [nameWarningMsg,setNameWarningMsg]=React.useState("");
   const algoTypes=["路面积水检测","漂浮物检测","墙面裂缝检测","游泳检测","其他"];
+  const annotationTypes=["yolo","voc","coco"];
 
   if(!isOpen) return null;
 
@@ -355,10 +475,34 @@ function UploadModal(props){
     }
   };
 
+  const validateName = async function(datasetName){
+    if(!datasetName.trim()) return {exists:false};
+    try{
+      const res = await fetch("/api/dataset/validate-name",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({name:datasetName})
+      });
+      return await res.json();
+    }catch(e){
+      return {exists:false};
+    }
+  };
+
   const handleSubmit = async function(){
     if(!name.trim()){setError("请输入数据集名称");return;}
     if(uploadMode === "folder" && (!files || files.length === 0)){setError("请选择文件夹");return;}
     if(uploadMode === "zip" && !file){setError("请选择ZIP文件");return;}
+
+    // 检查名称是否已存在
+    const nameCheck = await validateName(name);
+    if(nameCheck.exists){
+      setShowNameWarning(true);
+      const storageType = nameCheck.storage_type || "folder";
+      setNameWarningMsg(`数据集 "${name}" 已存在，存储方式为: ${storageType === "zip" ? "压缩包" : "文件夹"}。是否覆盖？`);
+      return;
+    }
+
     setError("");
     setUploading(true);
     setProgress(10);
@@ -375,6 +519,8 @@ function UploadModal(props){
     formData.append("description",description);
     formData.append("maintainer",maintainer);
     formData.append("uploadMode",uploadMode);
+    formData.append("annotationType",annotationType);
+    formData.append("skipValidation",skipValidation.toString());
     try{
       setProgress(30);
       const response = await fetch("/api/dataset/upload",{
@@ -394,7 +540,59 @@ function UploadModal(props){
         setProgress(100);
         if(onClose) onClose();
         setName("");setFile(null);setFiles(null);setDescription("");
-        alert("上传成功！请刷新页面查看新数据");
+        alert("上传成功！");
+        window.location.reload();
+      }else{
+        setError(data.error||"上传失败");
+        setUploading(false);
+      }
+    }catch(e){
+      setError("上传失败: "+e.message);
+      setUploading(false);
+    }
+  };
+
+  const handleConfirmOverwrite = async function(){
+    setShowNameWarning(false);
+    setError("");
+    setUploading(true);
+    setProgress(10);
+    const formData = new FormData();
+    if(uploadMode === "folder"){
+      for(let i = 0; i < files.length; i++){
+        formData.append("files",files[i]);
+      }
+    }else{
+      formData.append("file",file);
+    }
+    formData.append("name",name);
+    formData.append("algoType",algoType);
+    formData.append("description",description);
+    formData.append("maintainer",maintainer);
+    formData.append("uploadMode",uploadMode);
+    formData.append("annotationType",annotationType);
+    formData.append("skipValidation",skipValidation.toString());
+    try{
+      setProgress(30);
+      const response = await fetch("/api/dataset/upload",{
+        method:"POST",
+        body:formData
+      });
+      setProgress(70);
+      const contentType = response.headers.get("content-type");
+      if(!contentType || !contentType.includes("application/json")){
+        const text = await response.text();
+        setError("服务器错误: "+text.substring(0,100));
+        setUploading(false);
+        return;
+      }
+      const data = await response.json();
+      if(data.success){
+        setProgress(100);
+        if(onClose) onClose();
+        setName("");setFile(null);setFiles(null);setDescription("");
+        alert("上传成功！");
+        window.location.reload();
       }else{
         setError(data.error||"上传失败");
         setUploading(false);
@@ -418,7 +616,7 @@ function UploadModal(props){
     style:{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999},
     onClick:function(e){if(e.target === e.currentTarget && onClose) onClose();}
   },
-    React.createElement('div',{style:{background:C.white,borderRadius:"12px",width:"480px",maxHeight:"90vh",overflow:"auto",boxShadow:"0 20px 60px rgba(0,0,0,0.3)"},
+    React.createElement('div',{style:{background:C.white,borderRadius:"12px",width:"500px",maxHeight:"90vh",overflow:"auto",boxShadow:"0 20px 60px rgba(0,0,0,0.3)"},
       onClick:function(e){e.stopPropagation();}},
       React.createElement('div',{style:{padding:"20px 24px",borderBottom:"1px solid "+C.border,display:"flex",justifyContent:"space-between",alignItems:"center"}},
         React.createElement('h3',{style:{fontSize:"16px",fontWeight:600,color:C.gray1}},"新建数据集"),
@@ -441,6 +639,21 @@ function UploadModal(props){
             React.createElement('option',{value:"其他"},"其他")
           )
         ),
+        React.createElement('div',{style:{marginBottom:"16px"}},
+          React.createElement('label',{style:{display:"block",fontSize:"13px",fontWeight:500,color:C.gray2,marginBottom:"6px"}},"标注类型"),
+          React.createElement('select',{value:annotationType,onChange:function(e){setAnnotationType(e.target.value);},
+            style:{width:"100%",padding:"10px 12px",border:"1px solid "+C.border,borderRadius:"6px",fontSize:"13px",outline:"none",background:"white"}},
+            React.createElement('option',{value:"yolo"},"YOLO格式"),
+            React.createElement('option',{value:"voc"},"VOC格式"),
+            React.createElement('option',{value:"coco"},"COCO格式")
+          )
+        ),
+        annotationType==="yolo"?React.createElement('div',{style:{marginBottom:"16px"}},
+          React.createElement('label',{style:{display:"flex",alignItems:"center",fontSize:"13px",color:C.gray2,cursor:"pointer"}},
+            React.createElement('input',{type:"checkbox",checked:skipValidation,onChange:function(e){setSkipValidation(e.target.checked);},style:{marginRight:"8px"}}),
+            "跳过YOLO格式校验（如果上传文件不完整或结构不正确，请勾选此项）"
+          )
+        ):null,
         React.createElement('div',{style:{marginBottom:"16px"}},
           React.createElement('label',{style:{display:"block",fontSize:"13px",fontWeight:500,color:C.gray2,marginBottom:"6px"}},"描述"),
           React.createElement('textarea',{value:description,onChange:function(e){setDescription(e.target.value);},placeholder:"请输入数据集描述",
@@ -479,7 +692,20 @@ function UploadModal(props){
           style:{padding:"10px 20px",border:"1px solid "+C.border,borderRadius:"6px",background:C.white,color:C.gray2,cursor:uploading?"not-allowed":"pointer",fontSize:"13px"}},"取消"),
         React.createElement('button',{onClick:handleSubmit,disabled:uploading,
           style:{padding:"10px 24px",border:"none",borderRadius:"6px",background:C.primary,color:"white",cursor:uploading?"not-allowed":"pointer",fontSize:"13px",fontWeight:500,opacity:uploading?0.7:1}},"上传")
-      )
+      ),
+      // 名称重复警告弹窗
+      showNameWarning?React.createElement('div',{style:{position:"absolute",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.3)",display:"flex",alignItems:"center",justifyContent:"center",borderRadius:"12px"}},
+        React.createElement('div',{style:{background:C.white,borderRadius:"8px",padding:"24px",maxWidth:"360px",textAlign:"center",boxShadow:"0 10px 40px rgba(0,0,0,0.3)"}},
+          React.createElement('div',{style:{fontSize:"18px",fontWeight:600,color:C.gray1,marginBottom:"12px"}},"名称重复警告"),
+          React.createElement('div',{style:{fontSize:"14px",color:C.gray2,marginBottom:"20px",lineHeight:"1.5"}},nameWarningMsg),
+          React.createElement('div',{style:{display:"flex",gap:"12px",justifyContent:"center"}},
+            React.createElement('button',{onClick:function(){setShowNameWarning(false);setUploading(false);},
+              style:{padding:"10px 20px",border:"1px solid "+C.border,borderRadius:"6px",background:C.white,color:C.gray2,cursor:"pointer",fontSize:"13px"}},"取消"),
+            React.createElement('button',{onClick:handleConfirmOverwrite,
+              style:{padding:"10px 20px",border:"none",borderRadius:"6px",background:C.warning,color:"white",cursor:"pointer",fontSize:"13px",fontWeight:500}},"确认覆盖")
+          )
+        )
+      ):null
     )
   );
 }
@@ -493,6 +719,27 @@ function App(){
   const [mSearch,setMSearch]=React.useState("");
   const [mFilter,setMFilter]=React.useState("全部");
   const [showUpload,setShowUpload]=React.useState(false);
+  const [editingClassInfo,setEditingClassInfo]=React.useState(null);
+  const [datasetsState,setDatasetsState]=React.useState(window.DATASETS);
+  const [modelsState,setModelsState]=React.useState(window.MODELS);
+  const [previewImage,setPreviewImage]=React.useState(null);
+
+  const deleteDataset=async (name,e)=>{
+    e.stopPropagation();
+    if(!confirm(`确定要删除数据集 "${name}" 吗？此操作不可恢复！`)) return;
+    try{
+      const res = await fetch("/api/dataset/"+encodeURIComponent(name),{method:"DELETE"});
+      const data = await res.json();
+      if(data.success){
+        alert("数据集已删除");
+        await refreshData();
+      }else{
+        alert("删除失败: "+data.error);
+      }
+    }catch(err){
+      alert("删除失败: "+err.message);
+    }
+  };
 
   const refreshData=async ()=>{
     try{
@@ -504,15 +751,17 @@ function App(){
       const newModels = await mRes.json();
       window.DATASETS = newDatasets;
       window.MODELS = newModels;
+      setDatasetsState(newDatasets);
+      setModelsState(newModels);
     }catch(e){
       console.error("Refresh failed:", e);
     }
   };
 
-  const algoTypes=["全部",...new Set(DATASETS.map(d=>d.algoType))];
-  const modelAlgos=["全部",...new Set(MODELS.map(m=>m.algoName))];
-  const filtDs=DATASETS.filter(d=>(dsFilter==="全部"||d.algoType===dsFilter)&&d.name.toLowerCase().includes(dsSearch.toLowerCase()));
-  const filtMs=MODELS.filter(m=>(mFilter==="全部"||m.algoName===mFilter)&&m.name.toLowerCase().includes(mSearch.toLowerCase()));
+  const algoTypes=["全部",...new Set(datasetsState.map(d=>d.algoType))];
+  const modelAlgos=["全部",...new Set(modelsState.map(m=>m.algoName))];
+  const filtDs=datasetsState.filter(d=>(dsFilter==="全部"||d.algoType===dsFilter)&&d.name.toLowerCase().includes(dsSearch.toLowerCase()));
+  const filtMs=modelsState.filter(m=>(mFilter==="全部"||m.algoName===mFilter)&&m.name.toLowerCase().includes(mSearch.toLowerCase()));
   const gotoDs=(ds)=>{setSelDs(ds);setSelModel(null);setTab("datasets");};
 
   const th=(w,center=false)=>({padding:"10px 12px",fontSize:"12px",fontWeight:600,color:C.gray1,textAlign:center?"center":"left",background:"transparent",whiteSpace:"nowrap",width:w||"auto",letterSpacing:"0.2px"});
@@ -551,7 +800,7 @@ function App(){
         React.createElement('div',{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"16px"}},
           React.createElement('div',null,
             React.createElement('h2',{style:{fontSize:"18px",fontWeight:700,color:C.gray1}},"数据集管理"),
-            React.createElement('p',{style:{fontSize:"13px",color:C.gray3,marginTop:"2px"}},`共 ${DATASETS.length} 个数据集 · ${DATASETS.reduce((s,d)=>s+d.total,0).toLocaleString()} 个样本`)
+            React.createElement('p',{style:{fontSize:"13px",color:C.gray3,marginTop:"2px"}},`共 ${datasetsState.length} 个数据集 · ${datasetsState.reduce((s,d)=>s+d.total,0).toLocaleString()} 个样本`)
           ),
           React.createElement('button',{onClick:()=>setShowUpload(true),style:{background:C.primary,color:"white",border:"none",borderRadius:"7px",padding:"8px 18px",cursor:"pointer",fontSize:"13px",fontWeight:500,fontFamily:"inherit"}},"+ 新建数据集")
         ),
@@ -567,7 +816,7 @@ function App(){
             React.createElement('table',{style:{width:"100%",borderCollapse:"collapse",minWidth:"1180px"}},
               React.createElement('thead',null,
                 React.createElement('tr',{style:{background:C.gray7,borderBottom:`2px solid ${C.border}`}},
-                  ...[["编号","48px",true],["算法类型","110px",true],["数据集名称","210px",false],["分配比例","70px",true],["样本数量","72px",true],["详情图","84px",true],["分布图","84px",true],["标签数","64px",true],["各标签数量","145px",false],["数据集预览","160px",false],["数据集概述","185px",false],["维护日期","86px",true],["维护人员","72px",true]].map(([l,w,c])=>
+                  ...[["编号","48px",true],["算法类型","110px",true],["数据集名称","210px",false],["分配比例","70px",true],["样本数量","72px",true],["详情图","84px",true],["分布图","84px",true],["标签数","64px",true],["类别统计","145px",false],["数据集预览","160px",false],["数据集概述","185px",false],["维护日期","86px",true],["维护人员","72px",true],["操作","60px",true]].map(([l,w,c])=>
                     React.createElement('th',{key:l,style:th(w,c)},l)
                   )
                 )
@@ -584,16 +833,23 @@ function App(){
                   React.createElement('td',{style:td("72px",true)},React.createElement('span',{style:{fontWeight:700,color:C.gray1,fontSize:"13px"}},ds.total.toLocaleString())),
                   React.createElement('td',{style:td("84px",true)},React.createElement('div',{style:{display:"flex",justifyContent:"center"}},React.createElement(MiniHeatmap,{seed:ds.id*7,size:50}))),
                   React.createElement('td',{style:td("84px",true)},React.createElement('div',{style:{display:"flex",justifyContent:"center"}},React.createElement(MiniDistChart,{seed:ds.id*11,size:50}))),
-                  React.createElement('td',{style:td("64px",true)},React.createElement('span',{style:{background:C.primaryBg,color:C.primary,border:`1px solid ${C.primaryBd}`,borderRadius:"12px",padding:"2px 8px",fontSize:"11px",fontWeight:600}},ds.labelCount)),
+                  React.createElement('td',{style:td("64px",true)},React.createElement('span',{style:{background:C.primaryBg,color:C.primary,border:`1px solid ${C.primaryBd}`,borderRadius:"12px",padding:"2px 8px",fontSize:"11px",fontWeight:600}},Object.keys(ds.classInfo||{}).length)),
                   React.createElement('td',{style:td("145px")},
-                    React.createElement('div',{style:{fontSize:"11px",color:C.gray2,lineHeight:1.7}},
-                      ...Object.entries(ds.labels).map(([k,v])=>React.createElement('div',{key:k},React.createElement('span',{style:{color:C.gray3}},`${k}: `),React.createElement('span',{style:{fontWeight:600}},typeof v==="number"?v.toLocaleString():v)))
-                    )
+                    Object.keys(ds.classInfo||{}).length>0?
+                      React.createElement('div',{style:{fontSize:"11px",color:C.gray2,lineHeight:1.7}},
+                        ...Object.entries(ds.classInfo).map(([k,v])=>{
+                          const itemCount=typeof v==="number"?v:(v&&v.count?v.count:0);
+                          const itemName=typeof v==="number"?`类${k}`:(v&&v.name?v.name:`类${k}`);
+                          return React.createElement('div',{key:k},React.createElement('span',{style:{color:C.primary,fontWeight:600}},`${itemName}: `),React.createElement('span',{style:{fontWeight:600}},itemCount.toLocaleString()));
+                        })
+                      ):
+                      React.createElement('div',{style:{fontSize:"11px",color:C.gray3,padding:"5px"}},"—")
                   ),
-                  React.createElement('td',{style:td("160px")},React.createElement(MiniPreviewGrid,{seed:ds.id,count:8,algoType:ds.algoType})),
+                  React.createElement('td',{style:td("160px")},React.createElement(TablePreviewGrid,{datasetName:ds.name,count:6,onPreview:setPreviewImage})),
                   React.createElement('td',{style:td("185px")},React.createElement('div',{style:{fontSize:"11px",color:C.gray2,lineHeight:1.6,display:"-webkit-box",WebkitLineClamp:3,WebkitBoxOrient:"vertical",overflow:"hidden"}},ds.desc)),
                   React.createElement('td',{style:td("86px",true)},React.createElement('span',{style:{fontSize:"11px",color:C.gray3}},ds.maintainDate)),
-                  React.createElement('td',{style:td("72px",true)},React.createElement('span',{style:{fontSize:"11px",color:C.gray2,fontWeight:500}},ds.maintainer))
+                  React.createElement('td',{style:td("72px",true)},React.createElement('span',{style:{fontSize:"11px",color:C.gray2,fontWeight:500}},ds.maintainer)),
+                  React.createElement('td',{style:td("60px",true)},React.createElement('button',{onClick:(e)=>deleteDataset(ds.name,e),title:"删除数据集",style:{background:"#FEE2E2",color:"#DC2626",border:"none",borderRadius:"4px",padding:"4px 8px",fontSize:"11px",cursor:"pointer",fontWeight:500}},"删除"))
                 ))
               )
             )
@@ -602,7 +858,7 @@ function App(){
       ),
 
       // ===== Dataset Detail =====
-      tab==="datasets"&&selDs&&React.createElement(DatasetDetail,{ds:selDs,onBack:()=>setSelDs(null)}),
+      tab==="datasets"&&selDs&&React.createElement(DatasetDetail,{ds:selDs,onBack:()=>setSelDs(null),onEditClassInfo:setEditingClassInfo}),
 
       // ===== Model List =====
       tab==="models"&&!selModel&&React.createElement('div',null,
@@ -657,7 +913,7 @@ function App(){
                     React.createElement('td',{style:td("185px")},React.createElement('div',{style:{fontSize:"11px",color:C.gray2,lineHeight:1.6,display:"-webkit-box",WebkitLineClamp:3,WebkitBoxOrient:"vertical",overflow:"hidden"}},m.desc)),
                     React.createElement('td',{style:td("170px")},
                       React.createElement('span',{style:{color:C.primary,fontSize:"11px",cursor:"pointer",textDecoration:"underline",textDecorationColor:`${C.primary}50`,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",display:"block",maxWidth:"160px"},
-                        onClick:e=>{e.stopPropagation();const ds=DATASETS.find(d=>d.name===m.dataset);if(ds)gotoDs(ds);},title:m.dataset},m.dataset)
+                        onClick:e=>{e.stopPropagation();const ds=datasetsState.find(d=>d.name===m.dataset);if(ds)gotoDs(ds);},title:m.dataset},m.dataset)
                     ),
                     React.createElement('td',{style:td("86px",true)},React.createElement('span',{style:{fontSize:"11px",color:C.gray3}},m.maintainDate)),
                     React.createElement('td',{style:td("72px",true)},React.createElement('span',{style:{fontSize:"11px",color:C.gray2,fontWeight:500}},m.maintainer))
@@ -672,7 +928,96 @@ function App(){
       // ===== Model Detail =====
       tab==="models"&&selModel&&React.createElement(ModelDetail,{model:selModel,onBack:()=>setSelModel(null),onGotoDataset:gotoDs}),
       // ===== Upload Modal =====
-      showUpload && React.createElement(UploadModal,{isOpen:showUpload,onClose:function(){setShowUpload(false);},onSuccess:null})
+      showUpload && React.createElement(UploadModal,{isOpen:showUpload,onClose:function(){setShowUpload(false);},onSuccess:null}),
+      // ===== Edit Class Info Modal =====
+      editingClassInfo && React.createElement(EditClassInfoModal,{ds:editingClassInfo,onClose:function(){setEditingClassInfo(null);},onSave:async function(newClassInfo){
+        try{
+          const res=await fetch("/api/dataset/"+encodeURIComponent(editingClassInfo.name)+"/class-info",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({classInfo:newClassInfo})
+          });
+          const data=await res.json();
+          if(data.success){
+            alert("保存成功");
+            await refreshData();
+            setEditingClassInfo(null);
+          }else{
+            alert("保存失败: "+data.error);
+          }
+        }catch(e){
+          alert("保存失败: "+e.message);
+        }
+      }})
+    ),
+    // 全局图片预览弹窗
+    previewImage&&React.createElement('div',{
+      style:{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.8)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:10000},
+      onClick:function(){setPreviewImage(null);}
+    },
+      React.createElement('div',{style:{maxWidth:"90%",maxHeight:"90%"},onClick:function(e){e.stopPropagation();}},
+        React.createElement('img',{src:"/data/"+previewImage.replace("SLSD_vision/data/",""),alt:"preview",style:{maxWidth:"100%",maxHeight:"85vh",borderRadius:"8px"}}),
+        React.createElement('div',{style:{textAlign:"center",marginTop:"10px",color:"white",fontSize:"13px"}},previewImage.split('/').pop())
+      ),
+      React.createElement('button',{onClick:function(){setPreviewImage(null);},style:{position:"absolute",top:"20px",right:"20px",background:"rgba(255,255,255,0.2)",border:"none",borderRadius:"50%",width:"40px",height:"40px",fontSize:"20px",color:"white",cursor:"pointer"}},"×")
+    )
+  );
+}
+
+// ===== Edit Class Info Modal =====
+function EditClassInfoModal(props){
+  const ds=props.ds;
+  const onClose=props.onClose;
+  const onSave=props.onSave;
+  const [classNames,setClassNames]=React.useState(()=>{
+    const info=ds.classInfo||{};
+    const names={};
+    Object.keys(info).forEach(k=>{
+      const v=info[k];
+      // 支持新旧格式：{"0": 100} 或 {"0": {"name": "crack", "count": 100}}
+      if(typeof v==="number"){
+        names[k]=`类${k}`;
+      }else if(v&&v.name){
+        names[k]=v.name;
+      }else{
+        names[k]=`类${k}`;
+      }
+    });
+    return names;
+  });
+
+  if(!ds) return null;
+
+  return React.createElement('div',{
+    style:{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999},
+    onClick:function(e){if(e.target===e.currentTarget&&onClose)onClose();}
+  },
+    React.createElement('div',{style:{background:C.white,borderRadius:"12px",width:"400px",maxHeight:"80vh",overflow:"auto",boxShadow:"0 20px 60px rgba(0,0,0,0.3)"},
+      onClick:function(e){e.stopPropagation();}},
+      React.createElement('div',{style:{padding:"20px 24px",borderBottom:"1px solid "+C.border,display:"flex",justifyContent:"space-between",alignItems:"center"}},
+        React.createElement('h3',{style:{fontSize:"16px",fontWeight:600,color:C.gray1}},"编辑标签名称"),
+        React.createElement('button',{onClick:onClose,style:{background:"none",border:"none",cursor:"pointer",fontSize:"20px",color:C.gray3}},"×")
+      ),
+      React.createElement('div',{style:{padding:"20px 24px"}},
+        React.createElement('div',{style:{fontSize:"13px",color:C.gray2,marginBottom:"15px"}},"数据集: "+ds.name),
+        Object.entries(ds.classInfo||{}).map(([k,v])=>{
+          const itemCount=typeof v==="number"?v:(v&&v.count?v.count:0);
+          const itemName=typeof v==="number"?`类${k}`:(v&&v.name?v.name:`类${k}`);
+          return React.createElement('div',{key:k,style:{display:"flex",alignItems:"center",marginBottom:"12px"}},
+            React.createElement('span',{style:{width:"100px",fontSize:"13px",color:C.gray2}},`${itemName} (${itemCount.toLocaleString()}):`),
+            React.createElement('input',{value:classNames[k]||"",onChange:function(e){
+              setClassNames(Object.assign({},classNames,{[k]:e.target.value}));
+            },placeholder:"请输入标签名称",style:{flex:1,padding:"8px 12px",border:"1px solid "+C.border,borderRadius:"6px",fontSize:"13px"}})
+          );
+        }),
+        Object.keys(ds.classInfo||{}).length===0&&React.createElement('div',{style:{fontSize:"13px",color:C.gray3,padding:"20px",textAlign:"center"}},"无类别信息")
+      ),
+      React.createElement('div',{style:{padding:"16px 24px",borderTop:"1px solid "+C.border,display:"flex",justifyContent:"flex-end",gap:"12px"}},
+        React.createElement('button',{onClick:onClose,
+          style:{padding:"10px 20px",border:"1px solid "+C.border,borderRadius:"6px",background:C.white,color:C.gray2,cursor:"pointer",fontSize:"13px"}},"取消"),
+        React.createElement('button',{onClick:function(){onSave(classNames);},
+          style:{padding:"10px 24px",border:"none",borderRadius:"6px",background:C.primary,color:"white",cursor:"pointer",fontSize:"13px",fontWeight:500}},"保存")
+      )
     )
   );
 }

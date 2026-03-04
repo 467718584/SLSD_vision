@@ -38,10 +38,25 @@ def init_database():
             maintainer TEXT,
             preview_count INTEGER DEFAULT 8,
             annotation_format TEXT DEFAULT 'yolo',
+            storage_type TEXT DEFAULT 'folder',
+            annotation_type TEXT DEFAULT 'yolo',
+            split_ratio TEXT,
+            has_test BOOLEAN DEFAULT 0,
+            bg_count_train INTEGER DEFAULT 0,
+            bg_count_val INTEGER DEFAULT 0,
+            bg_count_test INTEGER DEFAULT 0,
+            bg_count_total INTEGER DEFAULT 0,
+            img_count_train INTEGER DEFAULT 0,
+            img_count_val INTEGER DEFAULT 0,
+            img_count_test INTEGER DEFAULT 0,
+            class_info TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+
+    # 数据库迁移：为已有数据库添加新字段
+    migrate_database(conn, cursor)
 
     # 模型表
     cursor.execute('''
@@ -66,6 +81,36 @@ def init_database():
     conn.close()
 
 
+def migrate_database(conn, cursor):
+    """数据库迁移：为已有数据库添加新字段"""
+    # 获取当前表结构
+    cursor.execute("PRAGMA table_info(datasets)")
+    columns = {row[1] for row in cursor.fetchall()}
+
+    # 需要添加的新字段
+    new_columns = {
+        'storage_type': 'ALTER TABLE datasets ADD COLUMN storage_type TEXT DEFAULT "folder"',
+        'annotation_type': 'ALTER TABLE datasets ADD COLUMN annotation_type TEXT DEFAULT "yolo"',
+        'split_ratio': 'ALTER TABLE datasets ADD COLUMN split_ratio TEXT',
+        'has_test': 'ALTER TABLE datasets ADD COLUMN has_test BOOLEAN DEFAULT 0',
+        'bg_count_train': 'ALTER TABLE datasets ADD COLUMN bg_count_train INTEGER DEFAULT 0',
+        'bg_count_val': 'ALTER TABLE datasets ADD COLUMN bg_count_val INTEGER DEFAULT 0',
+        'bg_count_test': 'ALTER TABLE datasets ADD COLUMN bg_count_test INTEGER DEFAULT 0',
+        'bg_count_total': 'ALTER TABLE datasets ADD COLUMN bg_count_total INTEGER DEFAULT 0',
+        'img_count_train': 'ALTER TABLE datasets ADD COLUMN img_count_train INTEGER DEFAULT 0',
+        'img_count_val': 'ALTER TABLE datasets ADD COLUMN img_count_val INTEGER DEFAULT 0',
+        'img_count_test': 'ALTER TABLE datasets ADD COLUMN img_count_test INTEGER DEFAULT 0',
+        'class_info': 'ALTER TABLE datasets ADD COLUMN class_info TEXT'
+    }
+
+    for col, sql in new_columns.items():
+        if col not in columns:
+            try:
+                cursor.execute(sql)
+            except:
+                pass  # 忽略可能的错误
+
+
 def add_dataset(data):
     """添加数据集"""
     conn = get_connection()
@@ -73,8 +118,8 @@ def add_dataset(data):
 
     cursor.execute('''
         INSERT OR REPLACE INTO datasets
-        (name, algo_type, description, split, total, label_count, labels, maintain_date, maintainer, preview_count, annotation_format, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (name, algo_type, description, split, total, label_count, labels, maintain_date, maintainer, preview_count, annotation_format, storage_type, annotation_type, split_ratio, has_test, bg_count_train, bg_count_val, bg_count_test, bg_count_total, img_count_train, img_count_val, img_count_test, class_info, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
         data.get('name'),
         data.get('algo_type'),
@@ -87,6 +132,18 @@ def add_dataset(data):
         data.get('maintainer'),
         data.get('preview_count', 8),
         data.get('annotation_format', 'yolo'),
+        data.get('storage_type', 'folder'),
+        data.get('annotation_type', 'yolo'),
+        data.get('split_ratio'),
+        1 if data.get('has_test') else 0,
+        data.get('bg_count_train', 0),
+        data.get('bg_count_val', 0),
+        data.get('bg_count_test', 0),
+        data.get('bg_count_total', 0),
+        data.get('img_count_train', 0),
+        data.get('img_count_val', 0),
+        data.get('img_count_test', 0),
+        json.dumps(data.get('class_info', {}), ensure_ascii=False),
         datetime.now().isoformat()
     ))
 
@@ -133,7 +190,23 @@ def get_all_datasets():
     datasets = []
     for row in rows:
         ds = dict(row)
-        ds['labels'] = json.loads(ds['labels']) if ds['labels'] else {}
+        # 添加错误处理，防止损坏的JSON数据导致解析失败
+        try:
+            if ds.get('labels'):
+                ds['labels'] = json.loads(ds['labels'])
+            else:
+                ds['labels'] = {}
+        except (json.JSONDecodeError, TypeError, AttributeError) as e:
+            print(f"[WARN] Failed to parse labels JSON: {e}")
+            ds['labels'] = {}
+        try:
+            if ds.get('class_info'):
+                ds['class_info'] = json.loads(ds['class_info'])
+            else:
+                ds['class_info'] = {}
+        except (json.JSONDecodeError, TypeError, AttributeError) as e:
+            print(f"[WARN] Failed to parse class_info JSON: {e}")
+            ds['class_info'] = {}
         datasets.append(ds)
 
     return datasets
@@ -166,7 +239,30 @@ def get_dataset_by_name(name):
 
     if row:
         ds = dict(row)
-        ds['labels'] = json.loads(ds['labels']) if ds['labels'] else {}
+
+        # 逐个字段处理，添加详细的错误处理
+        # 处理labels字段
+        labels_val = ds.get('labels')
+        if labels_val:
+            try:
+                ds['labels'] = json.loads(labels_val)
+            except Exception as e:
+                print(f"[ERROR] labels parse error for {name}: {type(e).__name__}: {e}, value={repr(labels_val[:100])}")
+                ds['labels'] = {}
+        else:
+            ds['labels'] = {}
+
+        # 处理class_info字段
+        class_info_val = ds.get('class_info')
+        if class_info_val:
+            try:
+                ds['class_info'] = json.loads(class_info_val)
+            except Exception as e:
+                print(f"[ERROR] class_info parse error for {name}: {type(e).__name__}: {e}, value={repr(class_info_val[:100])}")
+                ds['class_info'] = {}
+        else:
+            ds['class_info'] = {}
+
         return ds
     return None
 
@@ -229,6 +325,7 @@ def search_datasets(query, algo_type=None):
     for row in rows:
         ds = dict(row)
         ds['labels'] = json.loads(ds['labels']) if ds['labels'] else {}
+        ds['class_info'] = json.loads(ds['class_info']) if ds['class_info'] else {}
         datasets.append(ds)
 
     return datasets

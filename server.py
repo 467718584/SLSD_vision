@@ -7,13 +7,15 @@ import json
 from datetime import datetime
 from flask import Flask, render_template_string, jsonify, request, send_from_directory
 from werkzeug.utils import secure_filename
+from werkzeug.exceptions import RequestEntityTooLarge
 from modules.database import (
     init_database, get_all_datasets, get_all_models,
     get_dataset_by_name, get_model_by_name,
     search_datasets, search_models,
     get_dataset_stats, get_model_stats,
     get_algo_types, get_algo_names,
-    add_dataset, add_model, delete_dataset_by_name, delete_model_by_name
+    add_dataset, add_model, delete_dataset_by_name, delete_model_by_name,
+    get_connection
 )
 from modules.dataset_manager import get_dataset_images
 from modules.model_manager import get_model_files
@@ -21,8 +23,17 @@ from config import DATASETS_DIR, MODELS_DIR
 
 app = Flask(__name__)
 
-# 配置上传文件大小限制为500MB
-app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024
+# 配置上传文件大小限制为5GB
+app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024 * 1024
+
+# 文件上传数量限制
+MAX_FILES_PER_UPLOAD = 1000
+
+
+@app.errorhandler(RequestEntityTooLarge)
+def handle_large_file(error):
+    """处理文件过大错误"""
+    return jsonify({"success": False, "error": "文件过大，超过服务器限制（5GB）"}), 413
 
 # 初始化数据库
 init_database()
@@ -38,7 +49,11 @@ def dict_to_js(obj, indent=0):
             return "{}"
         items = []
         for k, v in obj.items():
-            items.append(f"{k}: {dict_to_js(v, indent + 1)}")
+            # 键必须总是用引号包裹，以避免解析错误
+            key_str = str(k)
+            # 转义键中的特殊字符
+            key_escaped = key_str.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')
+            items.append(f'"{key_escaped}": {dict_to_js(v, indent + 1)}')
         return "{" + ", ".join(items) + "}"
     elif isinstance(obj, list):
         if not obj:
@@ -103,6 +118,19 @@ def index():
         # 检查文件状态
         file_status = check_dataset_files(ds.get('name', ''))
 
+        # 处理class_info
+        class_info = ds.get('class_info', {})
+        class_info_processed = {}
+        for k, v in class_info.items():
+            if isinstance(v, dict):
+                # 新格式: {"name": "crack", "count": 100}
+                class_info_processed[k] = {"name": v.get("name", f"类{k}"), "count": v.get("count", 0)}
+            elif isinstance(v, int):
+                # 旧格式: 100
+                class_info_processed[k] = {"name": f"类{k}", "count": v}
+            else:
+                class_info_processed[k] = {"name": "-", "count": 0}
+
         datasets_data.append({
             "id": ds.get('id', 0),
             "algoType": ds.get('algo_type', ''),
@@ -115,6 +143,19 @@ def index():
             "maintainDate": ds.get('maintain_date', ''),
             "maintainer": ds.get('maintainer', ''),
             "previewCount": ds.get('preview_count', 8),
+            # 新增字段
+            "storageType": ds.get('storage_type', 'folder'),
+            "annotationType": ds.get('annotation_type', 'yolo'),
+            "splitRatio": ds.get('split_ratio', '8.0:2.0:0.0'),
+            "hasTest": bool(ds.get('has_test', 0)),
+            "bgCountTrain": ds.get('bg_count_train', 0),
+            "bgCountVal": ds.get('bg_count_val', 0),
+            "bgCountTest": ds.get('bg_count_test', 0),
+            "bgCountTotal": ds.get('bg_count_total', 0),
+            "imgCountTrain": ds.get('img_count_train', 0),
+            "imgCountVal": ds.get('img_count_val', 0),
+            "imgCountTest": ds.get('img_count_test', 0),
+            "classInfo": class_info_processed,
             # 使用 JavaScript 布尔值格式
             "hasFolder": file_status["hasFolder"],
             "hasZip": file_status["hasZip"]
@@ -189,6 +230,24 @@ def index():
     return html_content
 
 
+@app.route('/api/dataset/validate-name', methods=['POST'])
+def validate_dataset_name():
+    """检查数据集名称是否已存在"""
+    data = request.json
+    name = data.get('name', '').strip()
+
+    if not name:
+        return jsonify({"exists": False, "storage_type": None})
+
+    existing = get_dataset_by_name(name)
+    if existing:
+        return jsonify({
+            "exists": True,
+            "storage_type": existing.get('storage_type', 'folder')
+        })
+    return jsonify({"exists": False, "storage_type": None})
+
+
 @app.route('/api/datasets')
 def api_datasets():
     """数据集API"""
@@ -200,7 +259,63 @@ def api_datasets():
     else:
         datasets = get_all_datasets()
 
-    return jsonify(datasets)
+    # 处理数据集数据，转换class_info格式
+    def check_dataset_files(name):
+        dataset_path = os.path.join(DATASETS_DIR, name)
+        has_folder = os.path.exists(dataset_path) and os.path.isdir(dataset_path)
+        has_zip = os.path.exists(os.path.join(dataset_path, f"{name}.zip"))
+        return {"hasFolder": has_folder, "hasZip": has_zip}
+
+    datasets_data = []
+    for ds in datasets:
+        # 处理labels
+        labels = ds.get('labels', {})
+        labels_processed = {}
+        for k, v in labels.items():
+            labels_processed[k] = v if isinstance(v, int) else "-"
+
+        # 处理class_info
+        class_info = ds.get('class_info', {})
+        class_info_processed = {}
+        for k, v in class_info.items():
+            if isinstance(v, dict):
+                class_info_processed[k] = {"name": v.get("name", f"类{k}"), "count": v.get("count", 0)}
+            elif isinstance(v, int):
+                class_info_processed[k] = {"name": f"类{k}", "count": v}
+            else:
+                class_info_processed[k] = {"name": "-", "count": 0}
+
+        file_status = check_dataset_files(ds.get('name', ''))
+
+        datasets_data.append({
+            "id": ds.get('id', 0),
+            "algoType": ds.get('algo_type', ''),
+            "name": ds.get('name', ''),
+            "split": ds.get('split', '8:2'),
+            "total": ds.get('total', 0),
+            "labelCount": ds.get('label_count', 0),
+            "labels": labels_processed,
+            "desc": ds.get('description', '').replace('\n', ' ').replace('\r', ' '),
+            "maintainDate": ds.get('maintain_date', ''),
+            "maintainer": ds.get('maintainer', ''),
+            "previewCount": ds.get('preview_count', 8),
+            "storageType": ds.get('storage_type', 'folder'),
+            "annotationType": ds.get('annotation_type', 'yolo'),
+            "splitRatio": ds.get('split_ratio', '8.0:2.0:0.0'),
+            "hasTest": bool(ds.get('has_test', 0)),
+            "bgCountTrain": ds.get('bg_count_train', 0),
+            "bgCountVal": ds.get('bg_count_val', 0),
+            "bgCountTest": ds.get('bg_count_test', 0),
+            "bgCountTotal": ds.get('bg_count_total', 0),
+            "imgCountTrain": ds.get('img_count_train', 0),
+            "imgCountVal": ds.get('img_count_val', 0),
+            "imgCountTest": ds.get('img_count_test', 0),
+            "classInfo": class_info_processed,
+            "hasFolder": file_status["hasFolder"],
+            "hasZip": file_status["hasZip"]
+        })
+
+    return jsonify(datasets_data)
 
 
 @app.route('/api/models')
@@ -228,6 +343,209 @@ def api_stats():
     })
 
 
+# ==================== YOLO格式校验函数 ====================
+
+def count_yolo_classes(dataset_dir):
+    """统计YOLO数据集中的类别信息"""
+    class_counts = {}
+    labels_dir = os.path.join(dataset_dir, 'labels')
+
+    if not os.path.exists(labels_dir):
+        return {}
+
+    # 首先检查是否有标准的train/val/test子目录
+    has_subdirs = any(os.path.isdir(os.path.join(labels_dir, subset)) for subset in ['train', 'val', 'test'])
+
+    if has_subdirs:
+        # 标准YOLO结构：有train/val/test子目录
+        for subset in ['train', 'val', 'test']:
+            lbl_subset = os.path.join(labels_dir, subset)
+            if os.path.exists(lbl_subset) and os.path.isdir(lbl_subset):
+                for f in os.listdir(lbl_subset):
+                    if f.endswith('.txt'):
+                        try:
+                            with open(os.path.join(lbl_subset, f), 'r', encoding='utf-8', errors='ignore') as lf:
+                                for line in lf:
+                                    line = line.strip()
+                                    if line:
+                                        parts = line.split()
+                                        if len(parts) >= 5:
+                                            cls_id = parts[0]
+                                            class_counts[cls_id] = class_counts.get(cls_id, 0) + 1
+                        except:
+                            pass
+    else:
+        # 非标准结构：直接在labels目录下有txt文件
+        for f in os.listdir(labels_dir):
+            if f.endswith('.txt'):
+                try:
+                    with open(os.path.join(labels_dir, f), 'r', encoding='utf-8', errors='ignore') as lf:
+                        for line in lf:
+                            line = line.strip()
+                            if line:
+                                parts = line.split()
+                                if len(parts) >= 5:
+                                    cls_id = parts[0]
+                                    class_counts[cls_id] = class_counts.get(cls_id, 0) + 1
+                except:
+                    pass
+
+    # 构建类别信息，按类别ID排序
+    class_info = {}
+    for cls_id in sorted(class_counts.keys(), key=lambda x: int(x) if x.isdigit() else 0):
+        class_info[cls_id] = class_counts[cls_id]
+
+    return class_info
+
+
+def validate_yolo_format(dataset_dir, annotation_type='yolo'):
+    """
+    YOLO格式校验 (4步)
+    返回: (success, message, validation_data)
+    """
+    from config import SUPPORTED_IMAGE_FORMATS
+
+    validation_data = {
+        'step1_structure': False,
+        'step2_image_counts': {},
+        'step3_bg_counts': {},
+        'step4_classes': {}
+    }
+
+    # 第一步：文件夹结构检测
+    images_dir = os.path.join(dataset_dir, 'images')
+    labels_dir = os.path.join(dataset_dir, 'labels')
+
+    if not os.path.exists(images_dir) or not os.path.isdir(images_dir):
+        return False, "缺少 images 文件夹", validation_data
+    if not os.path.exists(labels_dir) or not os.path.isdir(labels_dir):
+        return False, "缺少 labels 文件夹", validation_data
+
+    # 检查子文件夹
+    required_subsets = ['train', 'val']
+    optional_subsets = ['test']
+    has_test = False
+
+    for subset in required_subsets:
+        img_subset = os.path.join(images_dir, subset)
+        lbl_subset = os.path.join(labels_dir, subset)
+        if not os.path.exists(img_subset) or not os.path.isdir(img_subset):
+            return False, f"缺少 images/{subset} 文件夹", validation_data
+        if not os.path.exists(lbl_subset) or not os.path.isdir(lbl_subset):
+            return False, f"缺少 labels/{subset} 文件夹", validation_data
+
+    for subset in optional_subsets:
+        img_subset = os.path.join(images_dir, subset)
+        lbl_subset = os.path.join(labels_dir, subset)
+        if os.path.exists(img_subset) and os.path.isdir(img_subset):
+            if os.path.exists(lbl_subset) and os.path.isdir(lbl_subset):
+                has_test = True
+
+    validation_data['step1_structure'] = True
+    validation_data['has_test'] = has_test
+
+    # 第二步：统计图片数量
+    img_count_train = 0
+    img_count_val = 0
+    img_count_test = 0
+
+    for subset, count_ref in [('train', lambda: img_count_train), ('val', lambda: img_count_val), ('test', lambda: img_count_test)]:
+        img_subset = os.path.join(images_dir, subset)
+        if os.path.exists(img_subset):
+            for f in os.listdir(img_subset):
+                if any(f.lower().endswith(ext) for ext in SUPPORTED_IMAGE_FORMATS):
+                    if subset == 'train':
+                        img_count_train += 1
+                    elif subset == 'val':
+                        img_count_val += 1
+                    else:
+                        img_count_test += 1
+
+    validation_data['step2_image_counts'] = {
+        'train': img_count_train,
+        'val': img_count_val,
+        'test': img_count_test
+    }
+
+    # 计算划分比例
+    total = img_count_train + img_count_val + img_count_test
+    if total > 0:
+        train_ratio = (img_count_train / total) * 10
+        val_ratio = (img_count_val / total) * 10
+        test_ratio = (img_count_test / total) * 10
+        split_ratio = f"{train_ratio:.1f}:{val_ratio:.1f}:{test_ratio:.1f}"
+    else:
+        split_ratio = "0.0:0.0:0.0"
+
+    validation_data['split_ratio'] = split_ratio
+
+    # 第三步：计算背景图片数量
+    bg_count_train = 0
+    bg_count_val = 0
+    bg_count_test = 0
+    total_labels = 0
+
+    for subset, bg_ref in [('train', lambda: bg_count_train), ('val', lambda: bg_count_val), ('test', lambda: bg_count_test)]:
+        lbl_subset = os.path.join(labels_dir, subset)
+        if os.path.exists(lbl_subset):
+            label_files = [f for f in os.listdir(lbl_subset) if f.endswith('.txt')]
+            img_subset = os.path.join(images_dir, subset)
+            img_count = 0
+            if os.path.exists(img_subset):
+                img_count = len([f for f in os.listdir(img_subset) if any(f.lower().endswith(ext) for ext in SUPPORTED_IMAGE_FORMATS)])
+
+            label_count = len(label_files)
+            total_labels += label_count
+
+            bg = img_count - label_count
+            if bg < 0:
+                bg = 0
+
+            if subset == 'train':
+                bg_count_train = bg
+            elif subset == 'val':
+                bg_count_val = bg
+            else:
+                bg_count_test = bg
+
+    validation_data['step3_bg_counts'] = {
+        'train': bg_count_train,
+        'val': bg_count_val,
+        'test': bg_count_test,
+        'total': bg_count_train + bg_count_val + bg_count_test
+    }
+
+    # 第四步：统计类别数量
+    class_counts = {}
+    for subset in ['train', 'val', 'test']:
+        lbl_subset = os.path.join(labels_dir, subset)
+        if os.path.exists(lbl_subset):
+            for f in os.listdir(lbl_subset):
+                if f.endswith('.txt'):
+                    try:
+                        with open(os.path.join(lbl_subset, f), 'r', encoding='utf-8', errors='ignore') as lf:
+                            for line in lf:
+                                line = line.strip()
+                                if line:
+                                    parts = line.split()
+                                    if len(parts) >= 5:
+                                        cls_id = parts[0]
+                                        class_counts[cls_id] = class_counts.get(cls_id, 0) + 1
+                    except:
+                        pass
+
+    # 构建类别信息
+    class_info = {}
+    for cls_id in sorted(class_counts.keys(), key=lambda x: int(x) if x.isdigit() else 0):
+        class_info[cls_id] = class_counts[cls_id]
+
+    validation_data['step4_classes'] = class_info
+    validation_data['class_info'] = class_info
+    validation_data['label_count'] = total_labels
+
+    return True, "校验通过", validation_data
+
+
 # ==================== 数据集上传API ====================
 
 @app.route('/api/dataset/upload', methods=['POST'])
@@ -238,6 +556,7 @@ def upload_dataset():
     algo_type = request.form.get('algoType', '其他')
     description = request.form.get('description', '')
     maintainer = request.form.get('maintainer', '管理员')
+    annotation_type = request.form.get('annotationType', 'yolo')
 
     try:
         dataset_dir = os.path.join(DATASETS_DIR, dataset_name)
@@ -248,6 +567,13 @@ def upload_dataset():
             files = request.files.getlist('files')
             if not files or len(files) == 0:
                 return jsonify({"success": False, "error": "没有上传文件"}), 400
+
+            # 检查文件数量
+            if len(files) > MAX_FILES_PER_UPLOAD:
+                return jsonify({
+                    "success": False,
+                    "error": f"文件数量超过限制（最多{MAX_FILES_PER_UPLOAD}个文件）。建议使用ZIP压缩包方式上传，或将数据集分成多个部分上传。"
+                }), 400
 
             if not dataset_name:
                 dataset_name = f"dataset_{datetime.now().strftime('%Y%m%d%H%M%S')}"
@@ -307,6 +633,23 @@ def upload_dataset():
             else:
                 file.save(os.path.join(dataset_dir, filename))
 
+        # 判断存储类型
+        storage_type = 'folder' if upload_mode == 'folder' else 'zip'
+
+        # 获取是否跳过YOLO校验
+        skip_validation = request.form.get('skipValidation', 'false').lower() == 'true'
+
+        # 如果是YOLO格式，进行4步校验
+        validation_result = None
+        if annotation_type == 'yolo' and not skip_validation:
+            success, msg, validation_result = validate_yolo_format(dataset_dir, annotation_type)
+            if not success:
+                # 删除已创建的目录
+                import shutil
+                if os.path.exists(dataset_dir):
+                    shutil.rmtree(dataset_dir)
+                return jsonify({"success": False, "error": f"YOLO格式校验失败: {msg}"}), 400
+
         # 统计图片数量
         from config import SUPPORTED_IMAGE_FORMATS
         image_count = 0
@@ -322,18 +665,61 @@ def upload_dataset():
                         lines = len(lf.readlines())
                         labels[label_name] = lines
 
+        # 统计类别信息（即使跳过YOLO校验也需要统计）
+        class_info = {}
+        if annotation_type == 'yolo':
+            class_info = count_yolo_classes(dataset_dir)
+
+        # 准备校验数据
+        split_ratio = "8.0:2.0:0.0"
+        has_test = False
+        bg_count_train = 0
+        bg_count_val = 0
+        bg_count_test = 0
+        bg_count_total = 0
+        img_count_train = 0
+        img_count_val = 0
+        img_count_test = 0
+
+        # 如果有validation_result，覆盖从统计函数得到的结果
+        if validation_result:
+            split_ratio = validation_result.get('split_ratio', "8.0:2.0:0.0")
+            has_test = validation_result.get('has_test', False)
+            bg_counts = validation_result.get('step3_bg_counts', {})
+            bg_count_train = bg_counts.get('train', 0)
+            bg_count_val = bg_counts.get('val', 0)
+            bg_count_test = bg_counts.get('test', 0)
+            bg_count_total = bg_counts.get('total', 0)
+            img_counts = validation_result.get('step2_image_counts', {})
+            img_count_train = img_counts.get('train', 0)
+            img_count_val = img_counts.get('val', 0)
+            img_count_test = img_counts.get('test', 0)
+            class_info = validation_result.get('class_info', {})
+
         # 保存元数据
         metadata = {
             "name": dataset_name,
             "algo_type": algo_type,
             "description": description,
-            "split": "8:2",
+            "split": split_ratio,
             "total": image_count,
             "label_count": len(labels),
             "labels": labels,
             "maintain_date": datetime.now().strftime('%Y/%m/%d'),
             "maintainer": maintainer,
-            "preview_count": 8
+            "preview_count": 8,
+            "storage_type": storage_type,
+            "annotation_type": annotation_type,
+            "split_ratio": split_ratio,
+            "has_test": has_test,
+            "bg_count_train": bg_count_train,
+            "bg_count_val": bg_count_val,
+            "bg_count_test": bg_count_test,
+            "bg_count_total": bg_count_total,
+            "img_count_train": img_count_train,
+            "img_count_val": img_count_val,
+            "img_count_test": img_count_test,
+            "class_info": class_info
         }
 
         with open(os.path.join(dataset_dir, 'metadata.json'), 'w', encoding='utf-8') as f:
@@ -344,18 +730,31 @@ def upload_dataset():
             'name': dataset_name,
             'algo_type': algo_type,
             'description': description,
-            'split': "8:2",
+            'split': split_ratio,
             'total': image_count,
             'label_count': len(labels),
             'labels': labels,
             'maintain_date': datetime.now().strftime('%Y/%m/%d'),
-            'maintainer': maintainer
+            'maintainer': maintainer,
+            'storage_type': storage_type,
+            'annotation_type': annotation_type,
+            'split_ratio': split_ratio,
+            'has_test': has_test,
+            'bg_count_train': bg_count_train,
+            'bg_count_val': bg_count_val,
+            'bg_count_test': bg_count_test,
+            'bg_count_total': bg_count_total,
+            'img_count_train': img_count_train,
+            'img_count_val': img_count_val,
+            'img_count_test': img_count_test,
+            'class_info': class_info
         })
 
         return jsonify({
             "success": True,
             "message": "数据集上传成功",
-            "dataset": metadata
+            "dataset": metadata,
+            "validation": validation_result
         })
 
     except Exception as e:
@@ -395,6 +794,92 @@ def delete_dataset(name):
         delete_dataset_by_name(name)
 
         return jsonify({"success": True, "message": "数据集已删除"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/dataset/<name>/class-info', methods=['POST'])
+def update_class_info(name):
+    """更新数据集的类别信息"""
+    try:
+        data = request.json
+        new_class_names = data.get('classInfo', {})
+
+        # 获取现有数据集
+        ds = get_dataset_by_name(name)
+        if not ds:
+            return jsonify({"success": False, "error": "数据集不存在"}), 404
+
+        # 获取现有的class_info（包含数量）
+        existing_class_info = ds.get('class_info', {})
+
+        # 检查是否需要重新计算类别数量
+        # 如果现有class_info为空或只有数字（旧格式），需要重新计算
+        needs_recalc = False
+        if not existing_class_info:
+            needs_recalc = True
+        else:
+            # 检查是否所有值都是数字（旧格式）
+            try:
+                needs_recalc = all(isinstance(v, int) for v in existing_class_info.values())
+            except:
+                needs_recalc = True
+
+        # 如果需要重新计算，从labels目录获取
+        if needs_recalc:
+            dataset_dir = os.path.join(DATASETS_DIR, name)
+            try:
+                existing_class_info = count_yolo_classes(dataset_dir)
+            except:
+                existing_class_info = {}
+            # 转换为新格式
+            existing_class_info = {k: v for k, v in existing_class_info.items()}
+
+        # 合并新名称与现有数量
+        # 格式: {"0": {"name": "crack", "count": 100}, "1": {"name": "person", "count": 50}}
+        merged_class_info = {}
+        for k, v in existing_class_info.items():
+            # 现有格式可能是 {"0": 100, "1": 50} 或 {"0": {"name": "x", "count": 100}}
+            if isinstance(v, dict):
+                count = v.get('count', 0)
+            else:
+                count = v if isinstance(v, int) else 0
+
+            # 获取新名称，如果没有则使用默认名称
+            new_name = new_class_names.get(k, f"类{k}")
+            merged_class_info[k] = {"name": new_name, "count": count}
+
+        # 同步更新metadata.json中的labels字段
+        labels_list = [merged_class_info[k]["name"] for k in sorted(merged_class_info.keys())]
+
+        # 更新数据库
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE datasets SET class_info = ? WHERE name = ?",
+            (json.dumps(merged_class_info, ensure_ascii=False), name)
+        )
+        conn.commit()
+        conn.close()
+
+        # 同时更新元数据文件
+        dataset_dir = os.path.join(DATASETS_DIR, name)
+        metadata_file = os.path.join(dataset_dir, 'metadata.json')
+        if os.path.exists(metadata_file):
+            try:
+                with open(metadata_file, 'r', encoding='utf-8', errors='ignore') as f:
+                    metadata = json.load(f)
+            except:
+                metadata = {}
+            metadata['class_info'] = merged_class_info
+            metadata['labels'] = labels_list
+            try:
+                with open(metadata_file, 'w', encoding='utf-8', errors='ignore') as f:
+                    json.dump(metadata, f, ensure_ascii=False, indent=2)
+            except:
+                pass
+
+        return jsonify({"success": True, "message": "类别信息已更新"})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 

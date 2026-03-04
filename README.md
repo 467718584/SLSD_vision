@@ -9,7 +9,8 @@
 - 模型管理：上传、查看、删除训练模型
 - 数据预览：查看数据集图片和标注信息
 - 搜索筛选：通过算法类型、名称等条件筛选数据
-- 大文件上传：支持最大500MB的文件上传
+- 大文件上传：支持最大5GB的文件上传
+- 数据集校验：YOLO格式4步校验、标签编辑、类别统计
 
 ## 技术栈
 
@@ -27,6 +28,7 @@ SLSD_vision/
 ├── config.py                   # 配置文件
 ├── requirements.txt            # Python 依赖
 ├── generate_test_data.py       # 测试数据生成脚本
+├── start_server.bat            # 启动脚本（推荐）
 ├── 参考资料/                    # 参考文档和资源
 │   └── vision-platform-preview.html  # 前端模板（含上传功能）
 ├── modules/                    # 功能模块
@@ -118,6 +120,47 @@ SLSD_vision/
 - SUPPORTED_ANNOTATION_FORMATS - 支持的标注格式
 - SUPPORTED_IMAGE_FORMATS - 支持的图片格式
 
+## v1.2 新增功能 (2026-03-05)
+
+### 1. 数据集上传校验功能
+- **名称重复检测**：上传前检查数据集名称是否已存在
+- **标注类型选择**：新增下拉框选择 YOLO/VOC/COCO 标注格式
+- **YOLO格式校验**：4步校验流程
+  - 步骤1：文件夹结构检测（images/train/val/test, labels/train/val/test）
+  - 步骤2：统计图片数量
+  - 步骤3：计算背景图片数量
+  - 步骤4：统计类别数量
+- **跳过校验选项**：可选择跳过校验快速上传
+
+### 2. 标签编辑功能
+- 在数据集详情页面可编辑类别标签名称
+- 保留原有类别数量统计
+- 实时保存到数据库和元数据文件
+
+### 3. 数据集总览预览功能
+- 表格中显示数据集真实缩略图（最多6张）
+- 点击缩略图弹出大图预览（页面内悬浮）
+- 与详情页面一致的预览体验
+- 加载失败时显示模拟方块
+
+### 4. 数据库增强
+- 新增字段：
+  - `storage_type`: 存储方式（zip/folder）
+  - `annotation_type`: 标注类型（yolo/voc/coco）
+  - `split_ratio`: 划分比例
+  - `has_test`: 是否存在测试集
+  - `bg_count_*`: 背景图片数量统计
+  - `img_count_*`: 各子集图片数量统计
+  - `class_info`: 类别信息（包含名称和数量）
+
+### 5. 编码问题修复
+- 修复数据库中损坏的中文字符
+- 修复JSON解析错误处理
+
+### 6. 启动脚本
+- 新增 `start_server.bat` 启动脚本
+- 使用指定Python环境（transformer-clip）
+
 ## v1.1 新增功能 (2026-03-04)
 
 ### 1. 文件夹上传支持
@@ -160,6 +203,18 @@ SLSD_vision/
 | maintainer | TEXT | 维护人员 |
 | preview_count | INTEGER | 预览图片数量 |
 | annotation_format | TEXT | 标注格式 |
+| storage_type | TEXT | 存储方式（zip/folder） |
+| annotation_type | TEXT | 标注类型（yolo/voc/coco） |
+| split_ratio | TEXT | 划分比例（如 8.0:2.0:0.0） |
+| has_test | BOOLEAN | 是否存在测试集 |
+| bg_count_train | INTEGER | 训练集背景图片数 |
+| bg_count_val | INTEGER | 验证集背景图片数 |
+| bg_count_test | INTEGER | 测试集背景图片数 |
+| bg_count_total | INTEGER | 总背景图片数 |
+| img_count_train | INTEGER | 训练集图片数 |
+| img_count_val | INTEGER | 验证集图片数 |
+| img_count_test | INTEGER | 测试集图片数 |
+| class_info | TEXT | 类别信息（JSON） |
 
 ### 模型表 (models)
 
@@ -178,14 +233,20 @@ SLSD_vision/
 
 ## 启动方式
 
-### Flask 服务器（推荐）
+### 方式一：使用启动脚本（推荐）
+
+```bash
+# 直接运行启动脚本
+./start_server.bat
+
+# 访问 http://localhost:8501
+```
+
+### 方式二：手动启动
 
 ```bash
 # 激活 conda 环境
 conda activate transformer-clip
-
-# 或使用 Anaconda Python
-/d/Anaconda/python.exe server.py
 
 # 启动服务器
 python server.py
@@ -275,6 +336,15 @@ werkzeug>=2.0.0
 
 ## 版本历史
 
+### v1.2 (2026-03-05)
+- 新增：数据集上传校验功能（名称重复检测、YOLO格式4步校验）
+- 新增：标注类型选择（YOLO/VOC/COCO）
+- 新增：标签编辑功能
+- 新增：数据集总览真实缩略图预览
+- 新增：数据库新字段（storage_type, annotation_type, split_ratio, class_info等）
+- 优化：大文件上传支持（5GB）
+- 修复：数据库编码问题
+
 ### v1.1 (2026-03-04)
 - 新增：文件夹上传支持（webkitdirectory）
 - 新增：数据集详情图片预览功能
@@ -298,6 +368,8 @@ werkzeug>=2.0.0
 | GET | `/api/datasets?q=xxx` | 搜索数据集 |
 | GET | `/api/dataset/<name>/images` | 获取数据集图片 |
 | POST | `/api/dataset/upload` | 上传数据集 |
+| POST | `/api/dataset/validate-name` | 校验数据集名称 |
+| POST | `/api/dataset/<name>/class-info` | 更新类别信息 |
 | DELETE | `/api/dataset/<name>` | 删除数据集 |
 
 #### 模型 API
