@@ -896,6 +896,34 @@ def dataset_charts(name):
     return jsonify(result)
 
 
+@app.route('/api/dataset/<name>/chart-upload', methods=['POST'])
+def upload_dataset_chart(name):
+    """上传/更新数据集的图表文件"""
+    dataset_dir = os.path.join(DATASETS_DIR, name)
+
+    if not os.path.exists(dataset_dir):
+        return jsonify({"success": False, "error": "数据集不存在"}), 404
+
+    chart_type = request.form.get('type', 'detail')
+    if 'file' not in request.files:
+        return jsonify({"success": False, "error": "没有文件"}), 400
+
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"success": False, "error": "文件名为空"}), 400
+
+    # 创建charts目录
+    charts_dir = os.path.join(dataset_dir, 'charts')
+    os.makedirs(charts_dir, exist_ok=True)
+
+    # 保存文件
+    filename = 'detail.png' if chart_type == 'detail' else 'distribution.png'
+    file_path = os.path.join(charts_dir, filename)
+    file.save(file_path)
+
+    return jsonify({"success": True, "path": file_path})
+
+
 @app.route('/api/dataset/<name>', methods=['DELETE'])
 def delete_dataset(name):
     """删除数据集"""
@@ -910,6 +938,40 @@ def delete_dataset(name):
         delete_dataset_by_name(name)
 
         return jsonify({"success": True, "message": "数据集已删除"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/dataset/<name>', methods=['PUT'])
+def update_dataset(name):
+    """更新数据集信息"""
+    try:
+        data = request.json or {}
+        algo_type = data.get('algoType')
+        tech_method = data.get('techMethod')
+
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        updates = []
+        params = []
+
+        if algo_type is not None:
+            updates.append("algo_type = ?")
+            params.append(algo_type)
+        if tech_method is not None:
+            updates.append("tech_method = ?")
+            params.append(tech_method)
+
+        if not updates:
+            return jsonify({"success": False, "error": "没有要更新的内容"}), 400
+
+        params.append(name)
+        cursor.execute(f"UPDATE datasets SET {', '.join(updates)} WHERE name = ?", params)
+        conn.commit()
+        conn.close()
+
+        return jsonify({"success": True, "message": "数据集已更新"})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 

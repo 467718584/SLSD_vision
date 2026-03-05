@@ -65,6 +65,32 @@ function MiniHeatmap({seed,size=52}){
   }
   return React.createElement('svg',{width:size,height:size,style:{borderRadius:"3px",flexShrink:0}},rects);
 }
+// 真实类别标注分布热力图组件
+function ClassHeatmap({classInfo,size=64}){
+  const entries=Object.entries(classInfo||{});
+  const classCount=Math.min(entries.length,6);
+  const cells=Math.max(classCount,2);
+  const s=size;
+  // 计算最大数量用于归一化
+  const maxCount=entries.reduce((max,[,v])=>{const c=typeof v==="number"?v:(v&&v.count?v.count:0);return Math.max(max,c);},1)||1;
+  // 生成热力图矩阵 (类别数 x 固定显示格数)
+  const rects=[];
+  for(let r=0;r<cells;r++){
+    for(let c=0;c<cells;c++){
+      let count=0;
+      if(r<entries.length){
+        const v=entries[r][1];
+        count=typeof v==="number"?v:(v&&v.count?v.count:0);
+      }
+      const intensity=count/maxCount;
+      // 使用蓝色渐变色
+      const blue=Math.round(180+intensity*75);
+      const fill=`rgb(200,220,${blue})`;
+      rects.push(React.createElement('rect',{key:`${r}-${c}`,x:c*(s/cells),y:r*(s/cells),width:s/cells-0.5,height:s/cells-0.5,fill,opacity:0.5+intensity*0.5}));
+    }
+  }
+  return React.createElement('svg',{width:size,height:size,style:{borderRadius:"3px",flexShrink:0}},rects);
+}
 function MiniDistChart({seed,size=52}){
   const bars=8;
   const heights=Array.from({length:bars},(_,i)=>Math.max(0.12,Math.exp(-Math.pow((i-bars/2)/2,2))*0.85+Math.abs(Math.sin(seed*13.7+i*2.3))*0.15));
@@ -75,7 +101,7 @@ function MiniDistChart({seed,size=52}){
 }
 
 // 真实详情图组件
-function DetailChart({datasetName,size=50}){
+function DetailChart({datasetName,size=50,onClick}){
   const [chartUrl,setChartUrl]=React.useState(null);
   const [loading,setLoading]=React.useState(true);
 
@@ -98,13 +124,15 @@ function DetailChart({datasetName,size=50}){
     return React.createElement('div',{style:{width:size,height:size,background:C.gray6,borderRadius:"3px"}});
   }
   if(!chartUrl){
-    return React.createElement(MiniHeatmap,{seed:Math.abs(datasetName.split("").reduce(function(a,c){return a+c.charCodeAt(0)},0)),size:size});
+    return React.createElement('div',{onClick:onClick,style:{cursor:onClick?"pointer":"default"}},
+      React.createElement(MiniHeatmap,{seed:Math.abs(datasetName.split("").reduce(function(a,c){return a+c.charCodeAt(0)},0)),size:size})
+    );
   }
-  return React.createElement('img',{src:chartUrl,alt:"detail",style:{width:size,height:size,objectFit:"cover",borderRadius:"3px"}});
+  return React.createElement('img',{src:chartUrl,alt:"detail",onClick:onClick,style:{width:size,height:size,objectFit:"cover",borderRadius:"3px",cursor:onClick?"pointer":"default"}});
 }
 
 // 真实分布图组件
-function DistChart({datasetName,size=50}){
+function DistChart({datasetName,size=50,onClick}){
   const [chartUrl,setChartUrl]=React.useState(null);
   const [loading,setLoading]=React.useState(true);
 
@@ -127,9 +155,11 @@ function DistChart({datasetName,size=50}){
     return React.createElement('div',{style:{width:size,height:size,background:C.gray6,borderRadius:"3px"}});
   }
   if(!chartUrl){
-    return React.createElement(MiniDistChart,{seed:Math.abs(datasetName.split("").reduce(function(a,c){return a+c.charCodeAt(0)},0)),size:size});
+    return React.createElement('div',{onClick:onClick,style:{cursor:onClick?"pointer":"default"}},
+      React.createElement(MiniDistChart,{seed:Math.abs(datasetName.split("").reduce(function(a,c){return a+c.charCodeAt(0)},0)),size:size})
+    );
   }
-  return React.createElement('img',{src:chartUrl,alt:"distribution",style:{width:size,height:size,objectFit:"cover",borderRadius:"3px"}});
+  return React.createElement('img',{src:chartUrl,alt:"distribution",onClick:onClick,style:{width:size,height:size,objectFit:"cover",borderRadius:"3px",cursor:onClick?"pointer":"default"}});
 }
 function MiniCurve({seed,size=48,color=C.primary}){
   const pts=Array.from({length:10},(_,i)=>Math.min(0.98,Math.max(0.1,1-Math.exp(-i*0.4)+Math.sin(seed*11+i*3.7)*0.03)));
@@ -225,10 +255,59 @@ function Card({children,style={}}){
   return React.createElement('div',{style:{background:C.white,border:`1px solid ${C.border}`,borderRadius:"10px",padding:"18px",...style}},children);
 }
 
-function DatasetDetail({ds,onBack,onEditClassInfo}){
+function DatasetDetail({ds,onBack,onEditClassInfo,onRefresh}){
   const [splitImages,setSplitImages]=React.useState({train:[],val:[],test:[]});
   const [loading,setLoading]=React.useState(true);
   const [previewImage,setPreviewImage]=React.useState(null);
+  const [previewChart,setPreviewChart]=React.useState(null);
+  const [chartType,setChartType]=React.useState("");
+  const [editModal,setEditModal]=React.useState(false);
+  const [editData,setEditData]=React.useState({algoType:ds.algoType||"其他",techMethod:ds.techMethod||"目标检测算法"});
+  const [uploading,setUploading]=React.useState(false);
+  const [detailChartFile,setDetailChartFile]=React.useState(null);
+  const [distChartFile,setDistChartFile]=React.useState(null);
+
+  function handleSaveEdit(){
+    setUploading(true);
+    Promise.all([
+      detailChartFile?uploadChart(detailChartFile,"detail"):Promise.resolve(),
+      distChartFile?uploadChart(distChartFile,"distribution"):Promise.resolve()
+    ]).then(function(){
+      fetch("/api/dataset/"+encodeURIComponent(ds.name),{
+        method:"PUT",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({algoType:editData.algoType,techMethod:editData.techMethod})
+      }).then(function(r){return r.json();}).then(function(data){
+        setEditModal(false);
+        setDetailChartFile(null);
+        setDistChartFile(null);
+        setUploading(false);
+        if(onRefresh)onRefresh();
+        window.location.reload();
+      }).catch(function(err){
+        setUploading(false);
+        alert("保存失败: "+err.message);
+      });
+    }).catch(function(err){
+      setUploading(false);
+      alert("上传图表失败: "+err.message);
+    });
+  }
+
+  function uploadChart(file,type){
+    return new Promise(function(resolve,reject){
+      const formData=new FormData();
+      formData.append("file",file);
+      formData.append("type",type);
+      formData.append("dataset",ds.name);
+      fetch("/api/dataset/"+encodeURIComponent(ds.name)+"/chart-upload",{
+        method:"POST",
+        body:formData
+      }).then(function(r){return r.json();}).then(function(data){
+        resolve(data);
+      }).catch(reject);
+    });
+  }
 
   React.useEffect(function(){
     setLoading(true);
@@ -309,13 +388,17 @@ function DatasetDetail({ds,onBack,onEditClassInfo}){
       React.createElement('div',{style:{display:"flex",flexDirection:"column",gap:"16px"}},
         // 数据集基本信息
         React.createElement(Card,null,
-          React.createElement(SectionTitle,null,"数据集信息"),
+          React.createElement('div',{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}},
+            React.createElement(SectionTitle,null,"数据集信息"),
+            React.createElement('button',{onClick:function(){setEditModal(true);setEditData({algoType:ds.algoType||"其他",techMethod:ds.techMethod||"目标检测算法"});},
+              style:{background:C.primary,color:"white",border:"none",borderRadius:"4px",padding:"4px 12px",fontSize:"11px",cursor:"pointer"}},"编辑")
+          ),
           React.createElement('div',{style:{fontSize:"12px",color:C.gray2,lineHeight:1.8}},
-            React.createElement('div',{style:{display:"flex",justifyContent:"space-between",marginBottom:"6px"}},
+            React.createElement('div',{style:{display:"flex",justifyContent:"space-between",marginBottom:"6px",alignItems:"center"}},
               React.createElement('span',null,"算法类型"),
-              React.createElement('b',{style:{color:C.primary}},ds.algoType||"其他")
+              React.createElement(AlgoTag,{type:ds.algoType||"其他"})
             ),
-            React.createElement('div',{style:{display:"flex",justifyContent:"space-between",marginBottom:"6px"}},
+            React.createElement('div',{style:{display:"flex",justifyContent:"space-between",marginBottom:"6px",alignItems:"center"}},
               React.createElement('span',null,"技术方法"),
               React.createElement(TechMethodTag,{type:techMethod})
             ),
@@ -371,9 +454,12 @@ function DatasetDetail({ds,onBack,onEditClassInfo}){
           })
         ):null,
         React.createElement(Card,null,
-          React.createElement('div',{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"10px"}},
+          React.createElement('div',{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"10px",flexWrap:"wrap",gap:"8px"}},
             React.createElement(SectionTitle,null,"各标签数量（YOLO类别统计）"),
-            Object.keys(classInfo).length>0?React.createElement('button',{onClick:()=>onEditClassInfo&&onEditClassInfo(ds),style:{background:C.primary,color:"white",border:"none",borderRadius:"4px",padding:"4px 10px",fontSize:"11px",cursor:"pointer"}},"编辑标签"):null
+            Object.keys(classInfo).length>0?React.createElement('div',{style:{display:"flex",alignItems:"center",gap:"8px"}},
+              React.createElement('span',{style:{fontSize:"11px",color:C.gray3}},"共"+Object.keys(classInfo).length+"类"),
+              React.createElement('button',{onClick:()=>onEditClassInfo&&onEditClassInfo(ds),style:{background:C.primary,color:"white",border:"none",borderRadius:"4px",padding:"3px 8px",fontSize:"10px",cursor:"pointer"}},"编辑标签")
+            ):null
           ),
           Object.keys(classInfo).length>0?
             (()=>{
@@ -405,20 +491,41 @@ function DatasetDetail({ds,onBack,onEditClassInfo}){
           React.createElement('div',{style:{display:"flex",gap:"28px",flexWrap:"wrap"}},
             React.createElement('div',null,
               React.createElement('div',{style:{fontSize:"12px",color:C.gray4,marginBottom:"8px"}},"标注分布热力图"),
-              React.createElement('div',{style:{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"4px"}},
-                ...Array.from({length:8},(_,i)=>React.createElement(MiniHeatmap,{key:i,seed:ds.id*7+i,size:64}))
-              )
+              Object.keys(classInfo).length>0?
+                React.createElement('div',{style:{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(80px,1fr))",gap:"6px"}},
+                  ...Object.entries(classInfo).map(function([k,v],i){
+                    const name=typeof v==="object"&&v&&v.name?v.name:k;
+                    const count=typeof v==="number"?v:(v&&v.count?v.count:0);
+                    const col=palette[i%palette.length];
+                    return React.createElement('div',{key:k,style:{textAlign:"center"}},
+                      React.createElement(ClassHeatmap,{classInfo:{[k]:v},size:56}),
+                      React.createElement('div',{style:{fontSize:"10px",color:C.gray3,marginTop:"2px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"70px"}},name),
+                      React.createElement('div',{style:{fontSize:"9px",color:col,fontWeight:600}},count)
+                    );
+                  })
+                ):
+                React.createElement('div',{style:{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"4px"}},
+                  ...Array.from({length:8},(_,i)=>React.createElement(MiniHeatmap,{key:i,seed:ds.id*7+i,size:64}))
+                )
             ),
             React.createElement('div',null,
-              React.createElement('div',{style:{fontSize:"12px",color:C.gray4,marginBottom:"8px"}},"数据分析图表"),
+              React.createElement('div',{style:{fontSize:"12px",color:C.gray4,marginBottom:"8px"}},"数据分析图表（点击查看大图）"),
               React.createElement('div',{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}},
                 React.createElement('div',{style:{textAlign:"center"}},
                   React.createElement('div',{style:{fontSize:"11px",color:C.gray3,marginBottom:"4px"}},"样本分布"),
-                  React.createElement(DetailChart,{datasetName:ds.name,size:100})
+                  React.createElement(DetailChart,{datasetName:ds.name,size:100,onClick:function(){
+                    fetch("/api/dataset/"+encodeURIComponent(ds.name)+"/charts").then(function(r){return r.json();}).then(function(data){
+                      if(data.detail){setPreviewChart("/data/"+data.detail.replace("SLSD_vision/data/",""));setChartType("样本分布");}
+                    });
+                  }})
                 ),
                 React.createElement('div',{style:{textAlign:"center"}},
                   React.createElement('div',{style:{fontSize:"11px",color:C.gray3,marginBottom:"4px"}},"类别分布"),
-                  React.createElement(DistChart,{datasetName:ds.name,size:100})
+                  React.createElement(DistChart,{datasetName:ds.name,size:100,onClick:function(){
+                    fetch("/api/dataset/"+encodeURIComponent(ds.name)+"/charts").then(function(r){return r.json();}).then(function(data){
+                      if(data.distribution){setPreviewChart("/data/"+data.distribution.replace("SLSD_vision/data/",""));setChartType("类别分布");}
+                    });
+                  }})
                 )
               )
             )
@@ -481,12 +588,66 @@ function DatasetDetail({ds,onBack,onEditClassInfo}){
         React.createElement('div',{style:{textAlign:"center",marginTop:"10px",color:"white",fontSize:"13px"}},previewImage.split('/').pop())
       ),
       React.createElement('button',{onClick:function(){setPreviewImage(null);},style:{position:"absolute",top:"20px",right:"20px",background:"rgba(255,255,255,0.2)",border:"none",borderRadius:"50%",width:"40px",height:"40px",fontSize:"20px",color:"white",cursor:"pointer"}},"×")
+    ),
+    // 图表预览弹窗
+    previewChart&&React.createElement('div',{
+      style:{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.8)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:10000},
+      onClick:function(){setPreviewChart(null);}
+    },
+      React.createElement('div',{style:{maxWidth:"90%",maxHeight:"90%"},onClick:function(e){e.stopPropagation();}},
+        React.createElement('img',{src:previewChart,alt:chartType,style:{maxWidth:"100%",maxHeight:"85vh",borderRadius:"8px"}}),
+        React.createElement('div',{style:{textAlign:"center",marginTop:"10px",color:"white",fontSize:"13px"}},chartType)
+      ),
+      React.createElement('button',{onClick:function(){setPreviewChart(null);},style:{position:"absolute",top:"20px",right:"20px",background:"rgba(255,255,255,0.2)",border:"none",borderRadius:"50%",width:"40px",height:"40px",fontSize:"20px",color:"white",cursor:"pointer"}},"×")
+    ),
+    // 编辑弹窗
+    editModal&&React.createElement('div',{
+      style:{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:10001},
+      onClick:function(){setEditModal(false);}
+    },
+      React.createElement('div',{style:{background:"white",borderRadius:"10px",padding:"24px",width:"420px",maxWidth:"90%",maxHeight:"90%",overflow:"auto"},onClick:function(e){e.stopPropagation();}},
+        React.createElement('h3',{style:{margin:"0 0 20px 0",color:C.gray1,fontSize:"16px"}},"编辑数据集信息"),
+        React.createElement('div',{style:{marginBottom:"16px"}},
+          React.createElement('div',{style:{fontSize:"13px",color:C.gray2,marginBottom:"6px"}},"算法类型"),
+          React.createElement('select',{value:editData.algoType,onChange:function(e){setEditData(Object.assign({},editData,{algoType:e.target.value}));},
+            style:{width:"100%",padding:"8px",borderRadius:"4px",border:`1px solid ${C.border}`,fontSize:"13px"}},
+            ...Object.keys(ALGO_COLORS).map(function(k){
+              return React.createElement('option',{key:k,value:k},k);
+            })
+          )
+        ),
+        React.createElement('div',{style:{marginBottom:"16px"}},
+          React.createElement('div',{style:{fontSize:"13px",color:C.gray2,marginBottom:"6px"}},"技术方法"),
+          React.createElement('select',{value:editData.techMethod,onChange:function(e){setEditData(Object.assign({},editData,{techMethod:e.target.value}));},
+            style:{width:"100%",padding:"8px",borderRadius:"4px",border:`1px solid ${C.border}`,fontSize:"13px"}},
+            ...Object.keys(TECH_METHOD_COLORS).map(function(k){
+              return React.createElement('option',{key:k,value:k},k);
+            })
+          )
+        ),
+        React.createElement('div',{style:{marginBottom:"16px"}},
+          React.createElement('div',{style:{fontSize:"13px",color:C.gray2,marginBottom:"6px"}},"上传/更换样本分布图(detail.png)"),
+          React.createElement('input',{type:"file",accept:"image/*",onChange:function(e){if(e.target.files[0])setDetailChartFile(e.target.files[0]);},
+            style:{width:"100%",padding:"6px",fontSize:"12px"}})
+        ),
+        React.createElement('div',{style:{marginBottom:"20px"}},
+          React.createElement('div',{style:{fontSize:"13px",color:C.gray2,marginBottom:"6px"}},"上传/更换类别分布图(distribution.png)"),
+          React.createElement('input',{type:"file",accept:"image/*",onChange:function(e){if(e.target.files[0])setDistChartFile(e.target.files[0]);},
+            style:{width:"100%",padding:"6px",fontSize:"12px"}})
+        ),
+        React.createElement('div',{style:{display:"flex",gap:"10px",justifyContent:"flex-end"}},
+          React.createElement('button',{onClick:function(){setEditModal(false);},
+            style:{padding:"8px 16px",borderRadius:"4px",border:`1px solid ${C.border}`,background:"white",color:C.gray2,cursor:"pointer",fontSize:"13px"}},"取消"),
+          React.createElement('button',{onClick:handleSaveEdit,disabled:uploading,
+            style:{padding:"8px 20px",borderRadius:"4px",border:"none",background:C.primary,color:"white",cursor:uploading?"not-allowed":"pointer",fontSize:"13px",opacity:uploading?0.7:1}},"保存")
+        )
+      )
     )
   );
 }
 
-function ModelDetail({model,onBack,onGotoDataset}){
-  const ds=datasetsState.find(d=>d.name===model.dataset);
+function ModelDetail({model,onBack,onGotoDataset,datasets}){
+  const ds=(datasets||[]).find(d=>d.name===model.dataset);
   const col=model.accuracy>=95?C.success:model.accuracy>=85?C.primary:C.warning;
   const curves=["P曲线","R曲线","PR曲线","F1曲线","混淆矩阵","val_loss"];
   const curveColors=[C.primary,"#E8631A",C.success,"#8E44AD","#C0392B",C.primary];
@@ -677,7 +838,7 @@ function UploadModal(props){
         if(onClose) onClose();
         setName("");setFile(null);setFiles(null);setDescription("");
         alert("上传成功！");
-        window.location.reload();
+        if(onSuccess)onSuccess();
       }else{
         setError(data.error||"上传失败");
         setUploading(false);
@@ -729,7 +890,7 @@ function UploadModal(props){
         if(onClose) onClose();
         setName("");setFile(null);setFiles(null);setDescription("");
         alert("上传成功！");
-        window.location.reload();
+        if(onSuccess)onSuccess();
       }else{
         setError(data.error||"上传失败");
         setUploading(false);
@@ -1291,7 +1452,7 @@ function App(){
       ),
 
       // ===== Dataset Detail =====
-      tab==="datasets"&&selDs&&React.createElement(DatasetDetail,{ds:selDs,onBack:()=>setSelDs(null),onEditClassInfo:setEditingClassInfo}),
+      tab==="datasets"&&selDs&&React.createElement(DatasetDetail,{ds:selDs,onBack:()=>setSelDs(null),onEditClassInfo:setEditingClassInfo,onRefresh:refreshData}),
 
       // ===== Model List =====
       tab==="models"&&!selModel&&React.createElement('div',null,
@@ -1399,9 +1560,9 @@ function App(){
       ),
 
       // ===== Model Detail =====
-      tab==="models"&&selModel&&React.createElement(ModelDetail,{model:selModel,onBack:()=>setSelModel(null),onGotoDataset:gotoDs}),
+      tab==="models"&&selModel&&React.createElement(ModelDetail,{model:selModel,onBack:()=>setSelModel(null),onGotoDataset:gotoDs,datasets:datasetsState}),
       // ===== Upload Modal =====
-      showUpload && React.createElement(UploadModal,{isOpen:showUpload,onClose:function(){setShowUpload(false);},onSuccess:null}),
+      showUpload && React.createElement(UploadModal,{isOpen:showUpload,onClose:function(){setShowUpload(false);},onSuccess:refreshData}),
       // ===== Settings Modal =====
       showSettings && React.createElement(SettingsDialog,{isOpen:showSettings,onClose:function(){setShowSettings(false);}}),
       // ===== Edit Class Info Modal =====
@@ -1417,6 +1578,7 @@ function App(){
             alert("保存成功");
             await refreshData();
             setEditingClassInfo(null);
+            window.location.reload();
           }else{
             alert("保存失败: "+data.error);
           }
