@@ -19,7 +19,9 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:#F0F4F8;}
 <div id="root"></div>
 <script type="text/babel">
 const C={primary:"#1462A8",primaryBg:"#EBF3FC",primaryBd:"#BFDBF7",success:"#2E8B57",successBg:"#E8F5EE",warning:"#E67E22",warningBg:"#FEF5E7",orange:"#E8631A",orangeBg:"#FDF0E7",gray1:"#1A2332",gray2:"#3D5166",gray3:"#6B8299",gray4:"#9EAFBE",gray5:"#C8D6E1",gray6:"#E8F0F5",gray7:"#F4F7FA",bg:"#F0F4F8",white:"#FFFFFF",border:"#D8E4EE"};
-const ALGO_COLORS={"路面积水检测":{bg:C.primaryBg,border:C.primaryBd,text:C.primary},"漂浮物检测":{bg:C.successBg,border:"#A8D5C0",text:C.success},"墙面裂缝检测":{bg:C.warningBg,border:"#F9D9B0",text:C.warning},"游泳检测":{bg:"#FDE9E9",border:"#F5BCBC",text:"#C0392B"}};
+const ALGO_COLORS={"路面积水检测":{bg:C.primaryBg,border:C.primaryBd,text:C.primary},"漂浮物检测":{bg:C.successBg,border:"#A8D5C0",text:C.success},"墙面裂缝检测":{bg:C.warningBg,border:"#F9D9B0",text:C.warning},"游泳检测":{bg:"#FDE9E9",border:"#F5BCBC",text:"#C0392B"},"其他":{bg:C.gray6,border:C.border,text:C.gray2}};
+const TECH_METHOD_COLORS={"目标检测算法":{bg:"#E3F2FD",border:"#90CAF9",text:"#1565C0"},"实例分割算法":{bg:"#E8F5E9",border:"#A5D6A7",text:"#2E7D32"}};
+const ANNOTATION_COLORS={"YOLO格式":{bg:C.orangeBg,border:C.orangeBd,text:C.orange},"VOC格式":{bg:"#F3E5F5",border:"#CE93D8",text:"#7B1FA2"},"COCO格式":{bg:"#FFF3E0",border:"#FFB74D",text:"#E65100"}}
 const MODEL_CAT_COLORS={"多标签实例分割模型（双标签）":{bg:C.primaryBg,border:C.primaryBd,text:C.primary},"多标签实例分割模型（三标签）":{bg:"#E8F4FE",border:"#A8D0F5",text:"#0A4D8C"},"单标签实例分割模型（背景负样本）":{bg:C.successBg,border:"#A8D5C0",text:C.success},"单标签实例分割模型":{bg:"#EDF6E8",border:"#B0D9A0",text:"#276B27"},"单标签目标检测模型":{bg:C.orangeBg,border:"#F5C8A8",text:C.orange}};
 const DATASETS=[
 {id:1,algoType:"路面积水检测",name:"pools+dry-all+camera_yolo_dataset-292",split:"8:2",total:292,labelCount:2,labels:{pools:"-",dry_road:"-"},desc:"路面积水与干燥路面双标签数据集（基础版），样本较少，用于初步验证。",maintainDate:"2025/8/25",maintainer:"张振煊",previewCount:8},
@@ -48,7 +50,8 @@ function Tag({label,colors}){
   const c=colors||{bg:C.gray6,border:C.border,text:C.gray2};
   return React.createElement('span',{style:{display:"inline-block",padding:"2px 8px",borderRadius:"4px",fontSize:"11px",fontWeight:500,background:c.bg,border:`1px solid ${c.border}`,color:c.text,whiteSpace:"nowrap"}},label);
 }
-function AlgoTag({type}){return React.createElement(Tag,{label:type,colors:ALGO_COLORS[type]});}
+function AlgoTag({type}){return React.createElement(Tag,{label:type,colors:ALGO_COLORS[type]||ALGO_COLORS["其他"]});}
+function TechMethodTag({type}){return React.createElement(Tag,{label:type,colors:TECH_METHOD_COLORS[type]||TECH_METHOD_COLORS["目标检测算法"]});}
 function ModelCatTag({cat}){return React.createElement(Tag,{label:cat,colors:MODEL_CAT_COLORS[cat]});}
 
 function MiniHeatmap({seed,size=52}){
@@ -69,6 +72,64 @@ function MiniDistChart({seed,size=52}){
     React.createElement('rect',{width:size,height:size,fill:"#F0F7FF",rx:"2"}),
     ...heights.map((h,i)=>{const bw=size/bars-1,bh=h*(size-6);return React.createElement('rect',{key:i,x:i*(size/bars)+0.5,y:size-bh-3,width:bw,height:bh,fill:C.primary,opacity:0.55+i*0.05,rx:"1"});})
   );
+}
+
+// 真实详情图组件
+function DetailChart({datasetName,size=50}){
+  const [chartUrl,setChartUrl]=React.useState(null);
+  const [loading,setLoading]=React.useState(true);
+
+  React.useEffect(function(){
+    setLoading(true);
+    fetch("/api/dataset/"+encodeURIComponent(datasetName)+"/charts")
+      .then(function(res){return res.json();})
+      .then(function(data){
+        if(data.detail){
+          setChartUrl("/data/"+data.detail.replace("SLSD_vision/data/",""));
+        }
+        setLoading(false);
+      })
+      .catch(function(){
+        setLoading(false);
+      });
+  },[datasetName]);
+
+  if(loading){
+    return React.createElement('div',{style:{width:size,height:size,background:C.gray6,borderRadius:"3px"}});
+  }
+  if(!chartUrl){
+    return React.createElement(MiniHeatmap,{seed:Math.abs(datasetName.split("").reduce(function(a,c){return a+c.charCodeAt(0)},0)),size:size});
+  }
+  return React.createElement('img',{src:chartUrl,alt:"detail",style:{width:size,height:size,objectFit:"cover",borderRadius:"3px"}});
+}
+
+// 真实分布图组件
+function DistChart({datasetName,size=50}){
+  const [chartUrl,setChartUrl]=React.useState(null);
+  const [loading,setLoading]=React.useState(true);
+
+  React.useEffect(function(){
+    setLoading(true);
+    fetch("/api/dataset/"+encodeURIComponent(datasetName)+"/charts")
+      .then(function(res){return res.json();})
+      .then(function(data){
+        if(data.distribution){
+          setChartUrl("/data/"+data.distribution.replace("SLSD_vision/data/",""));
+        }
+        setLoading(false);
+      })
+      .catch(function(){
+        setLoading(false);
+      });
+  },[datasetName]);
+
+  if(loading){
+    return React.createElement('div',{style:{width:size,height:size,background:C.gray6,borderRadius:"3px"}});
+  }
+  if(!chartUrl){
+    return React.createElement(MiniDistChart,{seed:Math.abs(datasetName.split("").reduce(function(a,c){return a+c.charCodeAt(0)},0)),size:size});
+  }
+  return React.createElement('img',{src:chartUrl,alt:"distribution",style:{width:size,height:size,objectFit:"cover",borderRadius:"3px"}});
 }
 function MiniCurve({seed,size=48,color=C.primary}){
   const pts=Array.from({length:10},(_,i)=>Math.min(0.98,Math.max(0.1,1-Math.exp(-i*0.4)+Math.sin(seed*11+i*3.7)*0.03)));
@@ -101,11 +162,17 @@ function TablePreviewGrid({datasetName,count=4,onPreview}){
   React.useEffect(function(){
     setLoading(true);
     setError(false);
-    fetch("/api/dataset/"+encodeURIComponent(datasetName)+"/images")
+    // 使用split-images API获取可视化图片
+    fetch("/api/dataset/"+encodeURIComponent(datasetName)+"/split-images")
       .then(function(res){return res.json();})
       .then(function(data){
-        if(data.images&&data.images.length>0){
-          setImages(data.images.slice(0,count));
+        // 合并所有split的图片
+        var allImages=[];
+        if(data.train) allImages=allImages.concat(data.train);
+        if(data.val) allImages=allImages.concat(data.val);
+        if(data.test) allImages=allImages.concat(data.test);
+        if(allImages.length>0){
+          setImages(allImages.slice(0,count));
         }else{
           setError(true);
         }
@@ -159,16 +226,20 @@ function Card({children,style={}}){
 }
 
 function DatasetDetail({ds,onBack,onEditClassInfo}){
-  const [images,setImages]=React.useState([]);
+  const [splitImages,setSplitImages]=React.useState({train:[],val:[],test:[]});
   const [loading,setLoading]=React.useState(true);
   const [previewImage,setPreviewImage]=React.useState(null);
 
   React.useEffect(function(){
     setLoading(true);
-    fetch("/api/dataset/"+encodeURIComponent(ds.name)+"/images")
+    fetch("/api/dataset/"+encodeURIComponent(ds.name)+"/split-images")
       .then(function(res){return res.json();})
       .then(function(data){
-        setImages(data.images||[]);
+        setSplitImages({
+          train:data.train||[],
+          val:data.val||[],
+          test:data.test||[]
+        });
         setLoading(false);
       })
       .catch(function(){
@@ -185,6 +256,7 @@ function DatasetDetail({ds,onBack,onEditClassInfo}){
 
   // 获取新字段或默认值
   const storageType=ds.storageType||"folder";
+  const techMethod=ds.techMethod||"目标检测算法";
   const annotationType=ds.annotationType||"yolo";
   const hasTest=ds.hasTest||false;
   const bgCountTrain=ds.bgCountTrain||0;
@@ -239,6 +311,14 @@ function DatasetDetail({ds,onBack,onEditClassInfo}){
         React.createElement(Card,null,
           React.createElement(SectionTitle,null,"数据集信息"),
           React.createElement('div',{style:{fontSize:"12px",color:C.gray2,lineHeight:1.8}},
+            React.createElement('div',{style:{display:"flex",justifyContent:"space-between",marginBottom:"6px"}},
+              React.createElement('span',null,"算法类型"),
+              React.createElement('b',{style:{color:C.primary}},ds.algoType||"其他")
+            ),
+            React.createElement('div',{style:{display:"flex",justifyContent:"space-between",marginBottom:"6px"}},
+              React.createElement('span',null,"技术方法"),
+              React.createElement(TechMethodTag,{type:techMethod})
+            ),
             React.createElement('div',{style:{display:"flex",justifyContent:"space-between",marginBottom:"6px"}},
               React.createElement('span',null,"存储方式"),
               React.createElement('b',{style:{color:C.gray1}},storageType==="zip"?"压缩包":"文件夹")
@@ -330,28 +410,64 @@ function DatasetDetail({ds,onBack,onEditClassInfo}){
               )
             ),
             React.createElement('div',null,
-              React.createElement('div',{style:{fontSize:"12px",color:C.gray4,marginBottom:"8px"}},"数据相关性分布图"),
-              React.createElement('div',{style:{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"4px"}},
-                ...Array.from({length:8},(_,i)=>React.createElement(MiniDistChart,{key:i,seed:ds.id*11+i,size:64}))
+              React.createElement('div',{style:{fontSize:"12px",color:C.gray4,marginBottom:"8px"}},"数据分析图表"),
+              React.createElement('div',{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}},
+                React.createElement('div',{style:{textAlign:"center"}},
+                  React.createElement('div',{style:{fontSize:"11px",color:C.gray3,marginBottom:"4px"}},"样本分布"),
+                  React.createElement(DetailChart,{datasetName:ds.name,size:100})
+                ),
+                React.createElement('div',{style:{textAlign:"center"}},
+                  React.createElement('div',{style:{fontSize:"11px",color:C.gray3,marginBottom:"4px"}},"类别分布"),
+                  React.createElement(DistChart,{datasetName:ds.name,size:100})
+                )
               )
             )
           )
         ),
+        // 训练集预览
         React.createElement(Card,null,
-          React.createElement(SectionTitle,null,`数据集预览（共${images.length}张）`),
-          loading?React.createElement('div',{style:{padding:"40px",textAlign:"center",color:C.gray3}},"加载中..."):
-          images.length===0?React.createElement('div',{style:{padding:"40px",textAlign:"center",color:C.gray3}},"暂无图片"):
+          React.createElement(SectionTitle,null,`训练集预览（共${splitImages.train.length}张）`),
+          loading?React.createElement('div',{style:{padding:"20px",textAlign:"center",color:C.gray3}},"加载中..."):
+          splitImages.train.length===0?React.createElement('div',{style:{padding:"20px",textAlign:"center",color:C.gray3}},"暂无训练集图片"):
           React.createElement('div',{style:{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:"10px"}},
-            ...images.slice(0,ds.previewCount).map(function(img,i){
-              return React.createElement('div',{key:i,onClick:function(){setPreviewImage(img);},
+            ...splitImages.train.slice(0,8).map(function(img,i){
+              return React.createElement('div',{key:"train-"+i,onClick:function(){setPreviewImage(img);},
                 style:{aspectRatio:"16/10",background:"#f5f5f5",borderRadius:"6px",border:`1px solid ${C.border}`,position:"relative",overflow:"hidden",cursor:"pointer"},
                 title:img},
-                React.createElement('img',{src:"/data/"+img.replace("SLSD_vision/data/",""),alt:"preview",style:{width:"100%",height:"100%",objectFit:"cover"}}),
-                React.createElement('div',{style:{position:"absolute",bottom:"4px",right:"4px",background:"rgba(0,0,0,0.5)",borderRadius:"3px",padding:"2px 6px",fontSize:"10px",color:"#fff"}},`#${i+1}`)
+                React.createElement('img',{src:"/data/"+img.replace("SLSD_vision/data/",""),alt:"preview",style:{width:"100%",height:"100%",objectFit:"cover"}})
               );
             })
-          ),
-          images.length>ds.previewCount&&React.createElement('div',{style:{marginTop:"8px",textAlign:"center",fontSize:"12px",color:C.gray3}},"...")
+          )
+        ),
+        // 验证集预览
+        React.createElement(Card,null,
+          React.createElement(SectionTitle,null,`验证集预览（共${splitImages.val.length}张）`),
+          loading?React.createElement('div',{style:{padding:"20px",textAlign:"center",color:C.gray3}},"加载中..."):
+          splitImages.val.length===0?React.createElement('div',{style:{padding:"20px",textAlign:"center",color:C.gray3}},"暂无验证集图片"):
+          React.createElement('div',{style:{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:"10px"}},
+            ...splitImages.val.slice(0,8).map(function(img,i){
+              return React.createElement('div',{key:"val-"+i,onClick:function(){setPreviewImage(img);},
+                style:{aspectRatio:"16/10",background:"#f5f5f5",borderRadius:"6px",border:`1px solid ${C.border}`,position:"relative",overflow:"hidden",cursor:"pointer"},
+                title:img},
+                React.createElement('img',{src:"/data/"+img.replace("SLSD_vision/data/",""),alt:"preview",style:{width:"100%",height:"100%",objectFit:"cover"}})
+              );
+            })
+          )
+        ),
+        // 测试集预览
+        React.createElement(Card,null,
+          React.createElement(SectionTitle,null,`测试集预览（共${splitImages.test.length}张）`),
+          loading?React.createElement('div',{style:{padding:"20px",textAlign:"center",color:C.gray3}},"加载中..."):
+          splitImages.test.length===0?React.createElement('div',{style:{padding:"20px",textAlign:"center",color:C.gray3}},"无测试集"):
+          React.createElement('div',{style:{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:"10px"}},
+            ...splitImages.test.slice(0,8).map(function(img,i){
+              return React.createElement('div',{key:"test-"+i,onClick:function(){setPreviewImage(img);},
+                style:{aspectRatio:"16/10",background:"#f5f5f5",borderRadius:"6px",border:`1px solid ${C.border}`,position:"relative",overflow:"hidden",cursor:"pointer"},
+                title:img},
+                React.createElement('img',{src:"/data/"+img.replace("SLSD_vision/data/",""),alt:"preview",style:{width:"100%",height:"100%",objectFit:"cover"}})
+              );
+            })
+          )
         )
       )
     ),
@@ -440,6 +556,7 @@ function UploadModal(props){
   const onSuccess = props.onSuccess;
   const [name,setName]=React.useState("");
   const [algoType,setAlgoType]=React.useState("其他");
+  const [techMethod,setTechMethod]=React.useState("目标检测算法");
   const [description,setDescription]=React.useState("");
   const [maintainer,setMaintainer]=React.useState("管理员");
   const [file,setFile]=React.useState(null);
@@ -452,8 +569,27 @@ function UploadModal(props){
   const [progress,setProgress]=React.useState(0);
   const [showNameWarning,setShowNameWarning]=React.useState(false);
   const [nameWarningMsg,setNameWarningMsg]=React.useState("");
-  const algoTypes=["路面积水检测","漂浮物检测","墙面裂缝检测","游泳检测","其他"];
+  const [algoTypes,setAlgoTypes]=React.useState(["路面积水检测","漂浮物检测","墙面裂缝检测","游泳检测","其他"]);
+  const [techMethods,setTechMethods]=React.useState(["目标检测算法","实例分割算法"]);
   const annotationTypes=["yolo","voc","coco"];
+
+  React.useEffect(function(){
+    if(isOpen){
+      fetch("/api/settings")
+        .then(function(res){return res.json();})
+        .then(function(data){
+          if(data.algo_types&&data.algo_types.length>0){
+            setAlgoTypes(data.algo_types);
+            setAlgoType(data.algo_types[0]);
+          }
+          if(data.tech_methods&&data.tech_methods.length>0){
+            setTechMethods(data.tech_methods);
+            setTechMethod(data.tech_methods[0]);
+          }
+        })
+        .catch(function(){});
+    }
+  },[isOpen]);
 
   if(!isOpen) return null;
 
@@ -567,6 +703,7 @@ function UploadModal(props){
     }
     formData.append("name",name);
     formData.append("algoType",algoType);
+    formData.append("techMethod",techMethod);
     formData.append("description",description);
     formData.append("maintainer",maintainer);
     formData.append("uploadMode",uploadMode);
@@ -629,14 +766,17 @@ function UploadModal(props){
             style:{width:"100%",padding:"10px 12px",border:"1px solid "+C.border,borderRadius:"6px",fontSize:"13px",outline:"none"}})
         ),
         React.createElement('div',{style:{marginBottom:"16px"}},
-          React.createElement('label',{style:{display:"block",fontSize:"13px",fontWeight:500,color:C.gray2,marginBottom:"6px"}},"算法类型"),
+          React.createElement('label',{style:{display:"block",fontSize:"13px",fontWeight:500,color:C.gray2,marginBottom:"6px"}},"算法类型（应用场景）"),
           React.createElement('select',{value:algoType,onChange:function(e){setAlgoType(e.target.value);},
             style:{width:"100%",padding:"10px 12px",border:"1px solid "+C.border,borderRadius:"6px",fontSize:"13px",outline:"none",background:"white"}},
-            React.createElement('option',{value:"路面积水检测"},"路面积水检测"),
-            React.createElement('option',{value:"漂浮物检测"},"漂浮物检测"),
-            React.createElement('option',{value:"墙面裂缝检测"},"墙面裂缝检测"),
-            React.createElement('option',{value:"游泳检测"},"游泳检测"),
-            React.createElement('option',{value:"其他"},"其他")
+            ...algoTypes.map(function(t){return React.createElement('option',{key:t,value:t},t);})
+          )
+        ),
+        React.createElement('div',{style:{marginBottom:"16px"}},
+          React.createElement('label',{style:{display:"block",fontSize:"13px",fontWeight:500,color:C.gray2,marginBottom:"6px"}},"技术方法"),
+          React.createElement('select',{value:techMethod,onChange:function(e){setTechMethod(e.target.value);},
+            style:{width:"100%",padding:"10px 12px",border:"1px solid "+C.border,borderRadius:"6px",fontSize:"13px",outline:"none",background:"white"}},
+            ...techMethods.map(function(t){return React.createElement('option',{key:t,value:t},t);})
           )
         ),
         React.createElement('div',{style:{marginBottom:"16px"}},
@@ -710,8 +850,162 @@ function UploadModal(props){
   );
 }
 
+// 设置弹窗组件
+function SettingsDialog({isOpen,onClose}){
+  const [algoTypes,setAlgoTypes]=React.useState(["路面积水检测","漂浮物检测","墙面裂缝检测","游泳检测","其他"]);
+  const [techMethods,setTechMethods]=React.useState(["目标检测算法","实例分割算法"]);
+  const [annotationTypes,setAnnotationTypes]=React.useState(["YOLO格式","VOC格式","COCO格式"]);
+  const [newAlgoType,setNewAlgoType]=React.useState("");
+  const [newTechMethod,setNewTechMethod]=React.useState("");
+  const [newAnnotationType,setNewAnnotationType]=React.useState("");
+  const [loading,setLoading]=React.useState(true);
+
+  React.useEffect(function(){
+    if(isOpen){
+      setLoading(true);
+      fetch("/api/settings")
+        .then(function(res){return res.json();})
+        .then(function(data){
+          if(data.algo_types) setAlgoTypes(data.algo_types);
+          if(data.tech_methods) setTechMethods(data.tech_methods);
+          if(data.annotation_types) setAnnotationTypes(data.annotation_types);
+          setLoading(false);
+        })
+        .catch(function(){
+          setLoading(false);
+        });
+    }
+  },[isOpen]);
+
+  if(!isOpen) return null;
+
+  const handleSave=function(){
+    fetch("/api/settings",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        algoTypes:algoTypes,
+        techMethods:techMethods,
+        annotationTypes:annotationTypes
+      })
+    })
+    .then(function(res){return res.json();})
+    .then(function(data){
+      if(data.success){
+        alert("设置已保存");
+        onClose();
+      }else{
+        alert("保存失败: "+data.error);
+      }
+    })
+    .catch(function(err){
+      alert("保存失败: "+err.message);
+    });
+  };
+
+  const handleAddAlgoType=function(){
+    if(newAlgoType&&!algoTypes.includes(newAlgoType)){
+      setAlgoTypes(algoTypes.concat(newAlgoType));
+      setNewAlgoType("");
+    }
+  };
+
+  const handleAddTechMethod=function(){
+    if(newTechMethod&&!techMethods.includes(newTechMethod)){
+      setTechMethods(techMethods.concat(newTechMethod));
+      setNewTechMethod("");
+    }
+  };
+
+  const handleAddAnnotationType=function(){
+    if(newAnnotationType&&!annotationTypes.includes(newAnnotationType)){
+      setAnnotationTypes(annotationTypes.concat(newAnnotationType));
+      setNewAnnotationType("");
+    }
+  };
+
+  const handleRemoveAlgoType=function(type){
+    setAlgoTypes(algoTypes.filter(t=>t!==type));
+  };
+
+  const handleRemoveTechMethod=function(type){
+    setTechMethods(techMethods.filter(t=>t!==type));
+  };
+
+  const handleRemoveAnnotationType=function(type){
+    setAnnotationTypes(annotationTypes.filter(t=>t!==type));
+  };
+
+  return React.createElement('div',{
+    style:{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:10000},
+    onClick:function(e){if(e.target===e.currentTarget&&onClose)onClose();}
+  },
+    React.createElement('div',{style:{background:C.white,borderRadius:"12px",width:"600px",maxHeight:"80vh",overflow:"auto",boxShadow:"0 20px 60px rgba(0,0,0,0.3)"},
+      onClick:function(e){e.stopPropagation();}},
+      React.createElement('div',{style:{padding:"20px 24px",borderBottom:"1px solid "+C.border,display:"flex",justifyContent:"space-between",alignItems:"center"}},
+        React.createElement('h3',{style:{fontSize:"16px",fontWeight:600,color:C.gray1}},"系统设置"),
+        React.createElement('button',{onClick:onClose,style:{background:"none",border:"none",cursor:"pointer",fontSize:"20px",color:C.gray3}},"×")
+      ),
+      React.createElement('div',{style:{padding:"20px 24px"}},
+        React.createElement('div',{style:{marginBottom:"24px"}},
+          React.createElement('h4',{style:{fontSize:"14px",fontWeight:600,color:C.gray1,marginBottom:"12px"}},"算法类型（应用场景）"),
+          React.createElement('div',{style:{display:"flex",flexWrap:"wrap",gap:"8px",marginBottom:"12px"}},
+            ...algoTypes.map(function(type){
+              return React.createElement('span',{key:type,style:{display:"inline-flex",alignItems:"center",gap:"4px",background:C.primaryBg,color:C.primary,border:"1px solid "+C.primaryBd,borderRadius:"20px",padding:"4px 10px",fontSize:"12px"}},
+                type,
+                React.createElement('button',{onClick:function(){handleRemoveAlgoType(type);},style:{background:"none",border:"none",cursor:"pointer",color:C.primary,fontSize:"14px",padding:"0",lineHeight:"1"}},"×")
+              );
+            })
+          ),
+          React.createElement('div',{style:{display:"flex",gap:"8px"}},
+            React.createElement('input',{value:newAlgoType,onChange:function(e){setNewAlgoType(e.target.value);},placeholder:"新增算法类型",
+              style:{flex:1,padding:"8px 12px",border:"1px solid "+C.border,borderRadius:"6px",fontSize:"13px"}}),
+            React.createElement('button',{onClick:handleAddAlgoType,style:{padding:"8px 16px",background:C.primary,color:"white",border:"none",borderRadius:"6px",cursor:"pointer",fontSize:"13px"}},"添加")
+          )
+        ),
+        React.createElement('div',{style:{marginBottom:"24px"}},
+          React.createElement('h4',{style:{fontSize:"14px",fontWeight:600,color:C.gray1,marginBottom:"12px"}},"技术方法"),
+          React.createElement('div',{style:{display:"flex",flexWrap:"wrap",gap:"8px",marginBottom:"12px"}},
+            ...techMethods.map(function(type){
+              return React.createElement('span',{key:type,style:{display:"inline-flex",alignItems:"center",gap:"4px",background:"#E8F5E9",color:"#2E7D32",border:"1px solid #A5D6A7",borderRadius:"20px",padding:"4px 10px",fontSize:"12px"}},
+                type,
+                React.createElement('button',{onClick:function(){handleRemoveTechMethod(type);},style:{background:"none",border:"none",cursor:"pointer",color:"#2E7D32",fontSize:"14px",padding:"0",lineHeight:"1"}},"×")
+              );
+            })
+          ),
+          React.createElement('div',{style:{display:"flex",gap:"8px"}},
+            React.createElement('input',{value:newTechMethod,onChange:function(e){setNewTechMethod(e.target.value);},placeholder:"新增技术方法",
+              style:{flex:1,padding:"8px 12px",border:"1px solid "+C.border,borderRadius:"6px",fontSize:"13px"}}),
+            React.createElement('button',{onClick:handleAddTechMethod,style:{padding:"8px 16px",background:"#2E7D32",color:"white",border:"none",borderRadius:"6px",cursor:"pointer",fontSize:"13px"}},"添加")
+          )
+        ),
+        React.createElement('div',{style:{marginBottom:"24px"}},
+          React.createElement('h4',{style:{fontSize:"14px",fontWeight:600,color:C.gray1,marginBottom:"12px"}},"标注方法"),
+          React.createElement('div',{style:{display:"flex",flexWrap:"wrap",gap:"8px",marginBottom:"12px"}},
+            ...annotationTypes.map(function(type){
+              return React.createElement('span',{key:type,style:{display:"inline-flex",alignItems:"center",gap:"4px",background:C.orangeBg,color:C.orange,border:"1px solid "+C.orangeBd,borderRadius:"20px",padding:"4px 10px",fontSize:"12px"}},
+                type,
+                React.createElement('button',{onClick:function(){handleRemoveAnnotationType(type);},style:{background:"none",border:"none",cursor:"pointer",color:C.orange,fontSize:"14px",padding:"0",lineHeight:"1"}},"×")
+              );
+            })
+          ),
+          React.createElement('div',{style:{display:"flex",gap:"8px"}},
+            React.createElement('input',{value:newAnnotationType,onChange:function(e){setNewAnnotationType(e.target.value);},placeholder:"新增标注方法",
+              style:{flex:1,padding:"8px 12px",border:"1px solid "+C.border,borderRadius:"6px",fontSize:"13px"}}),
+            React.createElement('button',{onClick:handleAddAnnotationType,style:{padding:"8px 16px",background:C.orange,color:"white",border:"none",borderRadius:"6px",cursor:"pointer",fontSize:"13px"}},"添加")
+          )
+        )
+      ),
+      React.createElement('div',{style:{padding:"16px 24px",borderTop:"1px solid "+C.border,display:"flex",justifyContent:"flex-end",gap:"12px"}},
+        React.createElement('button',{onClick:handleSave,
+          style:{padding:"10px 24px",border:"none",borderRadius:"6px",background:C.primary,color:"white",cursor:"pointer",fontSize:"13px",fontWeight:500}},"保存并关闭")
+      )
+    )
+  );
+}
+
 function App(){
-  const [tab,setTab]=React.useState("datasets");
+  const [tab,setTab]=React.useState("overview");
   const [selDs,setSelDs]=React.useState(null);
   const [selModel,setSelModel]=React.useState(null);
   const [dsSearch,setDsSearch]=React.useState("");
@@ -719,6 +1013,7 @@ function App(){
   const [mSearch,setMSearch]=React.useState("");
   const [mFilter,setMFilter]=React.useState("全部");
   const [showUpload,setShowUpload]=React.useState(false);
+  const [showSettings,setShowSettings]=React.useState(false);
   const [editingClassInfo,setEditingClassInfo]=React.useState(null);
   const [datasetsState,setDatasetsState]=React.useState(window.DATASETS);
   const [modelsState,setModelsState]=React.useState(window.MODELS);
@@ -738,6 +1033,27 @@ function App(){
       }
     }catch(err){
       alert("删除失败: "+err.message);
+    }
+  };
+
+  const downloadDataset=async (name,e)=>{
+    e.stopPropagation();
+    try{
+      const res = await fetch("/api/dataset/"+encodeURIComponent(name)+"/download");
+      const data = await res.json();
+      if(data.success){
+        // 触发下载
+        const link = document.createElement('a');
+        link.href = data.download_url;
+        link.download = data.filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }else{
+        alert("下载失败: "+data.error);
+      }
+    }catch(err){
+      alert("下载失败: "+err.message);
     }
   };
 
@@ -784,8 +1100,10 @@ function App(){
         ),
         React.createElement('span',{style:{fontWeight:700,fontSize:"16px",color:"white",letterSpacing:"0.5px"}},"机器视觉管理平台")
       ),
+      navBtn("overview","全体总览"),
       navBtn("datasets","数据集管理"),
       navBtn("models","算法模型管理"),
+      React.createElement('button',{onClick:()=>setShowSettings(true),style:{background:tab==="settings"?"rgba(255,255,255,0.2)":"transparent",border:"none",borderRadius:"6px",padding:"7px 16px",color:"white",cursor:"pointer",fontSize:"14px",fontWeight:tab==="settings"?600:400,fontFamily:"inherit",opacity:tab==="settings"?1:0.8}},"设置"),
       React.createElement('div',{style:{marginLeft:"auto",display:"flex",alignItems:"center",gap:"8px"}},
         React.createElement('div',{style:{width:"30px",height:"30px",borderRadius:"50%",background:"rgba(255,255,255,0.2)",border:"2px solid rgba(255,255,255,0.4)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"12px",fontWeight:700,color:"white"}},"管"),
         React.createElement('span',{style:{fontSize:"13px",color:"rgba(255,255,255,0.85)"}},"管理员")
@@ -794,6 +1112,117 @@ function App(){
 
     // Content
     React.createElement('div',{style:{flex:1,overflow:"auto",padding:"20px 24px"}},
+
+      // ===== Overview Page =====
+      tab==="overview"&&React.createElement('div',null,
+        React.createElement('div',{style:{marginBottom:"16px"}},
+          React.createElement('h2',{style:{fontSize:"18px",fontWeight:700,color:C.gray1}},"全体总览")
+        ),
+        // 统计卡片
+        React.createElement('div',{style:{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:"16px",marginBottom:"24px"}},
+          React.createElement(Card,{style:{padding:"20px",textAlign:"center"}},
+            React.createElement('div',{style:{fontSize:"36px",fontWeight:700,color:C.primary}},datasetsState.length),
+            React.createElement('div',{style:{fontSize:"13px",color:C.gray3,marginTop:"4px"}},"数据集总数")
+          ),
+          React.createElement(Card,{style:{padding:"20px",textAlign:"center"}},
+            React.createElement('div',{style:{fontSize:"36px",fontWeight:700,color:C.primary}},modelsState.length),
+            React.createElement('div',{style:{fontSize:"13px",color:C.gray3,marginTop:"4px"}},"模型总数")
+          ),
+          React.createElement(Card,{style:{padding:"20px",textAlign:"center"}},
+            React.createElement('div',{style:{fontSize:"36px",fontWeight:700,color:C.success}},datasetsState.reduce((s,d)=>s+d.total,0).toLocaleString()),
+            React.createElement('div',{style:{fontSize:"13px",color:C.gray3,marginTop:"4px"}},"样本总数")
+          ),
+          React.createElement(Card,{style:{padding:"20px",textAlign:"center"}},
+            React.createElement('div',{style:{fontSize:"36px",fontWeight:700,color:C.orange}},"-"),
+            React.createElement('div',{style:{fontSize:"13px",color:C.gray3,marginTop:"4px"}},"部署现场数")
+          )
+        ),
+        // 详细统计
+        React.createElement('div',{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"16px"}},
+          React.createElement(Card,{style:{padding:"20px"}},
+            React.createElement(SectionTitle,null,"数据集分布"),
+            React.createElement('div',{style:{marginTop:"12px"}},
+              React.createElement('div',{style:{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid "+C.gray6}},
+                React.createElement('span',{style:{color:C.gray2}},"算法类型分布"),
+                React.createElement('span',{style:{fontWeight:600,color:C.gray1}})
+              ),
+              ...Object.entries(datasetsState.reduce((acc,d)=>{
+                const t=d.algoType||"其他";
+                acc[t]=(acc[t]||0)+1;
+                return acc;
+              },{})).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([type,count])=>
+                React.createElement('div',{key:type,style:{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid "+C.gray6}},
+                  React.createElement('span',{style:{color:C.gray2}},type),
+                  React.createElement('span',{style:{fontWeight:600,color:C.primary}},count)
+                )
+              )
+            ),
+            React.createElement('div',{style:{marginTop:"16px"}},
+              React.createElement('div',{style:{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid "+C.gray6}},
+                React.createElement('span',{style:{color:C.gray2}},"技术方法分布"),
+                React.createElement('span',{style:{fontWeight:600,color:C.gray1}})
+              ),
+              ...Object.entries(datasetsState.reduce((acc,d)=>{
+                const t=d.techMethod||"目标检测算法";
+                acc[t]=(acc[t]||0)+1;
+                return acc;
+              },{})).sort((a,b)=>b[1]-a[1]).map(([type,count])=>
+                React.createElement('div',{key:type,style:{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid "+C.gray6}},
+                  React.createElement('span',{style:{color:C.gray2}},type),
+                  React.createElement('span',{style:{fontWeight:600,color:"#2E7D32"}},count)
+                )
+              )
+            )
+          ),
+          React.createElement(Card,{style:{padding:"20px"}},
+            React.createElement(SectionTitle,null,"样本统计"),
+            React.createElement('div',{style:{marginTop:"12px"}},
+              React.createElement('div',{style:{display:"flex",justifyContent:"space-between",padding:"10px 0",borderBottom:"1px solid "+C.gray6}},
+                React.createElement('span',{style:{color:C.gray2}},"训练集样本"),
+                React.createElement('span',{style:{fontWeight:600,color:C.primary}},datasetsState.reduce((s,d)=>s+(d.imgCountTrain||0),0).toLocaleString())
+              ),
+              React.createElement('div',{style:{display:"flex",justifyContent:"space-between",padding:"10px 0",borderBottom:"1px solid "+C.gray6}},
+                React.createElement('span',{style:{color:C.gray2}},"验证集样本"),
+                React.createElement('span',{style:{fontWeight:600,color:C.orange}},datasetsState.reduce((s,d)=>s+(d.imgCountVal||0),0).toLocaleString())
+              ),
+              React.createElement('div',{style:{display:"flex",justifyContent:"space-between",padding:"10px 0",borderBottom:"1px solid "+C.gray6}},
+                React.createElement('span',{style:{color:C.gray2}},"测试集样本"),
+                React.createElement('span',{style:{fontWeight:600,color:C.success}},datasetsState.reduce((s,d)=>s+(d.imgCountTest||0),0).toLocaleString())
+              ),
+              React.createElement('div',{style:{display:"flex",justifyContent:"space-between",padding:"10px 0",borderBottom:"1px solid "+C.gray6}},
+                React.createElement('span',{style:{color:C.gray2}},"背景图片"),
+                React.createElement('span',{style:{fontWeight:600,color:C.gray1}},datasetsState.reduce((s,d)=>s+(d.bgCountTotal||0),0).toLocaleString())
+              ),
+              React.createElement('div',{style:{display:"flex",justifyContent:"space-between",padding:"10px 0",borderBottom:"1px solid "+C.gray6}},
+                React.createElement('span',{style:{color:C.gray2}},"已标注样本"),
+                React.createElement('span',{style:{fontWeight:600,color:C.primary}},datasetsState.reduce((s,d)=>s+(d.labelCount||0),0).toLocaleString())
+              ),
+              React.createElement('div',{style:{display:"flex",justifyContent:"space-between",padding:"10px 0"}},
+                React.createElement('span',{style:{color:C.gray2}},"总类别数"),
+                React.createElement('span',{style:{fontWeight:600,color:C.gray1}},Object.keys(datasetsState.reduce((acc,d)=>{Object.keys(d.classInfo||{}).forEach(k=>acc[k]=1);return acc;},{})).length)
+              )
+            )
+          )
+        ),
+        // 最近的5个数据集
+        React.createElement(Card,{style:{padding:"20px",marginTop:"16px"}},
+          React.createElement(SectionTitle,null,"最近添加的数据集"),
+          React.createElement('div',{style:{marginTop:"12px"}},
+            ...datasetsState.slice(0,5).map(function(ds,idx){
+              return React.createElement('div',{key:ds.id,style:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0",borderBottom:idx<4?"1px solid "+C.gray6:"none"}},
+                React.createElement('div',null,
+                  React.createElement('div',{style:{fontWeight:500,color:C.gray1}},ds.name),
+                  React.createElement('div',{style:{fontSize:"12px",color:C.gray3}},ds.maintainDate+" · "+ds.algoType)
+                ),
+                React.createElement('div',{style:{textAlign:"right"}},
+                  React.createElement('div',{style:{fontWeight:600,color:C.primary}},ds.total.toLocaleString()),
+                  React.createElement('div',{style:{fontSize:"12px",color:C.gray3}},"样本")
+                )
+              );
+            })
+          )
+        )
+      ),
 
       // ===== Dataset List =====
       tab==="datasets"&&!selDs&&React.createElement('div',null,
@@ -816,7 +1245,7 @@ function App(){
             React.createElement('table',{style:{width:"100%",borderCollapse:"collapse",minWidth:"1180px"}},
               React.createElement('thead',null,
                 React.createElement('tr',{style:{background:C.gray7,borderBottom:`2px solid ${C.border}`}},
-                  ...[["编号","48px",true],["算法类型","110px",true],["数据集名称","210px",false],["分配比例","70px",true],["样本数量","72px",true],["详情图","84px",true],["分布图","84px",true],["标签数","64px",true],["类别统计","145px",false],["数据集预览","160px",false],["数据集概述","185px",false],["维护日期","86px",true],["维护人员","72px",true],["操作","60px",true]].map(([l,w,c])=>
+                  ...[["编号","48px",true],["算法类型","110px",true],["技术方法","110px",true],["数据集名称","210px",false],["分配比例","70px",true],["样本数量","72px",true],["详情图","84px",true],["分布图","84px",true],["标签数","64px",true],["类别统计","145px",false],["数据集预览","160px",false],["数据集概述","185px",false],["维护日期","86px",true],["维护人员","72px",true],["操作","110px",true]].map(([l,w,c])=>
                     React.createElement('th',{key:l,style:th(w,c)},l)
                   )
                 )
@@ -828,11 +1257,12 @@ function App(){
                   style:{cursor:"pointer",background:idx%2===0?C.white:"#FAFCFE",transition:"background .1s"}},
                   React.createElement('td',{style:td("48px",true)},React.createElement('span',{style:{fontWeight:600,color:C.gray4}},ds.id)),
                   React.createElement('td',{style:td("110px",true)},React.createElement(AlgoTag,{type:ds.algoType})),
+                  React.createElement('td',{style:td("110px",true)},React.createElement(TechMethodTag,{type:ds.techMethod||"目标检测算法"})),
                   React.createElement('td',{style:td("210px")},React.createElement('div',{style:{color:C.primary,fontWeight:500,fontSize:"12px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"200px"},title:ds.name},ds.name)),
                   React.createElement('td',{style:td("70px",true)},React.createElement('span',{style:{background:C.primaryBg,color:C.primary,border:`1px solid ${C.primaryBd}`,borderRadius:"4px",padding:"2px 6px",fontSize:"11px",fontWeight:600}},ds.split)),
                   React.createElement('td',{style:td("72px",true)},React.createElement('span',{style:{fontWeight:700,color:C.gray1,fontSize:"13px"}},ds.total.toLocaleString())),
-                  React.createElement('td',{style:td("84px",true)},React.createElement('div',{style:{display:"flex",justifyContent:"center"}},React.createElement(MiniHeatmap,{seed:ds.id*7,size:50}))),
-                  React.createElement('td',{style:td("84px",true)},React.createElement('div',{style:{display:"flex",justifyContent:"center"}},React.createElement(MiniDistChart,{seed:ds.id*11,size:50}))),
+                  React.createElement('td',{style:td("84px",true)},React.createElement('div',{style:{display:"flex",justifyContent:"center"}},React.createElement(DetailChart,{datasetName:ds.name,size:50}))),
+                  React.createElement('td',{style:td("84px",true)},React.createElement('div',{style:{display:"flex",justifyContent:"center"}},React.createElement(DistChart,{datasetName:ds.name,size:50}))),
                   React.createElement('td',{style:td("64px",true)},React.createElement('span',{style:{background:C.primaryBg,color:C.primary,border:`1px solid ${C.primaryBd}`,borderRadius:"12px",padding:"2px 8px",fontSize:"11px",fontWeight:600}},Object.keys(ds.classInfo||{}).length)),
                   React.createElement('td',{style:td("145px")},
                     Object.keys(ds.classInfo||{}).length>0?
@@ -849,7 +1279,10 @@ function App(){
                   React.createElement('td',{style:td("185px")},React.createElement('div',{style:{fontSize:"11px",color:C.gray2,lineHeight:1.6,display:"-webkit-box",WebkitLineClamp:3,WebkitBoxOrient:"vertical",overflow:"hidden"}},ds.desc)),
                   React.createElement('td',{style:td("86px",true)},React.createElement('span',{style:{fontSize:"11px",color:C.gray3}},ds.maintainDate)),
                   React.createElement('td',{style:td("72px",true)},React.createElement('span',{style:{fontSize:"11px",color:C.gray2,fontWeight:500}},ds.maintainer)),
-                  React.createElement('td',{style:td("60px",true)},React.createElement('button',{onClick:(e)=>deleteDataset(ds.name,e),title:"删除数据集",style:{background:"#FEE2E2",color:"#DC2626",border:"none",borderRadius:"4px",padding:"4px 8px",fontSize:"11px",cursor:"pointer",fontWeight:500}},"删除"))
+                  React.createElement('td',{style:td("110px",true)},React.createElement('div',{style:{display:"flex",gap:"6px"}},
+                    React.createElement('button',{onClick:(e)=>downloadDataset(ds.name,e),title:"下载数据集",style:{background:C.primary,color:"white",border:"none",borderRadius:"4px",padding:"4px 8px",fontSize:"11px",cursor:"pointer",fontWeight:500}},"下载"),
+                    React.createElement('button',{onClick:(e)=>deleteDataset(ds.name,e),title:"删除数据集",style:{background:"#FEE2E2",color:"#DC2626",border:"none",borderRadius:"4px",padding:"4px 8px",fontSize:"11px",cursor:"pointer",fontWeight:500}},"删除")
+                  ))
                 ))
               )
             )
@@ -925,10 +1358,52 @@ function App(){
         )
       ),
 
+      // ===== Settings Page =====
+      tab==="settings"&&React.createElement('div',null,
+        React.createElement('div',{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"16px"}},
+          React.createElement('div',null,
+            React.createElement('h2',{style:{fontSize:"18px",fontWeight:700,color:C.gray1}},"系统设置")
+          ),
+          React.createElement('button',{onClick:()=>setShowSettings(true),style:{background:C.primary,color:"white",border:"none",borderRadius:"7px",padding:"8px 18px",cursor:"pointer",fontSize:"13px",fontWeight:500,fontFamily:"inherit"}},"管理设置")
+        ),
+        React.createElement(Card,{style:{padding:"24px"}},
+          React.createElement('div',{style:{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:"20px"}},
+            React.createElement('div',{style:{padding:"20px",background:C.gray7,borderRadius:"8px"}},
+              React.createElement('h4',{style:{fontSize:"14px",fontWeight:600,color:C.gray1,marginBottom:"8px"}},"算法类型"),
+              React.createElement('p',{style:{fontSize:"12px",color:C.gray3,marginBottom:"12px"}},"管理数据集的算法类型（应用场景）"),
+              React.createElement('div',{style:{display:"flex",flexWrap:"wrap",gap:"6px"}},
+                React.createElement('span',{style:{fontSize:"12px",background:C.primaryBg,color:C.primary,borderRadius:"12px",padding:"3px 10px"}},"路面积水检测"),
+                React.createElement('span',{style:{fontSize:"12px",background:C.primaryBg,color:C.primary,borderRadius:"12px",padding:"3px 10px"}},"漂浮物检测"),
+                React.createElement('span',{style:{fontSize:"12px",background:C.primaryBg,color:C.primary,borderRadius:"12px",padding:"3px 10px"}},"墙面裂缝检测")
+              )
+            ),
+            React.createElement('div',{style:{padding:"20px",background:"#E8F5E9",borderRadius:"8px"}},
+              React.createElement('h4',{style:{fontSize:"14px",fontWeight:600,color:C.gray1,marginBottom:"8px"}},"技术方法"),
+              React.createElement('p',{style:{fontSize:"12px",color:C.gray3,marginBottom:"12px"}},"管理技术实现方法"),
+              React.createElement('div',{style:{display:"flex",flexWrap:"wrap",gap:"6px"}},
+                React.createElement('span',{style:{fontSize:"12px",background:"#C8E6C9",color:"#2E7D32",borderRadius:"12px",padding:"3px 10px"}},"目标检测算法"),
+                React.createElement('span',{style:{fontSize:"12px",background:"#C8E6C9",color:"#2E7D32",borderRadius:"12px",padding:"3px 10px"}},"实例分割算法")
+              )
+            ),
+            React.createElement('div',{style:{padding:"20px",background:C.orangeBg,borderRadius:"8px"}},
+              React.createElement('h4',{style:{fontSize:"14px",fontWeight:600,color:C.gray1,marginBottom:"8px"}},"标注方法"),
+              React.createElement('p',{style:{fontSize:"12px",color:C.gray3,marginBottom:"12px"}},"管理标注数据格式"),
+              React.createElement('div',{style:{display:"flex",flexWrap:"wrap",gap:"6px"}},
+                React.createElement('span',{style:{fontSize:"12px",background:"#FFE0B2",color:C.orange,borderRadius:"12px",padding:"3px 10px"}},"YOLO格式"),
+                React.createElement('span',{style:{fontSize:"12px",background:"#FFE0B2",color:C.orange,borderRadius:"12px",padding:"3px 10px"}},"VOC格式"),
+                React.createElement('span',{style:{fontSize:"12px",background:"#FFE0B2",color:C.orange,borderRadius:"12px",padding:"3px 10px"}},"COCO格式")
+              )
+            )
+          )
+        )
+      ),
+
       // ===== Model Detail =====
       tab==="models"&&selModel&&React.createElement(ModelDetail,{model:selModel,onBack:()=>setSelModel(null),onGotoDataset:gotoDs}),
       // ===== Upload Modal =====
       showUpload && React.createElement(UploadModal,{isOpen:showUpload,onClose:function(){setShowUpload(false);},onSuccess:null}),
+      // ===== Settings Modal =====
+      showSettings && React.createElement(SettingsDialog,{isOpen:showSettings,onClose:function(){setShowSettings(false);}}),
       // ===== Edit Class Info Modal =====
       editingClassInfo && React.createElement(EditClassInfoModal,{ds:editingClassInfo,onClose:function(){setEditingClassInfo(null);},onSave:async function(newClassInfo){
         try{

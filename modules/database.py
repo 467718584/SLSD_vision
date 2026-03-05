@@ -29,6 +29,7 @@ def init_database():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT UNIQUE NOT NULL,
             algo_type TEXT,
+            tech_method TEXT DEFAULT '目标检测算法',
             description TEXT,
             split TEXT,
             total INTEGER DEFAULT 0,
@@ -77,6 +78,23 @@ def init_database():
         )
     ''')
 
+    # 设置表
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS settings (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            algo_types TEXT DEFAULT '["路面积水检测","漂浮物检测","墙面裂缝检测","游泳检测","其他"]',
+            tech_methods TEXT DEFAULT '["目标检测算法","实例分割算法"]',
+            annotation_types TEXT DEFAULT '["YOLO格式","VOC格式","COCO格式"]',
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    # 初始化默认设置
+    cursor.execute('INSERT OR IGNORE INTO settings (id, algo_types, tech_methods, annotation_types) VALUES (1, ?, ?, ?)',
+        (json.dumps(["路面积水检测","漂浮物检测","墙面裂缝检测","游泳检测","其他"]),
+         json.dumps(["目标检测算法","实例分割算法"]),
+         json.dumps(["YOLO格式","VOC格式","COCO格式"])))
+
     conn.commit()
     conn.close()
 
@@ -100,7 +118,8 @@ def migrate_database(conn, cursor):
         'img_count_train': 'ALTER TABLE datasets ADD COLUMN img_count_train INTEGER DEFAULT 0',
         'img_count_val': 'ALTER TABLE datasets ADD COLUMN img_count_val INTEGER DEFAULT 0',
         'img_count_test': 'ALTER TABLE datasets ADD COLUMN img_count_test INTEGER DEFAULT 0',
-        'class_info': 'ALTER TABLE datasets ADD COLUMN class_info TEXT'
+        'class_info': 'ALTER TABLE datasets ADD COLUMN class_info TEXT',
+        'tech_method': 'ALTER TABLE datasets ADD COLUMN tech_method TEXT DEFAULT "目标检测算法"'
     }
 
     for col, sql in new_columns.items():
@@ -118,11 +137,12 @@ def add_dataset(data):
 
     cursor.execute('''
         INSERT OR REPLACE INTO datasets
-        (name, algo_type, description, split, total, label_count, labels, maintain_date, maintainer, preview_count, annotation_format, storage_type, annotation_type, split_ratio, has_test, bg_count_train, bg_count_val, bg_count_test, bg_count_total, img_count_train, img_count_val, img_count_test, class_info, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (name, algo_type, tech_method, description, split, total, label_count, labels, maintain_date, maintainer, preview_count, annotation_format, storage_type, annotation_type, split_ratio, has_test, bg_count_train, bg_count_val, bg_count_test, bg_count_total, img_count_train, img_count_val, img_count_test, class_info, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
         data.get('name'),
         data.get('algo_type'),
+        data.get('tech_method', '目标检测算法'),
         data.get('description'),
         data.get('split'),
         data.get('total', 0),
@@ -146,6 +166,45 @@ def add_dataset(data):
         json.dumps(data.get('class_info', {}), ensure_ascii=False),
         datetime.now().isoformat()
     ))
+
+    conn.commit()
+    conn.close()
+
+
+def get_settings():
+    """获取系统设置"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT algo_types, tech_methods, annotation_types FROM settings WHERE id = 1')
+    row = cursor.fetchone()
+    conn.close()
+    if row:
+        return {
+            'algo_types': json.loads(row[0]) if row[0] else ["路面积水检测","漂浮物检测","墙面裂缝检测","游泳检测","其他"],
+            'tech_methods': json.loads(row[1]) if row[1] else ["目标检测算法","实例分割算法"],
+            'annotation_types': json.loads(row[2]) if row[2] else ["YOLO格式","VOC格式","COCO格式"]
+        }
+    return {
+        'algo_types': ["路面积水检测","漂浮物检测","墙面裂缝检测","游泳检测","其他"],
+        'tech_methods': ["目标检测算法","实例分割算法"],
+        'annotation_types': ["YOLO格式","VOC格式","COCO格式"]
+    }
+
+
+def update_settings(algo_types=None, tech_methods=None, annotation_types=None):
+    """更新系统设置"""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    if algo_types is not None:
+        cursor.execute('UPDATE settings SET algo_types = ?, updated_at = ? WHERE id = 1',
+            (json.dumps(algo_types, ensure_ascii=False), datetime.now().isoformat()))
+    if tech_methods is not None:
+        cursor.execute('UPDATE settings SET tech_methods = ?, updated_at = ? WHERE id = 1',
+            (json.dumps(tech_methods, ensure_ascii=False), datetime.now().isoformat()))
+    if annotation_types is not None:
+        cursor.execute('UPDATE settings SET annotation_types = ?, updated_at = ? WHERE id = 1',
+            (json.dumps(annotation_types, ensure_ascii=False), datetime.now().isoformat()))
 
     conn.commit()
     conn.close()

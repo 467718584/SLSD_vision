@@ -6,7 +6,7 @@ from config import SUPPORTED_IMAGE_FORMATS
 
 def parse_yolo(annotation_file, image_width, image_height):
     """
-    解析YOLO格式标注文件
+    解析YOLO格式标注文件（支持目标检测和实例分割）
 
     Args:
         annotation_file: 标注文件路径
@@ -15,6 +15,7 @@ def parse_yolo(annotation_file, image_width, image_height):
 
     Returns:
         标注列表，每项包含 class_id, class_name, bbox (x_center, y_center, width, height)
+        对于实例分割，还会包含 polygon (多边形顶点列表)
     """
     annotations = []
     class_names = []
@@ -29,36 +30,76 @@ def parse_yolo(annotation_file, image_width, image_height):
                 parts = line.split()
                 if len(parts) >= 5:
                     class_id = int(parts[0])
-                    x_center = float(parts[1])
-                    y_center = float(parts[2])
-                    width = float(parts[3])
-                    height = float(parts[4])
+                    coords = [float(p) for p in parts[1:]]
 
-                    # 转换为像素坐标
-                    x_center_px = x_center * image_width
-                    y_center_px = y_center * image_height
-                    width_px = width * image_width
-                    height_px = height * image_height
+                    # 判断是目标检测还是实例分割
+                    # 目标检测：5个值 (x_center, y_center, width, height)
+                    # 实例分割：偶数个值 (x1, y1, x2, y2, ...) 多边形顶点
+                    if len(coords) == 4:
+                        # 目标检测格式
+                        x_center = coords[0]
+                        y_center = coords[1]
+                        width = coords[2]
+                        height = coords[3]
 
-                    # 计算左上角和右下角坐标
-                    x_min = x_center_px - width_px / 2
-                    y_min = y_center_px - height_px / 2
-                    x_max = x_center_px + width_px / 2
-                    y_max = y_center_px + height_px / 2
+                        # 转换为像素坐标
+                        x_center_px = x_center * image_width
+                        y_center_px = y_center * image_height
+                        width_px = width * image_width
+                        height_px = height * image_height
 
-                    annotations.append({
-                        'class_id': class_id,
-                        'class_name': f"class_{class_id}",
-                        'bbox': {
-                            'x_min': int(x_min),
-                            'y_min': int(y_min),
-                            'x_max': int(x_max),
-                            'y_max': int(y_max),
-                            'width': int(width_px),
-                            'height': int(height_px)
-                        },
-                        'format': 'yolo'
-                    })
+                        # 计算左上角和右下角坐标
+                        x_min = x_center_px - width_px / 2
+                        y_min = y_center_px - height_px / 2
+                        x_max = x_center_px + width_px / 2
+                        y_max = y_center_px + height_px / 2
+
+                        annotations.append({
+                            'class_id': class_id,
+                            'class_name': f"class_{class_id}",
+                            'bbox': {
+                                'x_min': int(x_min),
+                                'y_min': int(y_min),
+                                'x_max': int(x_max),
+                                'y_max': int(y_max),
+                                'width': int(width_px),
+                                'height': int(height_px)
+                            },
+                            'format': 'detection'
+                        })
+                    else:
+                        # 实例分割格式 - 多边形顶点
+                        # 坐标是归一化的值，需要转换为像素坐标
+                        polygon = []
+                        for i in range(0, len(coords), 2):
+                            if i + 1 < len(coords):
+                                x_px = coords[i] * image_width
+                                y_px = coords[i + 1] * image_height
+                                polygon.append((int(x_px), int(y_px)))
+
+                        if len(polygon) >= 3:
+                            # 计算边界框
+                            x_coords = [p[0] for p in polygon]
+                            y_coords = [p[1] for p in polygon]
+                            x_min = min(x_coords)
+                            y_min = min(y_coords)
+                            x_max = max(x_coords)
+                            y_max = max(y_coords)
+
+                            annotations.append({
+                                'class_id': class_id,
+                                'class_name': f"class_{class_id}",
+                                'bbox': {
+                                    'x_min': x_min,
+                                    'y_min': y_min,
+                                    'x_max': x_max,
+                                    'y_max': y_max,
+                                    'width': x_max - x_min,
+                                    'height': y_max - y_min
+                                },
+                                'polygon': polygon,
+                                'format': 'segmentation'
+                            })
 
                     if class_id not in class_names:
                         class_names.append(class_id)
@@ -213,9 +254,14 @@ def detect_annotation_format(dataset_path):
     # 检查YOLO格式
     yolo_labels_dir = os.path.join(dataset_path, 'labels')
     if os.path.isdir(yolo_labels_dir):
+        # 先检查根目录
         yolo_files = [f for f in os.listdir(yolo_labels_dir) if f.endswith('.txt')]
         if yolo_files:
             return 'yolo'
+        # 递归检查子目录（train/val/test等）
+        for root, dirs, files in os.walk(yolo_labels_dir):
+            if any(f.endswith('.txt') for f in files):
+                return 'yolo'
 
     # 检查COCO格式
     for filename in os.listdir(dataset_path):

@@ -18,6 +18,7 @@ from modules.database import (
     get_connection
 )
 from modules.dataset_manager import get_dataset_images
+from modules.storage import format_size
 from modules.model_manager import get_model_files
 from config import DATASETS_DIR, MODELS_DIR
 
@@ -134,6 +135,7 @@ def index():
         datasets_data.append({
             "id": ds.get('id', 0),
             "algoType": ds.get('algo_type', ''),
+            "techMethod": ds.get('tech_method', '目标检测算法'),
             "name": ds.get('name', ''),
             "split": ds.get('split', '8:2'),
             "total": ds.get('total', 0),
@@ -230,6 +232,37 @@ def index():
     return html_content
 
 
+# ==================== 设置API ====================
+
+@app.route('/api/settings')
+def get_settings():
+    """获取系统设置"""
+    from modules.database import get_settings
+    settings = get_settings()
+    return jsonify(settings)
+
+
+@app.route('/api/settings', methods=['POST'])
+def update_settings():
+    """更新系统设置"""
+    from modules.database import update_settings
+
+    data = request.json or {}
+
+    algo_types = data.get('algoTypes')
+    tech_methods = data.get('techMethods')
+    annotation_types = data.get('annotationTypes')
+
+    if algo_types is None and tech_methods is None and annotation_types is None:
+        return jsonify({"success": False, "error": "没有要更新的内容"}), 400
+
+    try:
+        update_settings(algo_types, tech_methods, annotation_types)
+        return jsonify({"success": True, "message": "设置已更新"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @app.route('/api/dataset/validate-name', methods=['POST'])
 def validate_dataset_name():
     """检查数据集名称是否已存在"""
@@ -290,6 +323,7 @@ def api_datasets():
         datasets_data.append({
             "id": ds.get('id', 0),
             "algoType": ds.get('algo_type', ''),
+            "techMethod": ds.get('tech_method', '目标检测算法'),
             "name": ds.get('name', ''),
             "split": ds.get('split', '8:2'),
             "total": ds.get('total', 0),
@@ -554,6 +588,7 @@ def upload_dataset():
     upload_mode = request.form.get('uploadMode', 'zip')
     dataset_name = request.form.get('name', '').strip()
     algo_type = request.form.get('algoType', '其他')
+    tech_method = request.form.get('techMethod', '目标检测算法')
     description = request.form.get('description', '')
     maintainer = request.form.get('maintainer', '管理员')
     annotation_type = request.form.get('annotationType', 'yolo')
@@ -628,7 +663,7 @@ def upload_dataset():
                             os.remove(dst)
                     shutil.move(src, dst)
 
-                os.remove(zip_path)
+                # 保留ZIP文件用于下载，只删除解压目录
                 shutil.rmtree(extract_dir)
             else:
                 file.save(os.path.join(dataset_dir, filename))
@@ -650,11 +685,14 @@ def upload_dataset():
                     shutil.rmtree(dataset_dir)
                 return jsonify({"success": False, "error": f"YOLO格式校验失败: {msg}"}), 400
 
-        # 统计图片数量
+        # 统计图片数量（排除vis目录）
         from config import SUPPORTED_IMAGE_FORMATS
         image_count = 0
         labels = {}
         for root, dirs, files in os.walk(dataset_dir):
+            # 跳过vis目录
+            if 'vis' in dirs:
+                dirs.remove('vis')
             for f in files:
                 if any(f.lower().endswith(ext) for ext in SUPPORTED_IMAGE_FORMATS):
                     image_count += 1
@@ -700,6 +738,7 @@ def upload_dataset():
         metadata = {
             "name": dataset_name,
             "algo_type": algo_type,
+            "tech_method": tech_method,
             "description": description,
             "split": split_ratio,
             "total": image_count,
@@ -729,6 +768,7 @@ def upload_dataset():
         add_dataset({
             'name': dataset_name,
             'algo_type': algo_type,
+            'tech_method': tech_method,
             'description': description,
             'split': split_ratio,
             'total': image_count,
@@ -749,6 +789,26 @@ def upload_dataset():
             'img_count_test': img_count_test,
             'class_info': class_info
         })
+
+        # 生成可视化图片
+        from modules.dataset_manager import visualize_dataset
+        try:
+            # 提取类别名称
+            class_names = {}
+            for k, v in class_info.items():
+                if isinstance(v, dict):
+                    class_names[k] = v.get('name', f'class_{k}')
+                else:
+                    class_names[k] = f'class_{k}'
+            visualize_dataset(dataset_name, class_names)
+            # 生成详情图和分布图
+            from modules.dataset_manager import generate_dataset_charts
+            try:
+                generate_dataset_charts(dataset_name, class_info)
+            except Exception as chart_err:
+                print(f"生成图表时出错: {chart_err}")
+        except Exception as e:
+            print(f"生成可视化图片时出错: {e}")
 
         return jsonify({
             "success": True,
@@ -780,6 +840,62 @@ def dataset_images(name):
     })
 
 
+@app.route('/api/dataset/<name>/split-images')
+def dataset_split_images(name):
+    """获取数据集按split分类的图片（训练集、验证集、测试集）"""
+    from modules.dataset_manager import get_dataset_split_images
+
+    split_images = get_dataset_split_images(name, max_per_split=8)
+
+    # 转换为相对路径供前端访问
+    base_dir = os.path.dirname(os.path.dirname(__file__))
+    result = {}
+
+    for split, images in split_images.items():
+        relative_paths = []
+        for img in images:
+            rel_path = os.path.relpath(img, base_dir)
+            relative_paths.append(rel_path.replace('\\', '/'))
+        result[split] = relative_paths
+
+    return jsonify({
+        "name": name,
+        "train": result.get('train', []),
+        "val": result.get('val', []),
+        "test": result.get('test', [])
+    })
+
+
+@app.route('/api/dataset/<name>/charts')
+def dataset_charts(name):
+    """获取数据集的详情图和分布图"""
+    dataset_dir = os.path.join(DATASETS_DIR, name)
+
+    if not os.path.exists(dataset_dir):
+        return jsonify({"detail": None, "distribution": None})
+
+    charts_dir = os.path.join(dataset_dir, 'charts')
+    base_dir = os.path.dirname(os.path.dirname(__file__))
+
+    detail_path = os.path.join(charts_dir, 'detail.png')
+    dist_path = os.path.join(charts_dir, 'distribution.png')
+
+    result = {
+        "detail": None,
+        "distribution": None
+    }
+
+    if os.path.exists(detail_path):
+        rel_path = os.path.relpath(detail_path, base_dir)
+        result["detail"] = rel_path.replace('\\', '/')
+
+    if os.path.exists(dist_path):
+        rel_path = os.path.relpath(dist_path, base_dir)
+        result["distribution"] = rel_path.replace('\\', '/')
+
+    return jsonify(result)
+
+
 @app.route('/api/dataset/<name>', methods=['DELETE'])
 def delete_dataset(name):
     """删除数据集"""
@@ -794,6 +910,36 @@ def delete_dataset(name):
         delete_dataset_by_name(name)
 
         return jsonify({"success": True, "message": "数据集已删除"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/dataset/<name>/download')
+def download_dataset(name):
+    """下载数据集压缩包"""
+    try:
+        dataset_dir = os.path.join(DATASETS_DIR, name)
+        if not os.path.exists(dataset_dir):
+            return jsonify({"success": False, "error": "数据集不存在"}), 404
+
+        # 查找ZIP文件
+        zip_files = [f for f in os.listdir(dataset_dir) if f.endswith('.zip')]
+
+        if not zip_files:
+            return jsonify({"success": False, "error": "没有可下载的压缩包"}), 404
+
+        # 返回第一个找到的ZIP文件信息
+        zip_file = zip_files[0]
+        zip_path = os.path.join(dataset_dir, zip_file)
+        file_size = os.path.getsize(zip_path)
+
+        return jsonify({
+            "success": True,
+            "filename": zip_file,
+            "size": file_size,
+            "size_formatted": format_size(file_size),
+            "download_url": f"/data/datasets/{name}/{zip_file}"
+        })
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
