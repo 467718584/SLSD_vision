@@ -65,6 +65,7 @@ def init_database():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT UNIQUE NOT NULL,
             algo_name TEXT,
+            tech_method TEXT DEFAULT '目标检测算法',
             category TEXT,
             accuracy REAL DEFAULT 0,
             description TEXT,

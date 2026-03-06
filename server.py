@@ -1096,13 +1096,14 @@ def update_class_info(name):
 
 @app.route('/api/model/upload', methods=['POST'])
 def upload_model():
-    """上传模型"""
-    if 'file' not in request.files:
-        return jsonify({"success": False, "error": "没有上传文件"}), 400
+    """上传模型（支持文件夹上传）"""
+    # 检查是单文件还是文件夹
+    files = request.files.getlist('files')
+    single_file = request.files.get('file')
 
-    file = request.files['file']
     model_name = request.form.get('name', '').strip()
     algo_name = request.form.get('algoName', '其他')
+    tech_method = request.form.get('techMethod', '目标检测算法')
     category = request.form.get('category', 'YOLO')
     accuracy = float(request.form.get('accuracy', 0))
     description = request.form.get('description', '')
@@ -1110,36 +1111,155 @@ def upload_model():
     maintainer = request.form.get('maintainer', '管理员')
 
     if not model_name:
-        model_name = secure_filename(file.filename)
-        if not model_name:
-            model_name = f"model_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        return jsonify({"success": False, "error": "请输入模型名称"}), 400
 
-    if file.filename == '':
-        return jsonify({"success": False, "error": "没有选择文件"}), 400
+    # 检查是否有文件上传
+    if files and len(files) > 0:
+        # 文件夹上传模式
+        file_list = files
+    elif single_file:
+        # 单文件上传模式（兼容旧版）
+        file_list = [single_file]
+    else:
+        return jsonify({"success": False, "error": "没有上传文件"}), 400
 
     try:
-        # 保存上传的文件
+        # 创建模型目录
         model_dir = os.path.join(MODELS_DIR, model_name)
         os.makedirs(model_dir, exist_ok=True)
 
-        filename = secure_filename(file.filename)
-        file.save(os.path.join(model_dir, filename))
+        # 创建子目录
+        weights_dir = os.path.join(model_dir, 'weights')
+        curves_dir = os.path.join(model_dir, 'curves')
+        batches_dir = os.path.join(model_dir, 'batches')
+        os.makedirs(weights_dir, exist_ok=True)
+        os.makedirs(curves_dir, exist_ok=True)
+        os.makedirs(batches_dir, exist_ok=True)
+
+        # 解析并保存文件
+        results_data = None
+        saved_files = {}
+
+        for uploaded_file in file_list:
+            if uploaded_file.filename:
+                # 获取相对路径
+                filename = uploaded_file.filename
+                # 处理路径分隔符
+                filename = filename.replace('\\', '/')
+                parts = filename.split('/')
+
+                if len(parts) >= 2 and parts[0] == 'weights':
+                    # weights目录下的文件
+                    target_path = os.path.join(weights_dir, parts[-1])
+                    uploaded_file.save(target_path)
+                    saved_files[parts[-1]] = f"weights/{parts[-1]}"
+                elif 'results.csv' in filename.lower():
+                    # results.csv文件
+                    target_path = os.path.join(model_dir, 'results.csv')
+                    uploaded_file.save(target_path)
+                    saved_files['results_csv'] = 'results.csv'
+                    # 解析results.csv
+                    try:
+                        uploaded_file.seek(0)
+                        content = uploaded_file.read().decode('utf-8', errors='ignore')
+                        import csv
+                        reader = csv.reader(content.splitlines())
+                        rows = list(reader)
+                        if len(rows) > 1:
+                            # 查找mAP50列（通常是第8列，索引7）
+                            header = rows[0] if rows else []
+                            map50_idx = None
+                            map50_95_idx = None
+                            for i, h in enumerate(header):
+                                if 'mAP50' in h and '95' not in h:
+                                    map50_idx = i
+                                elif 'mAP50-95' in h or 'mAP50-95(B)' in h:
+                                    map50_95_idx = i
+
+                            # 找到最高的mAP50值
+                            max_map50 = 0
+                            max_map50_95 = 0
+                            for row in rows[1:]:
+                                if map50_idx is not None and len(row) > map50_idx:
+                                    try:
+                                        val = float(row[map50_idx])
+                                        if val > max_map50:
+                                            max_map50 = val
+                                    except:
+                                        pass
+                                if map50_95_idx is not None and len(row) > map50_95_idx:
+                                    try:
+                                        val = float(row[map50_95_idx])
+                                        if val > max_map50_95:
+                                            max_map50_95 = val
+                                    except:
+                                        pass
+
+                            results_data = {
+                                'total_epochs': len(rows) - 1,
+                                'max_map50': round(max_map50 * 100, 2),
+                                'max_map50_95': round(max_map50_95 * 100, 2),
+                            }
+                            # 更新精度为最高mAP50值
+                            if max_map50 > 0:
+                                accuracy = round(max_map50 * 100, 2)
+                    except Exception as e:
+                        pass
+                elif 'curve' in filename.lower() or 'f1' in filename.lower() or 'p_curve' in filename.lower() or 'r_curve' in filename.lower() or 'pr_curve' in filename.lower():
+                    # 曲线图文件
+                    target_path = os.path.join(curves_dir, parts[-1])
+                    uploaded_file.save(target_path)
+                    saved_files[f'curve_{parts[-1]}'] = f"curves/{parts[-1]}"
+                elif 'confusion' in filename.lower():
+                    # 混淆矩阵
+                    target_path = os.path.join(curves_dir, parts[-1])
+                    uploaded_file.save(target_path)
+                    saved_files[f'confusion_{parts[-1]}'] = f"curves/{parts[-1]}"
+                elif 'train_batch' in filename.lower():
+                    # 训练批次图片
+                    target_path = os.path.join(batches_dir, parts[-1])
+                    uploaded_file.save(target_path)
+                    saved_files[f'train_{parts[-1]}'] = f"batches/{parts[-1]}"
+                elif 'val_batch' in filename.lower():
+                    # 验证批次图片
+                    target_path = os.path.join(batches_dir, parts[-1])
+                    uploaded_file.save(target_path)
+                    saved_files[f'val_{parts[-1]}'] = f"batches/{parts[-1]}"
+                elif 'labels.jpg' in filename.lower():
+                    # 标签分布图
+                    target_path = os.path.join(curves_dir, 'labels.jpg')
+                    uploaded_file.save(target_path)
+                    saved_files['labels'] = 'curves/labels.jpg'
+                elif 'results.png' in filename.lower():
+                    # 结果总图
+                    target_path = os.path.join(curves_dir, 'results.png')
+                    uploaded_file.save(target_path)
+                    saved_files['results_png'] = 'curves/results.png'
+                else:
+                    # 其他文件放到根目录
+                    target_path = os.path.join(model_dir, parts[-1])
+                    uploaded_file.save(target_path)
 
         # 保存元数据
         metadata = {
             "name": model_name,
             "algo_name": algo_name,
+            "tech_method": tech_method,
             "category": category,
             "accuracy": accuracy,
             "description": description,
             "dataset": dataset,
             "maintain_date": datetime.now().strftime('%Y/%m/%d'),
             "maintainer": maintainer,
-            "filename": filename
+            "saved_files": saved_files,
+            "results_data": results_data
         }
 
         with open(os.path.join(model_dir, 'metadata.json'), 'w', encoding='utf-8') as f:
             json.dump(metadata, f, ensure_ascii=False, indent=2)
+
+        # 统计预览图片数量
+        preview_count = len([k for k in saved_files.keys() if k.startswith('train_') or k.startswith('val_')])
 
         # 保存到数据库
         add_model({
@@ -1150,13 +1270,85 @@ def upload_model():
             'description': description,
             'dataset': dataset,
             'maintain_date': datetime.now().strftime('%Y/%m/%d'),
-            'maintainer': maintainer
+            'maintainer': maintainer,
+            'preview_count': preview_count
         })
 
         return jsonify({
             "success": True,
             "message": "模型上传成功",
             "model": metadata
+        })
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/model/detail/<name>')
+def model_detail_v2(name):
+    """获取模型详细信息 - 使用路径参数"""
+    try:
+        model_dir = os.path.join(MODELS_DIR, name)
+
+        if not os.path.exists(model_dir):
+            return jsonify({"success": False, "error": "模型不存在"}), 404
+
+        # 读取元数据
+        metadata_path = os.path.join(model_dir, 'metadata.json')
+        metadata = {}
+        if os.path.exists(metadata_path):
+            with open(metadata_path, 'r', encoding='utf-8') as f:
+                metadata = json.load(f)
+
+        # 获取图表文件路径
+        curves_dir = os.path.join(model_dir, 'curves')
+        weights_dir = os.path.join(model_dir, 'weights')
+        batches_dir = os.path.join(model_dir, 'batches')
+
+        base_dir = os.path.dirname(os.path.dirname(__file__))
+
+        def get_rel_path(path):
+            if os.path.exists(path):
+                rel = os.path.relpath(path, base_dir)
+                return rel.replace('\\', '/')
+            return None
+
+        charts = {
+            'labels': get_rel_path(os.path.join(curves_dir, 'labels.jpg')),
+            'results': get_rel_path(os.path.join(curves_dir, 'results.png')),
+            'confusion': get_rel_path(os.path.join(curves_dir, 'confusion_matrix.png')),
+            'confusion_normalized': get_rel_path(os.path.join(curves_dir, 'confusion_matrix_normalized.png')),
+            'box_f1': get_rel_path(os.path.join(curves_dir, 'BoxF1_curve.png')),
+            'box_p': get_rel_path(os.path.join(curves_dir, 'BoxP_curve.png')),
+            'box_r': get_rel_path(os.path.join(curves_dir, 'BoxR_curve.png')),
+            'box_pr': get_rel_path(os.path.join(curves_dir, 'BoxPR_curve.png')),
+        }
+
+        # 生成CSV曲线图
+        csv_charts = generate_model_csv_charts(model_dir, curves_dir)
+
+        weights = {
+            'best': get_rel_path(os.path.join(weights_dir, 'best.pt')),
+            'last': get_rel_path(os.path.join(weights_dir, 'last.pt')),
+        }
+
+        # 获取训练/验证批次图片（只获取val开头的）
+        batch_images = []
+        if os.path.exists(batches_dir):
+            for f in sorted(os.listdir(batches_dir)):
+                if f.lower().startswith('val'):
+                    path = os.path.join(batches_dir, f)
+                    rel = get_rel_path(path)
+                    if rel:
+                        batch_images.append(rel)
+
+        return jsonify({
+            "success": True,
+            "metadata": metadata,
+            "charts": charts,
+            "csv_charts": csv_charts,
+            "weights": weights,
+            "batch_images": batch_images
         })
 
     except Exception as e:
@@ -1179,6 +1371,144 @@ def delete_model(name):
         return jsonify({"success": True, "message": "模型已删除"})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
+
+
+def generate_model_csv_charts(model_dir, curves_dir):
+    """从results.csv生成mAP50、mAP50-95、val/box_loss、train/box_loss曲线图"""
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    import matplotlib
+    matplotlib.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS', 'DejaVu Sans']
+    matplotlib.rcParams['axes.unicode_minus'] = False
+    import csv
+
+    csv_path = os.path.join(model_dir, 'results.csv')
+    if not os.path.exists(csv_path):
+        return [None, None, None, None]
+
+    try:
+        # 读取CSV
+        with open(csv_path, 'r', encoding='utf-8') as f:
+            reader = csv.reader(f)
+            rows = list(reader)
+
+        if len(rows) < 2:
+            return [None, None, None, None]
+
+        headers = [h.strip().lower() for h in rows[0]]
+
+        # 找到需要的列
+        map50_idx = None
+        map50_95_idx = None
+        val_box_idx = None
+        train_box_idx = None
+
+        for i, h in enumerate(headers):
+            if 'map50' in h and '95' not in h:
+                map50_idx = i
+            elif 'map50-95' in h or ('map50' in h and '95' in h):
+                map50_95_idx = i
+            elif 'val/box_loss' in h:
+                val_box_idx = i
+            elif 'train/box_loss' in h:
+                train_box_idx = i
+
+        if map50_idx is None:
+            return [None, None, None, None]
+
+        epochs = []
+        map50_values = []
+        map50_95_values = []
+        val_box_values = []
+        train_box_values = []
+
+        for row in rows[1:]:
+            if len(row) > map50_idx:
+                try:
+                    epochs.append(len(epochs) + 1)
+                    map50_values.append(float(row[map50_idx]))
+                    if map50_95_idx is not None and len(row) > map50_95_idx:
+                        map50_95_values.append(float(row[map50_95_idx]))
+                    else:
+                        map50_95_values.append(0)
+                    if val_box_idx is not None and len(row) > val_box_idx:
+                        val_box_values.append(float(row[val_box_idx]))
+                    else:
+                        val_box_values.append(0)
+                    if train_box_idx is not None and len(row) > train_box_idx:
+                        train_box_values.append(float(row[train_box_idx]))
+                    else:
+                        train_box_values.append(0)
+                except:
+                    pass
+
+        if not epochs:
+            return [None, None, None, None]
+
+        # 确保输出目录存在
+        os.makedirs(curves_dir, exist_ok=True)
+
+        base_dir = os.path.dirname(os.path.dirname(__file__))
+        chart_paths = []
+
+        # 绘制mAP50曲线
+        plt.figure(figsize=(6, 4))
+        plt.plot(epochs, map50_values, 'g-', linewidth=2, label='mAP50')
+        plt.xlabel('Epoch')
+        plt.ylabel('mAP50')
+        plt.title('mAP50 (IoU=0.5)')
+        plt.grid(True, alpha=0.3)
+        plt.tight_layout()
+        map50_path = os.path.join(curves_dir, 'map50_curve.png')
+        plt.savefig(map50_path, dpi=80)
+        plt.close()
+        chart_paths.append(os.path.relpath(map50_path, base_dir).replace('\\', '/'))
+
+        # 绘制mAP50-95曲线
+        plt.figure(figsize=(6, 4))
+        plt.plot(epochs, map50_95_values, 'b-', linewidth=2, label='mAP50-95')
+        plt.xlabel('Epoch')
+        plt.ylabel('mAP50-95')
+        plt.title('mAP50-95 (IoU=0.5:0.95)')
+        plt.grid(True, alpha=0.3)
+        plt.tight_layout()
+        map50_95_path = os.path.join(curves_dir, 'map50_95_curve.png')
+        plt.savefig(map50_95_path, dpi=80)
+        plt.close()
+        chart_paths.append(os.path.relpath(map50_95_path, base_dir).replace('\\', '/'))
+
+        # 绘制train/box_loss曲线 (放在前面)
+        plt.figure(figsize=(6, 4))
+        plt.plot(epochs, train_box_values, 'orange', linewidth=2, label='train_box_loss')
+        plt.xlabel('Epoch')
+        plt.ylabel('Box Loss')
+        plt.title('训练集边框损失 (train/box_loss)')
+        plt.grid(True, alpha=0.3)
+        plt.tight_layout()
+        train_box_path = os.path.join(curves_dir, 'train_box_loss_curve.png')
+        plt.savefig(train_box_path, dpi=80)
+        plt.close()
+        chart_paths.append(os.path.relpath(train_box_path, base_dir).replace('\\', '/'))
+
+        # 绘制val/box_loss曲线
+        plt.figure(figsize=(6, 4))
+        plt.plot(epochs, val_box_values, 'r-', linewidth=2, label='val_box_loss')
+        plt.xlabel('Epoch')
+        plt.ylabel('Box Loss')
+        plt.title('验证集边框损失 (val/box_loss)')
+        plt.grid(True, alpha=0.3)
+        plt.tight_layout()
+        val_box_path = os.path.join(curves_dir, 'val_box_loss_curve.png')
+        plt.savefig(val_box_path, dpi=80)
+        plt.close()
+        chart_paths.append(os.path.relpath(val_box_path, base_dir).replace('\\', '/'))
+
+        return chart_paths
+
+    except Exception as e:
+        print(f"Error generating CSV charts: {e}")
+        return [None, None, None, None]
 
 
 # ==================== 文件访问API ====================
