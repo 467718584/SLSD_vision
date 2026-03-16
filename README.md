@@ -7,6 +7,7 @@
 本项目包含完整的文档，位于 `文档/` 目录下：
 
 - **PED.md** - 项目立项文档
+- **PRD产品需求文档.md** - 产品需求文档
 - **需求分析文档.md** - 需求分析文档
 - **概要设计文档.md** - 概要设计文档
 - **详细设计文档.md** - 详细设计文档
@@ -28,6 +29,48 @@
 - **前端**: React 18 + Babel (通过 CDN 加载)
 - **数据库**: SQLite
 - **数据存储**: 本地文件系统
+
+## Docker 部署
+
+本项目支持 Docker 容器化部署，便于跨机器迁移和部署。
+
+### 快速开始
+
+```bash
+# 方式一：使用 docker-compose（推荐）
+docker-compose up -d
+
+# 方式二：使用 Docker
+docker build -t sldsvision/platform .
+docker run -d -p 8501:8501 -v $(pwd)/data:/app/data sldsvision/platform
+```
+
+### Windows 用户
+
+双击运行 `docker-build.bat` 或使用 PowerShell:
+
+```powershell
+.\docker-build.bat
+```
+
+### 访问
+
+容器启动后访问 http://localhost:8501
+
+### 数据持久化
+
+- 数据目录 `./data` 会通过 volume 挂载到容器内
+- 迁移时只需复制整个 data 目录即可
+
+### Docker 文件说明
+
+| 文件 | 说明 |
+|------|------|
+| Dockerfile | Docker 镜像构建文件 |
+| docker-compose.yml | Docker Compose 配置 |
+| .dockerignore | Docker 构建排除文件 |
+| docker-build.sh | Linux/Mac 构建脚本 |
+| docker-build.bat | Windows 构建脚本 |
 
 ## 项目结构
 

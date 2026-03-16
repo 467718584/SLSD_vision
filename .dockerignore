@@ -1,0 +1,50 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info
+dist
+build
+
+# Virtual environments
+venv
+env
+.venv
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Testing
+.pytest_cache
+.coverage
+htmlcov
+
+# Documentation source
+文档/
+*.md
+
+# Data (在运行时挂载)
+data/
+# 注意：data目录在运行时会通过volume挂载
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build files
+*.zip
+*.tar.gz
