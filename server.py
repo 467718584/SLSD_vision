@@ -252,12 +252,13 @@ def update_settings():
     algo_types = data.get('algoTypes')
     tech_methods = data.get('techMethods')
     annotation_types = data.get('annotationTypes')
+    sites = data.get('sites')
 
-    if algo_types is None and tech_methods is None and annotation_types is None:
+    if algo_types is None and tech_methods is None and annotation_types is None and sites is None:
         return jsonify({"success": False, "error": "没有要更新的内容"}), 400
 
     try:
-        update_settings(algo_types, tech_methods, annotation_types)
+        update_settings(algo_types, tech_methods, annotation_types, sites)
         return jsonify({"success": True, "message": "设置已更新"})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
@@ -590,6 +591,7 @@ def upload_dataset():
     algo_type = request.form.get('algoType', '其他')
     tech_method = request.form.get('techMethod', '目标检测算法')
     description = request.form.get('description', '')
+    source = request.form.get('source', '')
     maintainer = request.form.get('maintainer', '管理员')
     annotation_type = request.form.get('annotationType', 'yolo')
 
@@ -740,6 +742,7 @@ def upload_dataset():
             "algo_type": algo_type,
             "tech_method": tech_method,
             "description": description,
+            "source": source,
             "split": split_ratio,
             "total": image_count,
             "label_count": len(labels),
@@ -770,6 +773,7 @@ def upload_dataset():
             'algo_type': algo_type,
             'tech_method': tech_method,
             'description': description,
+            'source': source,
             'split': split_ratio,
             'total': image_count,
             'label_count': len(labels),
@@ -1355,6 +1359,48 @@ def model_detail_v2(name):
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@app.route('/api/model/<name>', methods=['PUT'])
+def update_model(name):
+    """更新模型信息"""
+    from modules.database import update_model_by_name
+    import shutil
+
+    data = request.json or {}
+
+    try:
+        # 获取当前模型信息
+        models = get_all_models()
+        model = next((m for m in models if m['name'] == name), None)
+
+        if not model:
+            return jsonify({"success": False, "error": "模型不存在"}), 404
+
+        # 更新字段
+        update_data = {}
+        if 'algoName' in data:
+            update_data['algo_name'] = data['algoName']
+        if 'techMethod' in data:
+            update_data['tech_method'] = data['techMethod']
+        if 'category' in data:
+            update_data['category'] = data['category']
+        if 'description' in data:
+            update_data['description'] = data['description']
+        if 'site' in data:
+            update_data['site'] = data['site']
+        if 'dataset' in data:
+            update_data['dataset'] = data['dataset']
+        if 'maintainer' in data:
+            update_data['maintainer'] = data['maintainer']
+
+        if update_data:
+            update_model_by_name(name, update_data)
+
+        return jsonify({"success": True, "message": "模型已更新"})
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @app.route('/api/model/<name>', methods=['DELETE'])
 def delete_model(name):
     """删除模型"""
@@ -1373,6 +1419,80 @@ def delete_model(name):
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+# ========== 原始数据管理 API ==========
+@app.route('/api/raw-data', methods=['GET'])
+def get_raw_data_list():
+    """获取原始数据列表"""
+    try:
+        from modules.database import get_all_raw_data
+        raw_data = get_all_raw_data()
+        return jsonify({"success": True, "data": raw_data})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/raw-data', methods=['POST'])
+def add_raw_data():
+    """添加原始数据"""
+    try:
+        from modules.database import add_raw_data
+        data = request.get_json()
+        add_raw_data(data)
+        return jsonify({"success": True, "message": "原始数据已添加"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/raw-data/<name>', methods=['DELETE'])
+def delete_raw_data(name):
+    """删除原始数据"""
+    try:
+        from modules.database import delete_raw_data_by_name
+        deleted = delete_raw_data_by_name(name)
+        if deleted:
+            return jsonify({"success": True, "message": "原始数据已删除"})
+        return jsonify({"success": False, "error": "原始数据不存在"}), 404
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# ========== 应用现场管理 API ==========
+@app.route('/api/sites', methods=['GET'])
+def get_sites_list():
+    """获取应用现场列表"""
+    try:
+        from modules.database import get_all_sites
+        sites = get_all_sites()
+        return jsonify({"success": True, "data": sites})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/sites', methods=['POST'])
+def add_site():
+    """添加应用现场"""
+    try:
+        from modules.database import add_site
+        data = request.get_json()
+        add_site(data)
+        return jsonify({"success": True, "message": "应用现场已添加"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/sites/<name>', methods=['DELETE'])
+def delete_site(name):
+    """删除应用现场"""
+    try:
+        from modules.database import delete_site_by_name
+        deleted = delete_site_by_name(name)
+        if deleted:
+            return jsonify({"success": True, "message": "应用现场已删除"})
+        return jsonify({"success": False, "error": "应用现场不存在"}), 404
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 def generate_model_csv_charts(model_dir, curves_dir):
     """从results.csv生成mAP50、mAP50-95、val/box_loss、train/box_loss曲线图"""
     import matplotlib
@@ -1387,6 +1507,18 @@ def generate_model_csv_charts(model_dir, curves_dir):
     if not os.path.exists(csv_path):
         return [None, None, None, None]
 
+    # 检查缓存 - 如果所有图表都已存在，直接返回缓存路径
+    base_dir = os.path.dirname(os.path.dirname(__file__))
+    cached_charts = [
+        os.path.join(curves_dir, 'map50_curve.png'),
+        os.path.join(curves_dir, 'map50_95_curve.png'),
+        os.path.join(curves_dir, 'train_box_loss_curve.png'),
+        os.path.join(curves_dir, 'val_box_loss_curve.png'),
+    ]
+    if all(os.path.exists(p) for p in cached_charts):
+        return [os.path.relpath(p, base_dir).replace('\\', '/') for p in cached_charts]
+
+    # 图表不存在，需要生成
     try:
         # 读取CSV
         with open(csv_path, 'r', encoding='utf-8') as f:

@@ -31,6 +31,7 @@ def init_database():
             algo_type TEXT,
             tech_method TEXT DEFAULT '目标检测算法',
             description TEXT,
+            source TEXT,
             split TEXT,
             total INTEGER DEFAULT 0,
             label_count INTEGER DEFAULT 0,
@@ -56,9 +57,6 @@ def init_database():
         )
     ''')
 
-    # 数据库迁移：为已有数据库添加新字段
-    migrate_database(conn, cursor)
-
     # 模型表
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS models (
@@ -69,6 +67,7 @@ def init_database():
             category TEXT,
             accuracy REAL DEFAULT 0,
             description TEXT,
+            site TEXT,
             dataset TEXT,
             maintain_date TEXT,
             maintainer TEXT,
@@ -86,15 +85,52 @@ def init_database():
             algo_types TEXT DEFAULT '["路面积水检测","漂浮物检测","墙面裂缝检测","游泳检测","其他"]',
             tech_methods TEXT DEFAULT '["目标检测算法","实例分割算法"]',
             annotation_types TEXT DEFAULT '["YOLO格式","VOC格式","COCO格式"]',
+            sites TEXT DEFAULT '["苏北灌溉总渠","南水北调宝应站","慈溪北排","慈溪周巷","瓯江引水","互联网"]',
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    # 原始数据表
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS raw_data (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE NOT NULL,
+            algo_type TEXT,
+            description TEXT,
+            dataset TEXT,
+            source TEXT,
+            is_annotated BOOLEAN DEFAULT 0,
+            maintain_date TEXT,
+            maintainer TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    # 应用现场表
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS sites (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE NOT NULL,
+            description TEXT,
+            dataset TEXT,
+            model TEXT,
+            maintain_date TEXT,
+            maintainer TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
 
     # 初始化默认设置
-    cursor.execute('INSERT OR IGNORE INTO settings (id, algo_types, tech_methods, annotation_types) VALUES (1, ?, ?, ?)',
+    cursor.execute('INSERT OR IGNORE INTO settings (id, algo_types, tech_methods, annotation_types, sites) VALUES (1, ?, ?, ?, ?)',
         (json.dumps(["路面积水检测","漂浮物检测","墙面裂缝检测","游泳检测","其他"]),
          json.dumps(["目标检测算法","实例分割算法"]),
-         json.dumps(["YOLO格式","VOC格式","COCO格式"])))
+         json.dumps(["YOLO格式","VOC格式","COCO格式"]),
+         json.dumps(["苏北灌溉总渠","南水北调宝应站","慈溪北排","慈溪周巷","瓯江引水","互联网"])))
+
+    # 数据库迁移：为已有数据库添加新字段（在所有表创建之后执行）
+    migrate_database(conn, cursor)
 
     conn.commit()
     conn.close()
@@ -120,7 +156,8 @@ def migrate_database(conn, cursor):
         'img_count_val': 'ALTER TABLE datasets ADD COLUMN img_count_val INTEGER DEFAULT 0',
         'img_count_test': 'ALTER TABLE datasets ADD COLUMN img_count_test INTEGER DEFAULT 0',
         'class_info': 'ALTER TABLE datasets ADD COLUMN class_info TEXT',
-        'tech_method': 'ALTER TABLE datasets ADD COLUMN tech_method TEXT DEFAULT "目标检测算法"'
+        'tech_method': 'ALTER TABLE datasets ADD COLUMN tech_method TEXT DEFAULT "目标检测算法"',
+        'source': 'ALTER TABLE datasets ADD COLUMN source TEXT'
     }
 
     for col, sql in new_columns.items():
@@ -130,6 +167,34 @@ def migrate_database(conn, cursor):
             except:
                 pass  # 忽略可能的错误
 
+    # 迁移models表
+    cursor.execute("PRAGMA table_info(models)")
+    model_columns = {row[1] for row in cursor.fetchall()}
+
+    model_new_columns = {
+        'site': 'ALTER TABLE models ADD COLUMN site TEXT'
+    }
+
+    for col, sql in model_new_columns.items():
+        if col not in model_columns:
+            try:
+                cursor.execute(sql)
+            except:
+                pass  # 忽略可能的错误
+
+    # 迁移settings表
+    cursor.execute("PRAGMA table_info(settings)")
+    settings_columns = {row[1] for row in cursor.fetchall()}
+
+    if 'sites' not in settings_columns:
+        try:
+            # 先添加sites列，不设置默认值
+            cursor.execute('ALTER TABLE settings ADD COLUMN sites TEXT')
+            # 然后更新已有行设置默认值
+            cursor.execute("UPDATE settings SET sites = '[\"苏北灌溉总渠\",\"南水北调宝应站\",\"慈溪北排\",\"慈溪周巷\",\"瓯江引水\",\"互联网\"]' WHERE id = 1")
+        except Exception as e:
+            print(f"[WARN] Migration sites column: {e}")
+
 
 def add_dataset(data):
     """添加数据集"""
@@ -138,13 +203,14 @@ def add_dataset(data):
 
     cursor.execute('''
         INSERT OR REPLACE INTO datasets
-        (name, algo_type, tech_method, description, split, total, label_count, labels, maintain_date, maintainer, preview_count, annotation_format, storage_type, annotation_type, split_ratio, has_test, bg_count_train, bg_count_val, bg_count_test, bg_count_total, img_count_train, img_count_val, img_count_test, class_info, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (name, algo_type, tech_method, description, source, split, total, label_count, labels, maintain_date, maintainer, preview_count, annotation_format, storage_type, annotation_type, split_ratio, has_test, bg_count_train, bg_count_val, bg_count_test, bg_count_total, img_count_train, img_count_val, img_count_test, class_info, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
         data.get('name'),
         data.get('algo_type'),
         data.get('tech_method', '目标检测算法'),
         data.get('description'),
+        data.get('source'),
         data.get('split'),
         data.get('total', 0),
         data.get('label_count', 0),
@@ -176,23 +242,25 @@ def get_settings():
     """获取系统设置"""
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute('SELECT algo_types, tech_methods, annotation_types FROM settings WHERE id = 1')
+    cursor.execute('SELECT algo_types, tech_methods, annotation_types, sites FROM settings WHERE id = 1')
     row = cursor.fetchone()
     conn.close()
     if row:
         return {
             'algo_types': json.loads(row[0]) if row[0] else ["路面积水检测","漂浮物检测","墙面裂缝检测","游泳检测","其他"],
             'tech_methods': json.loads(row[1]) if row[1] else ["目标检测算法","实例分割算法"],
-            'annotation_types': json.loads(row[2]) if row[2] else ["YOLO格式","VOC格式","COCO格式"]
+            'annotation_types': json.loads(row[2]) if row[2] else ["YOLO格式","VOC格式","COCO格式"],
+            'sites': json.loads(row[3]) if row[3] else ["苏北灌溉总渠","南水北调宝应站","慈溪北排","慈溪周巷","瓯江引水","互联网"]
         }
     return {
         'algo_types': ["路面积水检测","漂浮物检测","墙面裂缝检测","游泳检测","其他"],
         'tech_methods': ["目标检测算法","实例分割算法"],
-        'annotation_types': ["YOLO格式","VOC格式","COCO格式"]
+        'annotation_types': ["YOLO格式","VOC格式","COCO格式"],
+        'sites': ["苏北灌溉总渠","南水北调宝应站","慈溪北排","慈溪周巷","瓯江引水","互联网"]
     }
 
 
-def update_settings(algo_types=None, tech_methods=None, annotation_types=None):
+def update_settings(algo_types=None, tech_methods=None, annotation_types=None, sites=None):
     """更新系统设置"""
     conn = get_connection()
     cursor = conn.cursor()
@@ -206,6 +274,9 @@ def update_settings(algo_types=None, tech_methods=None, annotation_types=None):
     if annotation_types is not None:
         cursor.execute('UPDATE settings SET annotation_types = ?, updated_at = ? WHERE id = 1',
             (json.dumps(annotation_types, ensure_ascii=False), datetime.now().isoformat()))
+    if sites is not None:
+        cursor.execute('UPDATE settings SET sites = ?, updated_at = ? WHERE id = 1',
+            (json.dumps(sites, ensure_ascii=False), datetime.now().isoformat()))
 
     conn.commit()
     conn.close()
@@ -218,14 +289,16 @@ def add_model(data):
 
     cursor.execute('''
         INSERT OR REPLACE INTO models
-        (name, algo_name, category, accuracy, description, dataset, maintain_date, maintainer, preview_count, model_type, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (name, algo_name, tech_method, category, accuracy, description, site, dataset, maintain_date, maintainer, preview_count, model_type, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
         data.get('name'),
         data.get('algo_name'),
+        data.get('tech_method', '目标检测算法'),
         data.get('category'),
         data.get('accuracy', 0),
         data.get('description'),
+        data.get('site'),
         data.get('dataset'),
         data.get('maintain_date'),
         data.get('maintainer'),
@@ -352,6 +425,33 @@ def delete_dataset_by_name(name):
     return affected > 0
 
 
+def update_model_by_name(name, data):
+    """更新模型信息"""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # 构建更新语句
+    set_clause = []
+    values = []
+    for key, value in data.items():
+        set_clause.append(f"{key} = ?")
+        values.append(value)
+
+    if not set_clause:
+        conn.close()
+        return False
+
+    values.append(name)
+    sql = f"UPDATE models SET {', '.join(set_clause)}, updated_at = CURRENT_TIMESTAMP WHERE name = ?"
+
+    cursor.execute(sql, values)
+    conn.commit()
+    affected = cursor.rowcount
+    conn.close()
+
+    return affected > 0
+
+
 def delete_model_by_name(name):
     """删除模型"""
     conn = get_connection()
@@ -470,6 +570,114 @@ def clear_all_data():
     cursor.execute('DELETE FROM models')
     conn.commit()
     conn.close()
+
+
+# ========== 原始数据管理 ==========
+def add_raw_data(data):
+    """添加原始数据"""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        INSERT OR REPLACE INTO raw_data
+        (name, algo_type, description, dataset, source, is_annotated, maintain_date, maintainer, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (
+        data.get('name'),
+        data.get('algo_type'),
+        data.get('description'),
+        data.get('dataset'),
+        data.get('source'),
+        1 if data.get('is_annotated') else 0,
+        data.get('maintain_date'),
+        data.get('maintainer'),
+        datetime.now().isoformat()
+    ))
+
+    conn.commit()
+    conn.close()
+
+
+def get_all_raw_data():
+    """获取所有原始数据"""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT * FROM raw_data ORDER BY id')
+    rows = cursor.fetchall()
+    conn.close()
+
+    raw_data_list = []
+    for row in rows:
+        raw_data_list.append(dict(row))
+
+    return raw_data_list
+
+
+def delete_raw_data_by_name(name):
+    """删除原始数据"""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('DELETE FROM raw_data WHERE name = ?', (name,))
+    conn.commit()
+    affected = cursor.rowcount
+    conn.close()
+
+    return affected > 0
+
+
+# ========== 应用现场管理 ==========
+def add_site(data):
+    """添加应用现场"""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        INSERT OR REPLACE INTO sites
+        (name, description, dataset, model, maintain_date, maintainer, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ''', (
+        data.get('name'),
+        data.get('description'),
+        data.get('dataset'),
+        data.get('model'),
+        data.get('maintain_date'),
+        data.get('maintainer'),
+        datetime.now().isoformat()
+    ))
+
+    conn.commit()
+    conn.close()
+
+
+def get_all_sites():
+    """获取所有应用现场"""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT * FROM sites ORDER BY id')
+    rows = cursor.fetchall()
+    conn.close()
+
+    sites_list = []
+    for row in rows:
+        sites_list.append(dict(row))
+
+    return sites_list
+
+
+def delete_site_by_name(name):
+    """删除应用现场"""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('DELETE FROM sites WHERE name = ?', (name,))
+    conn.commit()
+    affected = cursor.rowcount
+    conn.close()
+
+    return affected > 0
 
 
 if __name__ == '__main__':

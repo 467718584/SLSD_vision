@@ -12,6 +12,7 @@
 - **概要设计文档.md** - 概要设计文档
 - **详细设计文档.md** - 详细设计文档
 - **用户说明书.md** - 用户使用手册
+- **部署与运维指南.md** - Docker部署和运维指南
 
 ## 项目概述
 
@@ -51,6 +52,119 @@ docker run -d -p 8501:8501 -v $(pwd)/data:/app/data sldsvision/platform
 
 ```powershell
 .\docker-build.bat
+```
+
+### Linux (Ubuntu) 用户
+
+#### 方式一：使用 Docker Image 部署（推荐生产环境）
+
+```bash
+# 1. 拉取镜像（如果已有镜像）
+docker pull sldsvision/platform:latest
+
+# 2. 创建数据目录
+mkdir -p ~/sldsvision/data
+
+# 3. 运行容器
+docker run -d \
+  --name sldsvision-platform \
+  -p 8501:8501 \
+  -v ~/sldsvision/data:/app/data \
+  sldsvision/platform:latest
+
+# 4. 查看日志
+docker logs -f sldsvision-platform
+```
+
+#### 方式二：使用 Docker Compose 部署
+
+```bash
+# 1. 克隆项目或复制文件
+# 将项目文件复制到服务器
+
+# 2. 创建数据目录
+mkdir -p data/datasets data/models
+
+# 3. 使用 docker-compose 启动
+docker-compose up -d
+
+# 4. 查看状态
+docker-compose ps
+
+# 5. 查看日志
+docker-compose logs -f
+```
+
+#### 方式三：使用 Dockerfile 本地构建
+
+```bash
+# 1. 安装 Docker（如果未安装）
+sudo apt-get update
+sudo apt-get install -y docker.io docker-compose
+
+# 2. 克隆项目
+git clone <your-repo-url>
+cd SLSD_vision
+
+# 3. 构建镜像
+docker build -t sldsvision/platform .
+
+# 4. 创建数据目录
+mkdir -p data/datasets data/models
+
+# 5. 运行容器
+docker run -d \
+  --name sldsvision-platform \
+  -p 8501:8501 \
+  -v $(pwd)/data:/app/data \
+  sldsvision/platform
+```
+
+#### Ubuntu 系统 Docker 配置
+
+```bash
+# 1. 开机自启动 Docker
+sudo systemctl enable docker
+sudo systemctl start docker
+
+# 2. 添加当前用户到 docker 组（避免每次使用 sudo）
+sudo usermod -aG docker $USER
+# 重新登录后生效
+
+# 3. 配置 Docker 镜像加速（可选，提升拉取速度）
+sudo mkdir -p /etc/docker
+sudo tee /etc/docker/daemon.json <<EOF
+{
+  "registry-mirrors": [
+    "https://docker.mirrors.ustc.edu.cn",
+    "https://hub-mirror.c.163.com"
+  ]
+}
+EOF
+sudo systemctl daemon-reload
+sudo systemctl restart docker
+```
+
+#### 常用操作命令
+
+```bash
+# 停止容器
+docker-compose stop
+
+# 重启容器
+docker-compose restart
+
+# 更新并重新构建
+git pull
+docker-compose down
+docker-compose build --no-cache
+docker-compose up -d
+
+# 备份数据
+tar -czvf sldsvision-backup.tar.gz data/
+
+# 恢复数据
+tar -xzvf sldsvision-backup.tar.gz
 ```
 
 ### 访问
