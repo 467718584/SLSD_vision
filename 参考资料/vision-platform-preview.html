@@ -20,6 +20,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:#F0F4F8;}
 <script type="text/babel">
 const C={primary:"#1462A8",primaryBg:"#EBF3FC",primaryBd:"#BFDBF7",success:"#2E8B57",successBg:"#E8F5EE",warning:"#E67E22",warningBg:"#FEF5E7",orange:"#E8631A",orangeBg:"#FDF0E7",gray1:"#1A2332",gray2:"#3D5166",gray3:"#6B8299",gray4:"#9EAFBE",gray5:"#C8D6E1",gray6:"#E8F0F5",gray7:"#F4F7FA",bg:"#F0F4F8",white:"#FFFFFF",border:"#D8E4EE"};
 const ALGO_COLORS={"路面积水检测":{bg:C.primaryBg,border:C.primaryBd,text:C.primary},"漂浮物检测":{bg:C.successBg,border:"#A8D5C0",text:C.success},"墙面裂缝检测":{bg:C.warningBg,border:"#F9D9B0",text:C.warning},"游泳检测":{bg:"#FDE9E9",border:"#F5BCBC",text:"#C0392B"},"其他":{bg:C.gray6,border:C.border,text:C.gray2}};
+const SITE_COLORS={"苏北灌溉总渠":{bg:"#E3F2FD",border:"#90CAF9",text:"#1565C0"},"南水北调宝应站":{bg:"#E8F5E9",border:"#A5D6A7",text:"#2E7D32"},"慈溪北排":{bg:"#FFF3E0",border:"#FFB74D",text:"#E65100"},"慈溪周巷":{bg:"#F3E5F5",border:"#CE93D8",text:"#7B1FA2"},"瓯江引水":{bg:"#E0F7FA",border:"#80DEEA",text:"#00838F"},"互联网":{bg:"#FBE9E7",border:"#FFAB91",text:"#BF360C"},"其他":{bg:C.gray6,border:C.border,text:C.gray2}};
 const TECH_METHOD_COLORS={"目标检测算法":{bg:"#E3F2FD",border:"#90CAF9",text:"#1565C0"},"实例分割算法":{bg:"#E8F5E9",border:"#A5D6A7",text:"#2E7D32"}};
 const ANNOTATION_COLORS={"YOLO格式":{bg:C.orangeBg,border:C.orangeBd,text:C.orange},"VOC格式":{bg:"#F3E5F5",border:"#CE93D8",text:"#7B1FA2"},"COCO格式":{bg:"#FFF3E0",border:"#FFB74D",text:"#E65100"}}
 const MODEL_CAT_COLORS={"多标签实例分割模型（双标签）":{bg:C.primaryBg,border:C.primaryBd,text:C.primary},"多标签实例分割模型（三标签）":{bg:"#E8F4FE",border:"#A8D0F5",text:"#0A4D8C"},"单标签实例分割模型（背景负样本）":{bg:C.successBg,border:"#A8D5C0",text:C.success},"单标签实例分割模型":{bg:"#EDF6E8",border:"#B0D9A0",text:"#276B27"},"单标签目标检测模型":{bg:C.orangeBg,border:"#F5C8A8",text:C.orange}};
@@ -53,6 +54,7 @@ function Tag({label,colors}){
 function AlgoTag({type}){return React.createElement(Tag,{label:type,colors:ALGO_COLORS[type]||ALGO_COLORS["其他"]});}
 function TechMethodTag({type}){return React.createElement(Tag,{label:type,colors:TECH_METHOD_COLORS[type]||TECH_METHOD_COLORS["目标检测算法"]});}
 function ModelCatTag({cat}){return React.createElement(Tag,{label:cat,colors:MODEL_CAT_COLORS[cat]});}
+function SiteTag({site}){return React.createElement(Tag,{label:site||"-",colors:SITE_COLORS[site]||SITE_COLORS["其他"]});}
 
 function MiniHeatmap({seed,size=52}){
   const cells=6,s=size;
@@ -262,10 +264,17 @@ function DatasetDetail({ds,onBack,onEditClassInfo,onRefresh}){
   const [previewChart,setPreviewChart]=React.useState(null);
   const [chartType,setChartType]=React.useState("");
   const [editModal,setEditModal]=React.useState(false);
-  const [editData,setEditData]=React.useState({algoType:ds.algoType||"其他",techMethod:ds.techMethod||"目标检测算法"});
+  const [editData,setEditData]=React.useState({algoType:ds.algoType||"其他",techMethod:ds.techMethod||"目标检测算法",source:ds.source||""});
+  const [siteOptions,setSiteOptions]=React.useState([]);
   const [uploading,setUploading]=React.useState(false);
   const [detailChartFile,setDetailChartFile]=React.useState(null);
   const [distChartFile,setDistChartFile]=React.useState(null);
+
+  React.useEffect(function(){
+    fetch("/api/settings").then(function(r){return r.json();}).then(function(data){
+      if(data.sites)setSiteOptions(data.sites);
+    }).catch(function(){});
+  },[]);
 
   function handleSaveEdit(){
     setUploading(true);
@@ -276,7 +285,7 @@ function DatasetDetail({ds,onBack,onEditClassInfo,onRefresh}){
       fetch("/api/dataset/"+encodeURIComponent(ds.name),{
         method:"PUT",
         headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({algoType:editData.algoType,techMethod:editData.techMethod})
+        body:JSON.stringify({algoType:editData.algoType,techMethod:editData.techMethod,source:editData.source})
       }).then(function(r){return r.json();}).then(function(data){
         setEditModal(false);
         setDetailChartFile(null);
@@ -626,6 +635,16 @@ function DatasetDetail({ds,onBack,onEditClassInfo,onRefresh}){
           )
         ),
         React.createElement('div',{style:{marginBottom:"16px"}},
+          React.createElement('div',{style:{fontSize:"13px",color:C.gray2,marginBottom:"6px"}},"数据来源"),
+          React.createElement('select',{value:editData.source,onChange:function(e){setEditData(Object.assign({},editData,{source:e.target.value}));},
+            style:{width:"100%",padding:"8px",borderRadius:"4px",border:`1px solid ${C.border}`,fontSize:"13px"}},
+            React.createElement('option',{value:""},"请选择数据来源"),
+            ...siteOptions.map(function(s){
+              return React.createElement('option',{key:s,value:s},s);
+            })
+          )
+        ),
+        React.createElement('div',{style:{marginBottom:"16px"}},
           React.createElement('div',{style:{fontSize:"13px",color:C.gray2,marginBottom:"6px"}},"上传/更换样本分布图(detail.png)"),
           React.createElement('input',{type:"file",accept:"image/*",onChange:function(e){if(e.target.files[0])setDetailChartFile(e.target.files[0]);},
             style:{width:"100%",padding:"6px",fontSize:"12px"}})
@@ -650,7 +669,6 @@ function ModelDetail({model,onBack,onGotoDataset,datasets,onEditModel}){
   const [modelDetail,setModelDetail]=React.useState(null);
   const [loading,setLoading]=React.useState(true);
   const [previewImage,setPreviewImage]=React.useState(null);
-  const [showEdit,setShowEdit]=React.useState(false);
 
   React.useEffect(function(){
     setLoading(true);
@@ -686,7 +704,7 @@ function ModelDetail({model,onBack,onGotoDataset,datasets,onEditModel}){
         React.createElement('span',{style:{color:C.gray4}},"/"),
         React.createElement('span',{style:{color:C.primary,fontSize:"13px"}},model.name)
       ),
-      React.createElement('button',{onClick:function(){setShowEdit(true);},style:{background:C.primary,color:"white",border:"none",borderRadius:"6px",padding:"6px 16px",cursor:"pointer",fontSize:"13px",fontFamily:"inherit"}},"编辑")
+      React.createElement('button',{onClick:onEditModel,style:{background:C.primary,color:"white",border:"none",borderRadius:"6px",padding:"6px 16px",cursor:"pointer",fontSize:"13px",fontFamily:"inherit"}},"编辑")
     ),
     React.createElement(Card,{style:{marginBottom:"16px",padding:"20px 24px"}},
       React.createElement('div',{style:{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:"16px",flexWrap:"wrap"}},
@@ -2121,7 +2139,7 @@ function App(){
                   ),
                   React.createElement('td',{style:td("160px")},React.createElement(TablePreviewGrid,{datasetName:ds.name,count:6,onPreview:setPreviewImage})),
                   React.createElement('td',{style:td("185px")},React.createElement('div',{style:{fontSize:"11px",color:C.gray2,lineHeight:1.6,display:"-webkit-box",WebkitLineClamp:3,WebkitBoxOrient:"vertical",overflow:"hidden"}},ds.desc)),
-                  React.createElement('td',{style:td("100px",true)},React.createElement('span',{style:{fontSize:"11px",color:ds.source?C.gray2:"#999"}},ds.source||"-")),
+                  React.createElement('td',{style:td("100px",true)},React.createElement(SiteTag,{site:ds.source})),
                   React.createElement('td',{style:td("86px",true)},React.createElement('span',{style:{fontSize:"11px",color:C.gray3}},ds.maintainDate)),
                   React.createElement('td',{style:td("72px",true)},React.createElement('span',{style:{fontSize:"11px",color:C.gray2,fontWeight:500}},ds.maintainer)),
                   React.createElement('td',{style:td("110px",true)},React.createElement('div',{style:{display:"flex",gap:"6px"}},
@@ -2188,7 +2206,7 @@ function App(){
                       )
                     ),
                     React.createElement('td',{style:td("80px",true)},React.createElement(AccuracyBar,{value:m.accuracy,width:40})),
-                    React.createElement('td',{style:td("100px",true)},React.createElement('span',{style:{fontSize:"11px",color:m.site?C.gray2:"#999"}},m.site||"-")),
+                    React.createElement('td',{style:td("100px",true)},React.createElement(SiteTag,{site:m.site})),
                     React.createElement('td',{style:td("100px")},
                       React.createElement('span',{style:{color:C.primary,fontSize:"11px",cursor:"pointer",textDecoration:"underline",textDecorationColor:`${C.primary}50`,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",display:"block",maxWidth:"90px"},
                         onClick:e=>{e.stopPropagation();const ds=datasetsState.find(d=>d.name===m.dataset);if(ds)gotoDs(ds);},title:m.dataset},m.dataset||"-")
@@ -2409,6 +2427,7 @@ function ModelEditModal(props){
   const [dataset,setDataset]=React.useState(model?model.dataset:"");
   const [maintainer,setMaintainer]=React.useState(model?model.maintainer:"");
   const [saving,setSaving]=React.useState(false);
+  const [siteOptions,setSiteOptions]=React.useState([]);
 
   React.useEffect(function(){
     if(model&&isOpen){
@@ -2421,6 +2440,14 @@ function ModelEditModal(props){
       setMaintainer(model.maintainer||"");
     }
   },[model,isOpen]);
+
+  React.useEffect(function(){
+    if(isOpen){
+      fetch("/api/settings").then(function(r){return r.json();}).then(function(data){
+        if(data.sites)setSiteOptions(data.sites);
+      }).catch(function(){});
+    }
+  },[isOpen]);
 
   if(!isOpen) return null;
 
@@ -2505,12 +2532,7 @@ function ModelEditModal(props){
           React.createElement('select',{value:site,onChange:function(e){setSite(e.target.value);},
             style:{width:"100%",padding:"10px 12px",border:"1px solid "+C.border,borderRadius:"6px",fontSize:"13px",background:"white"}},
             React.createElement('option',{value:""},"请选择应用现场"),
-            React.createElement('option',{value:"苏北灌溉总渠"},"苏北灌溉总渠"),
-            React.createElement('option',{value:"南水北调宝应站"},"南水北调宝应站"),
-            React.createElement('option',{value:"慈溪北排"},"慈溪北排"),
-            React.createElement('option',{value:"慈溪周巷"},"慈溪周巷"),
-            React.createElement('option',{value:"瓯江引水"},"瓯江引水"),
-            React.createElement('option',{value:"互联网"},"互联网")
+            ...siteOptions.map(function(s){return React.createElement('option',{key:s,value:s},s);})
           )
         ),
         React.createElement('div',{style:{marginBottom:"16px"}},

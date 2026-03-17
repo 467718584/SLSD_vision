@@ -953,6 +953,7 @@ def update_dataset(name):
         data = request.json or {}
         algo_type = data.get('algoType')
         tech_method = data.get('techMethod')
+        source = data.get('source')
 
         conn = get_connection()
         cursor = conn.cursor()
@@ -966,6 +967,9 @@ def update_dataset(name):
         if tech_method is not None:
             updates.append("tech_method = ?")
             params.append(tech_method)
+        if source is not None:
+            updates.append("source = ?")
+            params.append(source)
 
         if not updates:
             return jsonify({"success": False, "error": "没有要更新的内容"}), 400
