@@ -5,7 +5,7 @@ import hashlib
 import secrets
 from datetime import datetime, timedelta
 import jwt
-from database import get_connection
+from modules.database import get_connection
 
 # JWT配置
 JWT_SECRET = secrets.token_hex(32)

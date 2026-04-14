@@ -1,142 +1,99 @@
 """
-文件上传安全校验模块
+API认证装饰器模块
+提供JWT验证和角色检查装饰器
 """
-import os
-import magic
+from functools import wraps
+from flask import request, jsonify, g
+from modules.auth import verify_token, get_user_by_id
 
-# 允许的文件扩展名
-ALLOWED_DATASET_EXTENSIONS = {'.zip', '.tar', '.gz', '.tar.gz'}
-ALLOWED_IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'}
-ALLOWED_LABEL_EXTENSIONS = {'.txt', '.csv', '.json', '.xml'}
-ALLOWED_MODEL_EXTENSIONS = {'.pt', '.pth', '.onnx', '.h5', '.pb', '.pkl', '.joblib'}
-ALLOWED_EXTENSIONS = ALLOWED_DATASET_EXTENSIONS | ALLOWED_IMAGE_EXTENSIONS | ALLOWED_LABEL_EXTENSIONS | ALLOWED_MODEL_EXTENSIONS
-
-# 文件大小限制 (字节)
-MAX_FILE_SIZE = 5 * 1024 * 1024 * 1024  # 5GB
-MAX_IMAGE_SIZE = 10 * 1024 * 1024  # 10MB
-MAX_MODEL_SIZE = 10 * 1024 * 1024 * 1024  # 10GB
-
-# MIME类型检查
-ALLOWED_MIME_TYPES = {
-    'application/zip',
-    'application/x-zip-compressed',
-    'application/gzip',
-    'application/x-gzip',
-    'image/jpeg',
-    'image/png',
-    'image/gif',
-    'image/bmp',
-    'image/webp',
-    'text/plain',
-    'text/csv',
-    'application/json',
-    'application/octet-stream'
+# 公开端点（不需要认证）
+PUBLIC_ENDPOINTS = {
+    'GET': [
+        '/api/datasets',
+        '/api/models',
+        '/api/stats',
+        '/api/settings',
+        '/api/dataset/',
+        '/api/model/detail/',
+        '/api/metrics/',
+    ],
+    'POST': [
+        '/api/auth/login',
+        '/api/auth/register',
+    ],
+    'PUT': [],
+    'DELETE': [],
 }
 
 
-def get_file_extension(filename):
-    """获取文件扩展名（小写）"""
-    if not filename:
-        return ''
-    return os.path.splitext(filename)[1].lower()
-
-
-def validate_file_extension(filename, allowed_extensions=None):
-    """验证文件扩展名"""
-    ext = get_file_extension(filename)
-    if not ext:
-        return False, f"文件 '{filename}' 缺少扩展名"
+def is_public_endpoint(method, path):
+    """检查端点是否公开"""
+    if method not in PUBLIC_ENDPOINTS:
+        return False
     
-    allowed = allowed_extensions or ALLOWED_EXTENSIONS
-    if ext not in allowed:
-        return False, f"不支持的文件类型: {ext}，允许的类型: {', '.join(sorted(allowed))}"
-    
-    return True, None
+    public_patterns = PUBLIC_ENDPOINTS[method]
+    for pattern in public_patterns:
+        if path.startswith(pattern):
+            return True
+    return False
 
 
-def validate_file_size(size, max_size=None):
-    """验证文件大小"""
-    if size > max_size:
-        max_mb = max_size / (1024 * 1024)
-        size_mb = size / (1024 * 1024)
-        return False, f"文件大小 ({size_mb:.1f}MB) 超过限制 ({max_mb:.0f}MB)"
-    return True, None
-
-
-def validate_mime_type(file_stream):
-    """通过文件内容检测MIME类型"""
-    try:
-        # 保存当前位置
-        pos = file_stream.tell()
+def require_auth(f):
+    """需要认证的装饰器"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # 检查是否是公开端点
+        if is_public_endpoint(request.method, request.path):
+            return f(*args, **kwargs)
         
-        # 读取文件头
-        header = file_stream.read(2048)
+        # 获取Token
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header:
+            return jsonify({"success": False, "error": "未授权，请先登录"}), 401
         
-        # 恢复位置
-        file_stream.seek(pos)
+        if not auth_header.startswith('Bearer '):
+            return jsonify({"success": False, "error": "无效的认证格式"}), 401
         
-        # 使用python-magic库检测
-        mime = magic.from_buffer(header, mime=True)
-        return mime
-    except Exception as e:
-        # 如果magic检测失败，返回octet-stream
-        return 'application/octet-stream'
+        token = auth_header[7:]
+        payload = verify_token(token)
+        if not payload:
+            return jsonify({"success": False, "error": "Token无效或已过期"}), 401
+        
+        # 获取用户信息
+        user = get_user_by_id(payload['user_id'])
+        if not user:
+            return jsonify({"success": False, "error": "用户不存在"}), 401
+        
+        # 将用户信息存入g对象
+        g.current_user = user
+        g.user_id = payload['user_id']
+        g.user_role = payload.get('role', 'user')
+        
+        return f(*args, **kwargs)
+    return decorated_function
 
 
-def validate_file_upload(filename, file_stream, file_size, file_type='dataset'):
-    """
-    综合验证上传文件
-    
-    Args:
-        filename: 文件名
-        file_stream: 文件流对象
-        file_size: 文件大小
-        file_type: 文件类型 ('dataset', 'image', 'model', 'chart')
-    
-    Returns:
-        (is_valid, error_message)
-    """
-    # 1. 扩展名检查
-    if file_type == 'dataset':
-        allowed_exts = ALLOWED_DATASET_EXTENSIONS
-        max_size = MAX_FILE_SIZE
-    elif file_type == 'image':
-        allowed_exts = ALLOWED_IMAGE_EXTENSIONS
-        max_size = MAX_IMAGE_SIZE
-    elif file_type == 'model':
-        allowed_exts = ALLOWED_MODEL_EXTENSIONS
-        max_size = MAX_MODEL_SIZE
-    elif file_type == 'chart':
-        allowed_exts = {'.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp'}
-        max_size = MAX_IMAGE_SIZE
-    else:
-        allowed_exts = ALLOWED_EXTENSIONS
-        max_size = MAX_FILE_SIZE
-    
-    valid, error = validate_file_extension(filename, allowed_exts)
-    if not valid:
-        return False, error
-    
-    # 2. 大小检查
-    valid, error = validate_file_size(file_size, max_size)
-    if not valid:
-        return False, error
-    
-    # 3. MIME类型检查（可选，更严格的安全检查）
-    detected_mime = validate_mime_type(file_stream)
-    # 这里可以添加更严格的MIME检查
-    
-    return True, None
+def require_role(*allowed_roles):
+    """角色检查装饰器（需配合require_auth使用）"""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not hasattr(g, 'user_role'):
+                return jsonify({"success": False, "error": "需要登录"}), 401
+            
+            if g.user_role not in allowed_roles:
+                return jsonify({"success": False, "error": "权限不足"}), 403
+            
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
 
 
-def sanitize_filename(filename):
-    """清理文件名，防止路径遍历攻击"""
-    # 移除路径分隔符
-    filename = filename.replace('/', '_').replace('\\', '_')
-    # 移除其他危险字符
-    filename = filename.replace('..', '_')
-    # 限制长度
-    if len(filename) > 255:
-        name, ext = os.path.splitext(filename)
-        filename = name[:250] + ext
-    return filename
+def require_admin(f):
+    """仅管理员可访问的装饰器"""
+    @wraps(f)
+    @require_auth
+    @require_role('admin')
+    def decorated_function(*args, **kwargs):
+        return f(*args, **kwargs)
+    return decorated_function

@@ -41,6 +41,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger('SLSD_Vision')
 
+app = Flask(__name__)
+app.config['START_TIME'] = time.time()
+
 # 请求日志中间件
 @app.before_request
 def before_request():
@@ -75,9 +78,6 @@ def after_request(response):
         stats['avg_time'] = stats['total_time'] / stats['count']
         stats['max_time'] = max(stats['max_time'], elapsed)
     return response
-
-app = Flask(__name__)
-app.config['START_TIME'] = time.time()
 
 # Swagger配置
 swagger_config = {
@@ -920,10 +920,6 @@ def api_users():
 
 # ==================== 受保护的端点 ====================
 
-@app.route('/api/dataset/<name>', methods=['DELETE'])
-@require_auth
-def delete_dataset(name):
-
 def count_yolo_classes(dataset_dir):
     """统计YOLO数据集中的类别信息"""
     class_counts = {}
@@ -1688,6 +1684,7 @@ def api_delete_version(version_id):
 
 
 @app.route('/api/dataset/<name>', methods=['DELETE'])
+@require_auth
 def delete_dataset(name):
     """删除数据集"""
     try:
