@@ -140,6 +140,7 @@ init_database()
 
 # 初始化用户认证表
 from modules.auth import init_users_table
+from modules.auth_decorators import require_auth, require_admin, require_role
 init_users_table()
 
 
@@ -376,6 +377,7 @@ def get_settings():
 
 
 @app.route('/api/settings', methods=['POST'])
+@require_admin
 def update_settings():
     """
     更新系统设置
@@ -915,7 +917,11 @@ def api_users():
     return jsonify({"success": True, "users": users})
 
 
-# ==================== YOLO格式校验函数 ====================
+# ==================== 受保护的端点 ====================
+
+@app.route('/api/dataset/<name>', methods=['DELETE'])
+@require_auth
+def delete_dataset(name):
 
 def count_yolo_classes(dataset_dir):
     """统计YOLO数据集中的类别信息"""
@@ -1121,6 +1127,7 @@ def validate_yolo_format(dataset_dir, annotation_type='yolo'):
 # ==================== 数据集上传API ====================
 
 @app.route('/api/dataset/upload', methods=['POST'])
+@require_auth
 def upload_dataset():
     """上传数据集"""
     upload_mode = request.form.get('uploadMode', 'zip')
@@ -1438,6 +1445,7 @@ def dataset_charts(name):
 
 
 @app.route('/api/dataset/<name>/chart-upload', methods=['POST'])
+@require_auth
 def upload_dataset_chart(name):
     """上传/更新数据集的图表文件"""
     dataset_dir = os.path.join(DATASETS_DIR, name)
@@ -1611,6 +1619,7 @@ def api_compare_versions():
     return jsonify({"success": True, "comparison": result})
 
 @app.route('/api/dataset/versions/<int:version_id>', methods=['DELETE'])
+@require_auth
 def api_delete_version(version_id):
     """
     删除版本 (软删除)
@@ -1653,6 +1662,7 @@ def delete_dataset(name):
 
 
 @app.route('/api/dataset/<name>', methods=['PUT'])
+@require_auth
 def update_dataset(name):
     """更新数据集信息"""
     try:
@@ -1809,6 +1819,7 @@ def update_class_info(name):
 # ==================== 模型上传API ====================
 
 @app.route('/api/model/upload', methods=['POST'])
+@require_auth
 def upload_model():
     """上传模型（支持文件夹上传）"""
     # 检查是单文件还是文件夹
@@ -2070,6 +2081,7 @@ def model_detail_v2(name):
 
 
 @app.route('/api/model/<name>', methods=['PUT'])
+@require_auth
 def update_model(name):
     """更新模型信息"""
     from modules.database import update_model_by_name
@@ -2114,6 +2126,7 @@ def update_model(name):
 
 
 @app.route('/api/model/<name>', methods=['DELETE'])
+@require_auth
 def delete_model(name):
     """删除模型"""
     try:
