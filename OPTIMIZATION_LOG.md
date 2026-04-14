@@ -198,7 +198,7 @@ export const ALGO_COLORS = { ... }
 | ModelDetail | ~50 | P1 | ✅ 完成基础 |
 | **DatasetList** | **~450** | **P1** | **✅ 完成** |
 | **ModelList** | **~400** | **P1** | **✅ 完成** |
-| UploadModal | ~300 | P2 | ⏳ 待开始 |
+| **UploadModal** | **~400** | **P2** | **✅ 完成** |
 | SettingsDialog | ~200 | P2 | ⏳ 待开始 |
 | EditClassInfoModal | ~100 | P2 | ⏳ 待开始 |
 | ModelEditModal | ~200 | P2 | ⏳ 待开始 |
@@ -219,6 +219,16 @@ export const ALGO_COLORS = { ... }
 - ✅ 精度曲线缩略图(4个)
 - ✅ 下载/删除操作
 - ✅ React.memo优化
+
+**UploadModal功能**：
+- ✅ ZIP/文件夹上传模式
+- ✅ 名称重复校验
+- ✅ 算法类型选择
+- ✅ 技术方法选择
+- ✅ 数据来源选择
+- ✅ 标注格式选择
+- ✅ 上传进度显示
+- ✅ 错误处理
 
 ---
 
