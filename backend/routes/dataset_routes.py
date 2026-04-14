@@ -5,6 +5,8 @@ from flask import Blueprint, request, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
 import os
 
+from .errors import api_handler, validate_dataset_name, ApiError
+
 # 创建蓝图
 dataset_bp = Blueprint('datasets', __name__, url_prefix='/api/dataset')
 
@@ -39,6 +41,7 @@ MODELS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'm
 
 
 @dataset_bp.route('/validate-name', methods=['POST'])
+@api_handler
 def validate_name():
     """检查数据集名称是否已存在"""
     data = request.json
@@ -47,6 +50,8 @@ def validate_name():
     if not name:
         return jsonify({"exists": False, "storage_type": None})
 
+    validate_dataset_name(name)
+    
     existing = get_dataset_by_name(name)
     if existing:
         return jsonify({
@@ -57,25 +62,21 @@ def validate_name():
 
 
 @dataset_bp.route('/upload', methods=['POST'])
+@api_handler
 def upload_dataset():
     """上传数据集"""
     from modules.dataset_manager import upload_dataset as _upload
-    try:
-        result = _upload(request)
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+    result = _upload(request)
+    return jsonify(result)
 
 
 @dataset_bp.route('/<name>/images')
+@api_handler
 def get_dataset_images(name):
     """获取数据集图片列表"""
     from modules.dataset_manager import get_dataset_images as _get_images
-    try:
-        images = _get_images(name)
-        return jsonify(images)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    images = _get_images(name)
+    return jsonify(images)
 
 
 @dataset_bp.route('/<name>/split-images')
