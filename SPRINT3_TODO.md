@@ -5,43 +5,59 @@
 | 任务 | 优先级 | 状态 | 备注 |
 |------|--------|------|------|
 | 模型性能对比 | P2 | ✅ 已完成 | 核心功能 |
-| 用户认证系统 | P2 | ⏳ 进行中 | 安全功能 |
+| 用户认证系统 | P2 | ✅ 已完成 | 安全功能 |
 | 数据集版本管理 | P2 | ⏳ 待开始 | 规划中 |
 
-## 用户认证系统
+## 已完成功能
 
-### 功能需求
-- [ ] 1. 用户数据模型 (users表)
-- [ ] 2. 注册API (/api/auth/register)
-- [ ] 3. 登录API (/api/auth/login)
-- [ ] 4. JWT token认证
-- [ ] 5. 前端登录页面
-- [ ] 6. 路由保护中间件
-- [ ] 7. 登出功能
+### 模型性能对比 ✅
+- [x] 模型选择界面 (勾选多个模型)
+- [x] 对比数据API
+- [x] 并排对比表格视图
+- [x] 精度柱状图可视化
+- [x] 训练曲线对比
 
-### 用户表设计
-```sql
-CREATE TABLE users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,
-    email TEXT,
-    role TEXT DEFAULT 'user',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+### 用户认证系统 ✅
+- [x] 用户数据模型 (users表)
+- [x] 注册API (/api/auth/register)
+- [x] 登录API (/api/auth/login)
+- [x] JWT token认证
+- [x] 前端登录/注册页面
+- [x] 登出功能
+- [x] 默认账户: admin / admin123
+
+## 新增API端点
+
+### 认证API
+| 端点 | 方法 | 说明 |
+|------|------|------|
+| /api/auth/register | POST | 用户注册 |
+| /api/auth/login | POST | 用户登录 |
+| /api/auth/me | GET | 获取当前用户 |
+| /api/auth/users | GET | 用户列表 |
+
+## 新增文件
+
+| 文件 | 说明 |
+|------|------|
+| modules/auth.py | 认证模块 |
+| frontend/src/components/Auth.jsx | 登录/注册组件 |
+
+## Git提交记录
+
+```
+869a896 feat: 添加用户认证系统
+60b3ecf docs: 更新Sprint 3工作清单
+4549feb feat: 添加模型性能对比功能
+629477b docs: Sprint 2全部完成
+... (共32个提交)
 ```
 
-### API端点
-- POST /api/auth/register - 用户注册
-- POST /api/auth/login - 用户登录
-- GET /api/auth/me - 获取当前用户
-- POST /api/auth/logout - 登出
-
-## 执行记录
+## 完成记录
 
 | 日期 | 任务 | 状态 |
 |------|------|------|
 | 2026-04-14 | Sprint 1完成 | ✅ |
 | 2026-04-14 | Sprint 2完成 | ✅ |
 | 2026-04-14 | Sprint 3 - 模型对比 | ✅ |
-| 2026-04-14 | Sprint 3 - 用户认证 | ⏳ 进行中 |
+| 2026-04-14 | Sprint 3 - 用户认证 | ✅ |
