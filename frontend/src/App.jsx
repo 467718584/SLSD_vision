@@ -3,6 +3,7 @@ import { C } from './constants'
 import DatasetList from './components/DatasetList'
 import ModelList from './components/ModelList'
 import UploadModal from './components/UploadModal'
+import SettingsDialog from './components/SettingsDialog'
 
 // 懒加载详情页组件
 const DatasetDetail = lazy(() => import('./components/DatasetDetail'))
@@ -35,6 +36,7 @@ function App() {
   const [selectedDataset, setSelectedDataset] = useState(null)
   const [selectedModel, setSelectedModel] = useState(null)
   const [showUpload, setShowUpload] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -133,10 +135,29 @@ function App() {
         {/* 设置页面 */}
         {currentPage === 'settings' && (
           <div style={{ padding: '20px' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: 700, color: C.gray1 }}>系统设置</h2>
-            <p style={{ fontSize: '13px', color: C.gray3, marginTop: '8px' }}>
-              功能迁移中...
-            </p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: 700, color: C.gray1 }}>系统设置</h2>
+              <button
+                onClick={() => setShowSettings(true)}
+                style={{
+                  background: C.primary,
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '7px',
+                  padding: '8px 18px',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: 500
+                }}
+              >
+                编辑设置
+              </button>
+            </div>
+            <div className="card">
+              <p style={{ color: C.gray3, textAlign: 'center', padding: '40px' }}>
+                点击"编辑设置"按钮配置系统参数
+              </p>
+            </div>
           </div>
         )}
 
@@ -188,6 +209,12 @@ function App() {
         isOpen={showUpload}
         onClose={() => setShowUpload(false)}
         onSuccess={loadData}
+      />
+
+      {/* 设置Modal */}
+      <SettingsDialog
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
       />
     </div>
   )
