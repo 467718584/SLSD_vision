@@ -90,6 +90,24 @@ def init_database():
         )
     ''')
 
+    # 数据集版本表
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS dataset_versions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            dataset_name TEXT NOT NULL,
+            version TEXT NOT NULL,
+            description TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            created_by TEXT,
+            file_count INTEGER DEFAULT 0,
+            file_hash TEXT,
+            parent_version TEXT,
+            total INTEGER DEFAULT 0,
+            class_info TEXT,
+            is_active BOOLEAN DEFAULT 1
+        )
+    ''')
+
     # 原始数据表
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS raw_data (
@@ -677,6 +695,120 @@ def delete_site_by_name(name):
     affected = cursor.rowcount
     conn.close()
 
+    return affected > 0
+
+
+# ==================== 数据集版本管理 ====================
+
+def create_dataset_version(dataset_name, version, description=None, created_by=None, 
+                           file_count=0, file_hash=None, parent_version=None,
+                           total=0, class_info=None):
+    """创建数据集版本"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        INSERT INTO dataset_versions 
+        (dataset_name, version, description, created_by, file_count, file_hash, parent_version, total, class_info)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (dataset_name, version, description, created_by, file_count, file_hash, parent_version, total, 
+          json.dumps(class_info) if class_info else None))
+    
+    conn.commit()
+    version_id = cursor.lastrowid
+    conn.close()
+    return version_id
+
+
+def get_dataset_versions(dataset_name):
+    """获取数据集的所有版本"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT * FROM dataset_versions 
+        WHERE dataset_name = ? AND is_active = 1
+        ORDER BY created_at DESC
+    ''', (dataset_name,))
+    
+    rows = cursor.fetchall()
+    conn.close()
+    
+    versions = []
+    for row in rows:
+        v = dict(row)
+        if v.get('class_info'):
+            v['class_info'] = json.loads(v['class_info'])
+        versions.append(v)
+    
+    return versions
+
+
+def get_dataset_version_by_id(version_id):
+    """根据ID获取版本详情"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('SELECT * FROM dataset_versions WHERE id = ?', (version_id,))
+    row = cursor.fetchone()
+    conn.close()
+    
+    if row:
+        v = dict(row)
+        if v.get('class_info'):
+            v['class_info'] = json.loads(v['class_info'])
+        return v
+    return None
+
+
+def get_latest_version(dataset_name):
+    """获取数据集的最新版本"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT * FROM dataset_versions 
+        WHERE dataset_name = ? AND is_active = 1
+        ORDER BY created_at DESC LIMIT 1
+    ''', (dataset_name,))
+    row = cursor.fetchone()
+    conn.close()
+    
+    if row:
+        v = dict(row)
+        if v.get('class_info'):
+            v['class_info'] = json.loads(v['class_info'])
+        return v
+    return None
+
+
+def compare_versions(version_id1, version_id2):
+    """对比两个版本的差异"""
+    v1 = get_dataset_version_by_id(version_id1)
+    v2 = get_dataset_version_by_id(version_id2)
+    
+    if not v1 or not v2:
+        return None
+    
+    return {
+        "version1": v1,
+        "version2": v2,
+        "changes": {
+            "file_count_diff": (v2.get('file_count') or 0) - (v1.get('file_count') or 0),
+            "total_diff": (v2.get('total') or 0) - (v1.get('total') or 0),
+        }
+    }
+
+
+def delete_dataset_version(version_id):
+    """软删除版本 (设置is_active=0)"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('UPDATE dataset_versions SET is_active = 0 WHERE id = ?', (version_id,))
+    conn.commit()
+    affected = cursor.rowcount
+    conn.close()
     return affected > 0
 
 

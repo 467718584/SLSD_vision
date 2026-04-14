@@ -1465,6 +1465,175 @@ def upload_dataset_chart(name):
     return jsonify({"success": True, "path": file_path})
 
 
+# ==================== 数据集版本管理API ====================
+from modules.database import (
+    create_dataset_version, get_dataset_versions, get_dataset_version_by_id,
+    get_latest_version, compare_versions, delete_dataset_version
+)
+
+@app.route('/api/dataset/<name>/versions')
+def api_dataset_versions(name):
+    """
+    获取数据集的所有版本
+    ---
+    tags:
+      - datasets
+    parameters:
+      - name: name
+        in: path
+        type: string
+        required: true
+        description: 数据集名称
+    responses:
+      200:
+        description: 版本列表
+    """
+    versions = get_dataset_versions(name)
+    return jsonify({
+        "success": True,
+        "versions": versions,
+        "latest_version": get_latest_version(name)
+    })
+
+@app.route('/api/dataset/<name>/versions', methods=['POST'])
+def api_create_version(name):
+    """
+    创建数据集新版本
+    ---
+    tags:
+      - datasets
+    parameters:
+      - name: name
+        in: path
+        type: string
+        required: true
+        description: 数据集名称
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          properties:
+            version:
+              type: string
+              description: 版本号 (如 v1.0)
+            description:
+              type: string
+              description: 版本描述
+    responses:
+      200:
+        description: 创建结果
+    """
+    data = request.json
+    version = data.get('version', '')
+    description = data.get('description', '')
+    
+    if not version:
+        return jsonify({"success": False, "error": "版本号不能为空"}), 400
+    
+    # 获取当前最新版本作为父版本
+    latest = get_latest_version(name)
+    parent_version = latest['version'] if latest else None
+    
+    version_id = create_dataset_version(
+        dataset_name=name,
+        version=version,
+        description=description,
+        created_by=data.get('created_by'),
+        file_count=data.get('file_count', 0),
+        file_hash=data.get('file_hash'),
+        parent_version=parent_version,
+        total=data.get('total', 0),
+        class_info=data.get('class_info')
+    )
+    
+    return jsonify({
+        "success": True,
+        "version_id": version_id,
+        "message": f"版本 {version} 创建成功"
+    })
+
+@app.route('/api/dataset/versions/<int:version_id>')
+def api_version_detail(version_id):
+    """
+    获取版本详情
+    ---
+    tags:
+      - datasets
+    parameters:
+      - name: version_id
+        in: path
+        type: integer
+        required: true
+        description: 版本ID
+    responses:
+      200:
+        description: 版本详情
+    """
+    version = get_dataset_version_by_id(version_id)
+    if not version:
+        return jsonify({"success": False, "error": "版本不存在"}), 404
+    
+    return jsonify({"success": True, "version": version})
+
+@app.route('/api/dataset/versions/compare')
+def api_compare_versions():
+    """
+    对比两个版本的差异
+    ---
+    tags:
+      - datasets
+    parameters:
+      - name: v1
+        in: query
+        type: integer
+        required: true
+        description: 版本1 ID
+      - name: v2
+        in: query
+        type: integer
+        required: true
+        description: 版本2 ID
+    responses:
+      200:
+        description: 版本对比结果
+    """
+    v1_id = request.args.get('v1', type=int)
+    v2_id = request.args.get('v2', type=int)
+    
+    if not v1_id or not v2_id:
+        return jsonify({"success": False, "error": "需要提供两个版本ID"}), 400
+    
+    result = compare_versions(v1_id, v2_id)
+    if not result:
+        return jsonify({"success": False, "error": "版本不存在"}), 404
+    
+    return jsonify({"success": True, "comparison": result})
+
+@app.route('/api/dataset/versions/<int:version_id>', methods=['DELETE'])
+def api_delete_version(version_id):
+    """
+    删除版本 (软删除)
+    ---
+    tags:
+      - datasets
+    parameters:
+      - name: version_id
+        in: path
+        type: integer
+        required: true
+        description: 版本ID
+    responses:
+      200:
+        description: 删除结果
+    """
+    success = delete_dataset_version(version_id)
+    return jsonify({
+        "success": success,
+        "message": "版本已删除" if success else "删除失败"
+    })
+
+
 @app.route('/api/dataset/<name>', methods=['DELETE'])
 def delete_dataset(name):
     """删除数据集"""

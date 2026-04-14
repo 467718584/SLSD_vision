@@ -3,6 +3,7 @@ import { C } from './constants'
 import DatasetList from './components/DatasetList'
 import ModelList from './components/ModelList'
 import ModelCompare from './components/ModelCompare'
+import DatasetVersions from './components/DatasetVersions'
 import UploadModal from './components/UploadModal'
 import ModelUploadModal from './components/ModelUploadModal'
 import DatasetEditModal from './components/DatasetEditModal'
@@ -47,6 +48,7 @@ function App() {
   const [editingDataset, setEditingDataset] = useState(null)
   const [editingModel, setEditingModel] = useState(null)
   const [showSettings, setShowSettings] = useState(false)
+  const [versionsDataset, setVersionsDataset] = useState(null)
   const [loading, setLoading] = useState(true)
 
   // 认证状态
@@ -190,6 +192,7 @@ function App() {
         <nav>
           <NavItem active={currentPage === 'overview'} onClick={() => setCurrentPage('overview')}>🏠 全体总览</NavItem>
           <NavItem active={currentPage === 'datasets'} onClick={() => setCurrentPage('datasets')}>📁 数据集管理</NavItem>
+          <NavItem active={currentPage === 'versions'} onClick={() => setCurrentPage('versions')}>📦 版本管理</NavItem>
           <NavItem active={currentPage === 'models'} onClick={() => setCurrentPage('models')}>🤖 模型管理</NavItem>
           <NavItem active={currentPage === 'compare'} onClick={() => setCurrentPage('compare')}>📈 模型对比</NavItem>
           <NavItem active={currentPage === 'settings'} onClick={() => setCurrentPage('settings')}>⚙️ 设置</NavItem>
@@ -226,6 +229,22 @@ function App() {
         {currentPage === 'compare' && (
           <ModelCompare
             models={models}
+          />
+        )}
+
+        {/* 版本管理页面 */}
+        {currentPage === 'versions' && (
+          <VersionSelector
+            datasets={datasets}
+            onSelectDataset={(name) => { setVersionsDataset(name); setCurrentPage('versions-detail') }}
+          />
+        )}
+
+        {/* 版本详情页面 */}
+        {currentPage === 'versions-detail' && versionsDataset && (
+          <DatasetVersions
+            datasetName={versionsDataset}
+            onBack={() => { setVersionsDataset(null); setCurrentPage('versions') }}
           />
         )}
 
@@ -324,6 +343,33 @@ function SettingsCard({ title, items }) {
             color: C.gray2
           }}>{item}</span>
         )) : <span style={{ color: C.gray4, fontSize: '12px' }}>暂无</span>}
+      </div>
+    </div>
+  )
+}
+
+function VersionSelector({ datasets, onSelectDataset }) {
+  return (
+    <div style={{ padding: '20px' }}>
+      <h2 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '20px', color: C.gray1 }}>📦 数据集版本管理</h2>
+      <p style={{ fontSize: '13px', color: C.gray3, marginBottom: '24px' }}>
+        选择一个数据集来管理其版本历史
+      </p>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+        {datasets.map(ds => (
+          <div
+            key={ds.name}
+            onClick={() => onSelectDataset(ds.name)}
+            className="card"
+            style={{ cursor: 'pointer', transition: 'all 0.2s' }}
+          >
+            <div style={{ fontWeight: 600, color: C.gray1, marginBottom: '8px' }}>{ds.name}</div>
+            <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: C.gray3 }}>
+              <span>算法: {ds.algoType}</span>
+              <span>样本: {ds.total?.toLocaleString()}</span>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   )
