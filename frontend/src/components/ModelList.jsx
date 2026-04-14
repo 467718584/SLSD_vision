@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react'
 import { C, ALGO_COLORS, SITE_COLORS, TECH_METHOD_COLORS, MODEL_CAT_COLORS } from '../constants'
+import ConfirmDialog from './ConfirmDialog'
 
 // 基础标签组件
 const MemoizedTag = React.memo(({ label, colors }) => {
@@ -75,6 +76,7 @@ const AccuracyBar = React.memo(({ value, width = 60 }) => {
 function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [filterType, setFilterType] = useState('全部')
+  const [deleteTarget, setDeleteTarget] = useState(null)
 
   // 获取所有算法类型
   const modelAlgos = useMemo(() => {
@@ -94,10 +96,13 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload })
   // 删除模型
   async function deleteModel(name, e) {
     e.stopPropagation()
-    if (!confirm(`确定要删除模型 "${name}" 吗？`)) return
+    setDeleteTarget({ name })
+  }
 
+  async function confirmDelete() {
+    if (!deleteTarget) return
     try {
-      const res = await fetch(`/api/model/${encodeURIComponent(name)}`, { method: 'DELETE' })
+      const res = await fetch(`/api/model/${encodeURIComponent(deleteTarget.name)}`, { method: 'DELETE' })
       const data = await res.json()
       if (data.success) {
         onRefresh()
@@ -107,6 +112,7 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload })
     } catch (err) {
       alert(`删除失败: ${err.message}`)
     }
+    setDeleteTarget(null)
   }
 
   // 下载模型
@@ -372,7 +378,7 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload })
                           下载
                         </button>
                         <button
-                          onClick={(e) => deleteModel(m.name, e)}
+                          onClick={(e) => { e.stopPropagation(); setDeleteTarget({ name: m.name }); }}
                           title="删除模型"
                           style={{
                             background: "#FEE2E2",
@@ -396,6 +402,18 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload })
           </table>
         </div>
       </div>
+
+      {/* 删除确认弹窗 */}
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={confirmDelete}
+        title="确认删除模型"
+        message={`确定要删除模型 "${deleteTarget?.name}" 吗？此操作不可撤销。`}
+        confirmText="删除"
+        cancelText="取消"
+        type="danger"
+      />
     </div>
   )
 }
