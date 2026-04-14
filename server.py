@@ -27,6 +27,32 @@ from modules.model_manager import get_model_files
 from modules.csrf import init_csrf, csrf_protect, generate_csrf_token
 from config import DATASETS_DIR, MODELS_DIR
 
+
+def log_audit(action, resource_type, resource_name, details=None, status='success', error=None):
+    """记录审计日志的辅助函数"""
+    try:
+        user_id = getattr(g, 'user_id', None)
+        username = getattr(g, 'user_role', 'anonymous')
+        ip = request.remote_addr if request else None
+        ua = request.headers.get('User-Agent') if request else None
+        
+        from modules.database import add_audit_log
+        add_audit_log(
+            user_id=user_id,
+            username=username,
+            action=action,
+            resource_type=resource_type,
+            resource_name=resource_name,
+            details=details,
+            ip_address=ip,
+            user_agent=ua,
+            status=status,
+            error_message=str(error) if error else None
+        )
+    except Exception as e:
+        logger.error(f"Failed to log audit: {e}")
+
+
 # ==================== 日志配置 ====================
 LOG_DIR = os.path.join(os.path.dirname(__file__), 'logs')
 if not os.path.exists(LOG_DIR):
@@ -770,6 +796,101 @@ def api_performance_metrics():
     return jsonify({
         **performance_metrics,
         "uptime_seconds": time.time() - app.config.get('START_TIME', time.time())
+    })
+
+
+# ==================== 审计日志API ====================
+
+@app.route('/api/audit/logs')
+@require_admin
+def api_audit_logs():
+    """
+    获取审计日志列表
+    ---
+    tags:
+      - audit
+    parameters:
+      - in: query
+        name: limit
+        type: integer
+        default: 100
+        description: 返回数量
+      - in: query
+        name: offset
+        type: integer
+        default: 0
+        description: 偏移量
+      - in: query
+        name: user_id
+        type: string
+        description: 筛选用户ID
+      - in: query
+        name: action
+        type: string
+        description: 筛选操作类型
+      - in: query
+        name: resource_type
+        type: string
+        description: 筛选资源类型
+    responses:
+      200:
+        description: 审计日志列表
+    """
+    from modules.database import get_audit_logs
+    
+    limit = request.args.get('limit', 100, type=int)
+    offset = request.args.get('offset', 0, type=int)
+    user_id = request.args.get('user_id')
+    action = request.args.get('action')
+    resource_type = request.args.get('resource_type')
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    
+    logs = get_audit_logs(
+        limit=min(limit, 500),
+        offset=offset,
+        user_id=user_id,
+        action=action,
+        resource_type=resource_type,
+        start_date=start_date,
+        end_date=end_date
+    )
+    
+    return jsonify({
+        'success': True,
+        'logs': logs,
+        'limit': limit,
+        'offset': offset
+    })
+
+
+@app.route('/api/audit/stats')
+@require_admin
+def api_audit_stats():
+    """
+    获取审计统计数据
+    ---
+    tags:
+      - audit
+    parameters:
+      - in: query
+        name: days
+        type: integer
+        default: 7
+        description: 统计天数
+    responses:
+      200:
+        description: 审计统计
+    """
+    from modules.database import get_audit_stats
+    
+    days = request.args.get('days', 7, type=int)
+    stats = get_audit_stats(days=min(days, 90))
+    
+    return jsonify({
+        'success': True,
+        'stats': stats,
+        'days': days
     })
 
 
@@ -1731,8 +1852,12 @@ def delete_dataset(name):
         # 删除数据库记录
         delete_dataset_by_name(name)
 
+        # 记录审计日志
+        log_audit('delete', 'dataset', name, {'action': 'delete_dataset'})
+
         return jsonify({"success": True, "message": "数据集已删除"})
     except Exception as e:
+        log_audit('delete', 'dataset', name, status='error', error=str(e))
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -1771,8 +1896,12 @@ def update_dataset(name):
         conn.commit()
         conn.close()
 
+        # 记录审计日志
+        log_audit('update', 'dataset', name, {'updates': data})
+
         return jsonify({"success": True, "message": "数据集已更新"})
     except Exception as e:
+        log_audit('update', 'dataset', name, status='error', error=str(e))
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -2211,9 +2340,13 @@ def update_model(name):
         if update_data:
             update_model_by_name(name, update_data)
 
+        # 记录审计日志
+        log_audit('update', 'model', name, {'updates': data})
+
         return jsonify({"success": True, "message": "模型已更新"})
 
     except Exception as e:
+        log_audit('update', 'model', name, status='error', error=str(e))
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -2232,8 +2365,12 @@ def delete_model(name):
         # 删除数据库记录
         delete_model_by_name(name)
 
+        # 记录审计日志
+        log_audit('delete', 'model', name, {'action': 'delete_model'})
+
         return jsonify({"success": True, "message": "模型已删除"})
     except Exception as e:
+        log_audit('delete', 'model', name, status='error', error=str(e))
         return jsonify({"success": False, "error": str(e)}), 500
 
 

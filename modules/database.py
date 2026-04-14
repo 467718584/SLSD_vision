@@ -147,6 +147,29 @@ def init_database():
          json.dumps(["YOLO格式","VOC格式","COCO格式"]),
          json.dumps(["苏北灌溉总渠","南水北调宝应站","慈溪北排","慈溪周巷","瓯江引水","互联网"])))
 
+    # 操作审计日志表
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS audit_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT,
+            username TEXT,
+            action TEXT NOT NULL,
+            resource_type TEXT,
+            resource_name TEXT,
+            details TEXT,
+            ip_address TEXT,
+            user_agent TEXT,
+            status TEXT DEFAULT 'success',
+            error_message TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    # 创建索引
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_audit_logs_user ON audit_logs(user_id)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at)')
+
     # 数据库迁移：为已有数据库添加新字段（在所有表创建之后执行）
     migrate_database(conn, cursor)
 
@@ -810,6 +833,116 @@ def delete_dataset_version(version_id):
     affected = cursor.rowcount
     conn.close()
     return affected > 0
+
+
+# ==================== 审计日志函数 ====================
+
+def add_audit_log(user_id, username, action, resource_type=None, resource_name=None, 
+                   details=None, ip_address=None, user_agent=None, status='success', 
+                   error_message=None):
+    """添加审计日志"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    details_json = json.dumps(details) if details else None
+    
+    cursor.execute('''
+        INSERT INTO audit_logs 
+        (user_id, username, action, resource_type, resource_name, details, 
+         ip_address, user_agent, status, error_message)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (user_id, username, action, resource_type, resource_name, details_json,
+          ip_address, user_agent, status, error_message))
+    
+    conn.commit()
+    conn.close()
+
+
+def get_audit_logs(limit=100, offset=0, user_id=None, action=None, resource_type=None,
+                   start_date=None, end_date=None):
+    """获取审计日志列表"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    query = 'SELECT * FROM audit_logs WHERE 1=1'
+    params = []
+    
+    if user_id:
+        query += ' AND user_id = ?'
+        params.append(user_id)
+    
+    if action:
+        query += ' AND action = ?'
+        params.append(action)
+    
+    if resource_type:
+        query += ' AND resource_type = ?'
+        params.append(resource_type)
+    
+    if start_date:
+        query += ' AND created_at >= ?'
+        params.append(start_date)
+    
+    if end_date:
+        query += ' AND created_at <= ?'
+        params.append(end_date)
+    
+    query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
+    params.extend([limit, offset])
+    
+    cursor.execute(query, params)
+    rows = cursor.fetchall()
+    conn.close()
+    
+    return [dict(row) for row in rows]
+
+
+def get_audit_stats(days=7):
+    """获取审计统计数据"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # 获取每日操作统计
+    cursor.execute('''
+        SELECT DATE(created_at) as date, action, COUNT(*) as count
+        FROM audit_logs
+        WHERE created_at >= DATE('now', '-' || ? || ' days')
+        GROUP BY DATE(created_at), action
+        ORDER BY date DESC
+    ''', (days,))
+    
+    daily_stats = [dict(row) for row in cursor.fetchall()]
+    
+    # 获取用户操作统计
+    cursor.execute('''
+        SELECT username, COUNT(*) as count
+        FROM audit_logs
+        WHERE created_at >= DATE('now', '-' || ? || ' days')
+        GROUP BY username
+        ORDER BY count DESC
+        LIMIT 10
+    ''', (days,))
+    
+    user_stats = [dict(row) for row in cursor.fetchall()]
+    
+    # 获取资源操作统计
+    cursor.execute('''
+        SELECT resource_type, action, COUNT(*) as count
+        FROM audit_logs
+        WHERE created_at >= DATE('now', '-' || ? || ' days')
+        GROUP BY resource_type, action
+        ORDER BY count DESC
+    ''', (days,))
+    
+    resource_stats = [dict(row) for row in cursor.fetchall()]
+    
+    conn.close()
+    
+    return {
+        'daily_stats': daily_stats,
+        'user_stats': user_stats,
+        'resource_stats': resource_stats
+    }
 
 
 if __name__ == '__main__':
