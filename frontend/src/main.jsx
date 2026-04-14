@@ -5,7 +5,26 @@ import ErrorBoundary from './components/ErrorBoundary'
 import './styles.css'
 import './responsive.css'
 
-// 封装的fetch函数，自动添加Authorization头
+// CSRF Token管理
+let csrfToken = ''
+
+// 获取CSRF Token
+export async function fetchCsrfToken() {
+  try {
+    const res = await fetch('/api/auth/csrf')
+    const data = await res.json()
+    if (data.csrf_token) {
+      csrfToken = data.csrf_token
+    }
+  } catch (e) {
+    console.warn('Failed to fetch CSRF token:', e)
+  }
+}
+
+// 初始化CSRF Token
+fetchCsrfToken()
+
+// 封装的fetch函数，自动添加Authorization和CSRF头
 const originalFetch = window.fetch
 
 window.fetch = async function(url, options = {}) {
@@ -20,15 +39,29 @@ window.fetch = async function(url, options = {}) {
     headers['Authorization'] = `Bearer ${token}`
   }
   
+  // 对于写请求，添加CSRF Token
+  const method = (options.method || 'GET').toUpperCase()
+  if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method) && csrfToken) {
+    headers['X-CSRF-Token'] = csrfToken
+  }
+  
   // 添加Content-Type（如果不是FormData）
   if (!(options.body instanceof FormData) && !headers['Content-Type']) {
     headers['Content-Type'] = 'application/json'
   }
   
-  return originalFetch(url, {
+  const response = await originalFetch(url, {
     ...options,
     headers
   })
+  
+  // 如果收到新的CSRF Token（来自响应头），更新它
+  const newCsrfToken = response.headers.get('X-CSRF-Token')
+  if (newCsrfToken) {
+    csrfToken = newCsrfToken
+  }
+  
+  return response
 }
 
 // 错误处理函数

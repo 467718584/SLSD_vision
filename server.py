@@ -24,6 +24,7 @@ from modules.database import (
 from modules.dataset_manager import get_dataset_images
 from modules.storage import format_size
 from modules.model_manager import get_model_files
+from modules.csrf import init_csrf, csrf_protect, generate_csrf_token
 from config import DATASETS_DIR, MODELS_DIR
 
 # ==================== 日志配置 ====================
@@ -43,6 +44,12 @@ logger = logging.getLogger('SLSD_Vision')
 
 app = Flask(__name__)
 app.config['START_TIME'] = time.time()
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', os.urandom(32))
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+
+# 初始化CSRF保护
+init_csrf(app)
 
 # 请求日志中间件
 @app.before_request
@@ -867,6 +874,27 @@ def api_login():
     })
 
 
+@app.route('/api/auth/csrf')
+def api_csrf():
+    """
+    获取CSRF Token
+    ---
+    tags:
+      - auth
+    responses:
+      200:
+        description: CSRF Token
+        schema:
+          type: object
+          properties:
+            csrf_token:
+              type: string
+            description: CSRF Token
+    """
+    return jsonify({
+        'csrf_token': session.get('csrf_token', '')
+    })
+
 @app.route('/api/auth/me')
 def api_me():
     """
@@ -1125,6 +1153,7 @@ def validate_yolo_format(dataset_dir, annotation_type='yolo'):
 
 @app.route('/api/dataset/upload', methods=['POST'])
 @require_auth
+@csrf_protect
 def upload_dataset():
     """上传数据集"""
     upload_mode = request.form.get('uploadMode', 'zip')
@@ -1472,6 +1501,7 @@ def dataset_charts(name):
 
 @app.route('/api/dataset/<name>/chart-upload', methods=['POST'])
 @require_auth
+@csrf_protect
 def upload_dataset_chart(name):
     """上传/更新数据集的图表文件"""
     dataset_dir = os.path.join(DATASETS_DIR, name)
@@ -1544,6 +1574,8 @@ def api_dataset_versions(name):
     })
 
 @app.route('/api/dataset/<name>/versions', methods=['POST'])
+@require_auth
+@csrf_protect
 def api_create_version(name):
     """
     创建数据集新版本
@@ -1660,6 +1692,7 @@ def api_compare_versions():
 
 @app.route('/api/dataset/versions/<int:version_id>', methods=['DELETE'])
 @require_auth
+@csrf_protect
 def api_delete_version(version_id):
     """
     删除版本 (软删除)
@@ -1685,6 +1718,7 @@ def api_delete_version(version_id):
 
 @app.route('/api/dataset/<name>', methods=['DELETE'])
 @require_auth
+@csrf_protect
 def delete_dataset(name):
     """删除数据集"""
     try:
@@ -1704,6 +1738,7 @@ def delete_dataset(name):
 
 @app.route('/api/dataset/<name>', methods=['PUT'])
 @require_auth
+@csrf_protect
 def update_dataset(name):
     """更新数据集信息"""
     try:
@@ -1772,6 +1807,8 @@ def download_dataset(name):
 
 
 @app.route('/api/dataset/<name>/class-info', methods=['POST'])
+@require_auth
+@csrf_protect
 def update_class_info(name):
     """更新数据集的类别信息"""
     try:
@@ -1861,6 +1898,7 @@ def update_class_info(name):
 
 @app.route('/api/model/upload', methods=['POST'])
 @require_auth
+@csrf_protect
 def upload_model():
     """上传模型（支持文件夹上传）"""
     # 检查是单文件还是文件夹
@@ -2135,6 +2173,7 @@ def model_detail_v2(name):
 
 @app.route('/api/model/<name>', methods=['PUT'])
 @require_auth
+@csrf_protect
 def update_model(name):
     """更新模型信息"""
     from modules.database import update_model_by_name
@@ -2180,6 +2219,7 @@ def update_model(name):
 
 @app.route('/api/model/<name>', methods=['DELETE'])
 @require_auth
+@csrf_protect
 def delete_model(name):
     """删除模型"""
     try:
