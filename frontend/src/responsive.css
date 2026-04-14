@@ -1,0 +1,228 @@
+/* 响应式布局 - 移动端适配 */
+
+/* 平板和手机 */
+@media (max-width: 1024px) {
+  .page-container {
+    flex-direction: column;
+  }
+  
+  .sidebar {
+    width: 100% !important;
+    height: auto;
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    padding: 0;
+    border-bottom: 1px solid #e5e5e5;
+  }
+  
+  .sidebar h2 {
+    font-size: 14px !important;
+    margin: 0;
+    padding: 12px 16px;
+  }
+  
+  .sidebar nav {
+    display: flex;
+    flex-direction: row;
+    flex: 1;
+    overflow-x: auto;
+  }
+  
+  .sidebar > div:first-child {
+    display: none;
+  }
+  
+  .main-content {
+    padding: 12px !important;
+  }
+}
+
+/* 手机 */
+@media (max-width: 768px) {
+  /* 侧边栏优化 */
+  .sidebar {
+    height: 50px;
+    padding: 0 8px;
+  }
+  
+  .sidebar nav {
+    gap: 0;
+  }
+  
+  /* 导航项 */
+  .sidebar [class*="NavItem"],
+  nav div {
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+    min-width: auto;
+  }
+  
+  nav div span {
+    display: none;
+  }
+  
+  /* 页面标题 */
+  h2 {
+    font-size: 16px !important;
+  }
+  
+  /* 卡片 */
+  .card {
+    padding: 12px !important;
+    margin-bottom: 12px !important;
+  }
+  
+  /* 表格 */
+  table {
+    font-size: 11px !important;
+  }
+  
+  th, td {
+    padding: 6px 8px !important;
+  }
+  
+  /* 按钮 */
+  .btn {
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+  }
+  
+  /* 模态框 */
+  .modal,
+  [style*="position: fixed"] > div[style*="background"] {
+    width: 95% !important;
+    max-width: 400px !important;
+    margin: 10px !important;
+    padding: 16px !important;
+  }
+  
+  /* 表单 */
+  input, select, textarea {
+    font-size: 14px !important;
+    padding: 8px !important;
+  }
+  
+  /* 统计卡片 */
+  .stat-card,
+  [style*="gridTemplateColumns: repeat(4"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  /* 图片预览网格 */
+  img[style*="width: 100px"] {
+    width: 60px !important;
+    height: 45px !important;
+  }
+  
+  /* 标签 */
+  span[style*="padding: 2px 8px"] {
+    font-size: 10px !important;
+    padding: 1px 4px !important;
+  }
+}
+
+/* 小手机 */
+@media (max-width: 480px) {
+  .sidebar {
+    height: 45px;
+  }
+  
+  nav div {
+    padding: 8px 10px !important;
+  }
+  
+  h1 {
+    font-size: 18px !important;
+  }
+  
+  h3 {
+    font-size: 14px !important;
+  }
+  
+  .stat-card {
+    padding: 12px 8px !important;
+  }
+  
+  .stat-card div:first-child {
+    font-size: 20px !important;
+  }
+  
+  /* 隐藏次要信息 */
+  .hide-mobile {
+    display: none !important;
+  }
+  
+  /* 简化表格显示 */
+  table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
+
+/* 触摸优化 */
+@media (hover: none) and (pointer: coarse) {
+  /* 触摸设备 */
+  .btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  input, select, textarea {
+    min-height: 44px;
+  }
+  
+  /* 触摸反馈 */
+  .btn:active {
+    opacity: 0.7;
+  }
+  
+  /* 隐藏hover效果 */
+  *:hover {
+    /* 保留颜色变化但移除复杂效果 */
+  }
+}
+
+/* 横屏手机 */
+@media (max-height: 500px) and (orientation: landscape) {
+  .sidebar {
+    height: 40px;
+  }
+  
+  .sidebar h2 {
+    padding: 8px 12px;
+  }
+  
+  nav div {
+    padding: 6px 10px !important;
+    font-size: 11px !important;
+  }
+}
+
+/* 安全区域适配 - iPhone X及以上 */
+@supports (padding: max(0px)) {
+  .sidebar {
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+  }
+  
+  .main-content {
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+}
+
+/* 打印样式 */
+@media print {
+  .sidebar {
+    display: none !important;
+  }
+  
+  .main-content {
+    width: 100% !important;
+    padding: 0 !important;
+  }
+}
