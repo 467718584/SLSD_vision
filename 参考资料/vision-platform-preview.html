@@ -4,9 +4,8 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>机器视觉管理平台</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:#F0F4F8;}
@@ -17,7 +16,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:#F0F4F8;}
 </head>
 <body>
 <div id="root"></div>
-<script type="text/babel">
+<script type="text/javascript">
 const C={primary:"#1462A8",primaryBg:"#EBF3FC",primaryBd:"#BFDBF7",success:"#2E8B57",successBg:"#E8F5EE",warning:"#E67E22",warningBg:"#FEF5E7",orange:"#E8631A",orangeBg:"#FDF0E7",gray1:"#1A2332",gray2:"#3D5166",gray3:"#6B8299",gray4:"#9EAFBE",gray5:"#C8D6E1",gray6:"#E8F0F5",gray7:"#F4F7FA",bg:"#F0F4F8",white:"#FFFFFF",border:"#D8E4EE"};
 const ALGO_COLORS={"路面积水检测":{bg:C.primaryBg,border:C.primaryBd,text:C.primary},"漂浮物检测":{bg:C.successBg,border:"#A8D5C0",text:C.success},"墙面裂缝检测":{bg:C.warningBg,border:"#F9D9B0",text:C.warning},"游泳检测":{bg:"#FDE9E9",border:"#F5BCBC",text:"#C0392B"},"其他":{bg:C.gray6,border:C.border,text:C.gray2}};
 const SITE_COLORS={"苏北灌溉总渠":{bg:"#E3F2FD",border:"#90CAF9",text:"#1565C0"},"南水北调宝应站":{bg:"#E8F5E9",border:"#A5D6A7",text:"#2E7D32"},"慈溪北排":{bg:"#FFF3E0",border:"#FFB74D",text:"#E65100"},"慈溪周巷":{bg:"#F3E5F5",border:"#CE93D8",text:"#7B1FA2"},"瓯江引水":{bg:"#E0F7FA",border:"#80DEEA",text:"#00838F"},"互联网":{bg:"#FBE9E7",border:"#FFAB91",text:"#BF360C"},"其他":{bg:C.gray6,border:C.border,text:C.gray2}};
@@ -47,16 +46,18 @@ const MODELS=[
 {id:9,algoName:"游泳检测",name:"swim-1694-best-0941",category:"单标签目标检测模型",accuracy:94.06,desc:"检测游泳者的单标签目标检测模型。",dataset:"swimming_yolo-1694",maintainDate:"2025/9/18",maintainer:"俞赵波",previewCount:8},
 ];
 
-function Tag({label,colors}){
+// React.memo优化的纯展示组件
+const MemoizedTag = React.memo(function Tag({label,colors}){
   const c=colors||{bg:C.gray6,border:C.border,text:C.gray2};
   return React.createElement('span',{style:{display:"inline-block",padding:"2px 8px",borderRadius:"4px",fontSize:"11px",fontWeight:500,background:c.bg,border:`1px solid ${c.border}`,color:c.text,whiteSpace:"nowrap"}},label);
-}
-function AlgoTag({type}){return React.createElement(Tag,{label:type,colors:ALGO_COLORS[type]||ALGO_COLORS["其他"]});}
-function TechMethodTag({type}){return React.createElement(Tag,{label:type,colors:TECH_METHOD_COLORS[type]||TECH_METHOD_COLORS["目标检测算法"]});}
-function ModelCatTag({cat}){return React.createElement(Tag,{label:cat,colors:MODEL_CAT_COLORS[cat]});}
-function SiteTag({site}){return React.createElement(Tag,{label:site||"-",colors:SITE_COLORS[site]||SITE_COLORS["其他"]});}
+});
+const MemoizedAlgoTag = React.memo(function AlgoTag({type}){return React.createElement(MemoizedTag,{label:type,colors:ALGO_COLORS[type]||ALGO_COLORS["其他"]});});
+const MemoizedTechMethodTag = React.memo(function TechMethodTag({type}){return React.createElement(MemoizedTag,{label:type,colors:TECH_METHOD_COLORS[type]||TECH_METHOD_COLORS["目标检测算法"]});});
+const MemoizedModelCatTag = React.memo(function ModelCatTag({cat}){return React.createElement(MemoizedTag,{label:cat,colors:MODEL_CAT_COLORS[cat]});});
+const MemoizedSiteTag = React.memo(function SiteTag({site}){return React.createElement(MemoizedTag,{label:site||"-",colors:SITE_COLORS[site]||SITE_COLORS["其他"]});});
 
-function MiniHeatmap({seed,size=52}){
+// 纯展示组件 - MiniHeatmap
+const MemoizedMiniHeatmap = React.memo(function MiniHeatmap({seed,size=52}){
   const cells=6,s=size;
   const rects=[];
   for(let r=0;r<cells;r++)for(let c=0;c<cells;c++){
@@ -66,9 +67,9 @@ function MiniHeatmap({seed,size=52}){
     rects.push(React.createElement('rect',{key:`${r}-${c}`,x:c*(s/cells),y:r*(s/cells),width:s/cells-0.5,height:s/cells-0.5,fill,opacity:r===c?0.85:0.4+v*0.5}));
   }
   return React.createElement('svg',{width:size,height:size,style:{borderRadius:"3px",flexShrink:0}},rects);
-}
-// 真实类别标注分布热力图组件
-function ClassHeatmap({classInfo,size=64}){
+});
+// 纯展示组件 - 真实类别标注分布热力图
+const MemoizedClassHeatmap = React.memo(function ClassHeatmap({classInfo,size=64}){
   const entries=Object.entries(classInfo||{});
   const classCount=Math.min(entries.length,6);
   const cells=Math.max(classCount,2);
@@ -93,14 +94,15 @@ function ClassHeatmap({classInfo,size=64}){
   }
   return React.createElement('svg',{width:size,height:size,style:{borderRadius:"3px",flexShrink:0}},rects);
 }
-function MiniDistChart({seed,size=52}){
+// 纯展示组件 - MiniDistChart
+const MemoizedMiniDistChart = React.memo(function MiniDistChart({seed,size=52}){
   const bars=8;
   const heights=Array.from({length:bars},(_,i)=>Math.max(0.12,Math.exp(-Math.pow((i-bars/2)/2,2))*0.85+Math.abs(Math.sin(seed*13.7+i*2.3))*0.15));
   return React.createElement('svg',{width:size,height:size,style:{borderRadius:"3px",flexShrink:0}},
     React.createElement('rect',{width:size,height:size,fill:"#F0F7FF",rx:"2"}),
     ...heights.map((h,i)=>{const bw=size/bars-1,bh=h*(size-6);return React.createElement('rect',{key:i,x:i*(size/bars)+0.5,y:size-bh-3,width:bw,height:bh,fill:C.primary,opacity:0.55+i*0.05,rx:"1"});})
   );
-}
+});
 
 // 真实详情图组件
 function DetailChart({datasetName,size=50,onClick}){
@@ -127,10 +129,10 @@ function DetailChart({datasetName,size=50,onClick}){
   }
   if(!chartUrl){
     return React.createElement('div',{onClick:onClick,style:{cursor:onClick?"pointer":"default"}},
-      React.createElement(MiniHeatmap,{seed:Math.abs(datasetName.split("").reduce(function(a,c){return a+c.charCodeAt(0)},0)),size:size})
+      React.createElement(MemoizedMiniHeatmap,{seed:Math.abs(datasetName.split("").reduce(function(a,c){return a+c.charCodeAt(0)},0)),size:size})
     );
   }
-  return React.createElement('img',{src:chartUrl,alt:"detail",onClick:onClick,style:{width:size,height:size,objectFit:"cover",borderRadius:"3px",cursor:onClick?"pointer":"default"}});
+  return React.createElement('img',{src:chartUrl,alt:"detail",loading:"lazy",onClick:onClick,style:{width:size,height:size,objectFit:"cover",borderRadius:"3px",cursor:onClick?"pointer":"default"}});
 }
 
 // 真实分布图组件
@@ -158,10 +160,10 @@ function DistChart({datasetName,size=50,onClick}){
   }
   if(!chartUrl){
     return React.createElement('div',{onClick:onClick,style:{cursor:onClick?"pointer":"default"}},
-      React.createElement(MiniDistChart,{seed:Math.abs(datasetName.split("").reduce(function(a,c){return a+c.charCodeAt(0)},0)),size:size})
+      React.createElement(MemoizedMiniDistChart,{seed:Math.abs(datasetName.split("").reduce(function(a,c){return a+c.charCodeAt(0)},0)),size:size})
     );
   }
-  return React.createElement('img',{src:chartUrl,alt:"distribution",onClick:onClick,style:{width:size,height:size,objectFit:"cover",borderRadius:"3px",cursor:onClick?"pointer":"default"}});
+  return React.createElement('img',{src:chartUrl,alt:"distribution",loading:"lazy",onClick:onClick,style:{width:size,height:size,objectFit:"cover",borderRadius:"3px",cursor:onClick?"pointer":"default"}});
 }
 function MiniCurve({seed,size=48,color=C.primary}){
   const pts=Array.from({length:10},(_,i)=>Math.min(0.98,Math.max(0.1,1-Math.exp(-i*0.4)+Math.sin(seed*11+i*3.7)*0.03)));
@@ -231,7 +233,7 @@ function TablePreviewGrid({datasetName,count=4,onPreview}){
   return React.createElement('div',{style:{display:"flex",gap:"2px",flexWrap:"wrap"}},
     images.map(function(img,i){
       const imgUrl="/data/"+img.replace("SLSD_vision/data/","");
-      return React.createElement('img',{key:i,src:imgUrl,alt:"preview",style:{width:"28px",height:"28px",objectFit:"cover",borderRadius:"2px",border:`1px solid ${C.border}`,cursor:"pointer"},
+      return React.createElement('img',{key:i,src:imgUrl,alt:"preview",loading:"lazy",style:{width:"28px",height:"28px",objectFit:"cover",borderRadius:"2px",border:`1px solid ${C.border}`,cursor:"pointer"},
         onClick:function(e){e.stopPropagation();if(onPreview)onPreview(img);},
         title:"点击查看大图"
       });
@@ -368,7 +370,7 @@ function DatasetDetail({ds,onBack,onEditClassInfo,onRefresh}){
       React.createElement('div',{style:{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:"16px",flexWrap:"wrap"}},
         React.createElement('div',{style:{flex:1,minWidth:"280px"}},
           React.createElement('div',{style:{display:"flex",alignItems:"center",gap:"10px",marginBottom:"8px",flexWrap:"wrap"}},
-            React.createElement(AlgoTag,{type:ds.algoType}),
+            React.createElement(MemoizedAlgoTag,{type:ds.algoType}),
             React.createElement('span',{style:{fontSize:"11px",padding:"2px 8px",background:storageType==="zip"?C.orangeBg:C.primaryBg,color:storageType==="zip"?C.orange:C.primary,borderRadius:"4px",border:`1px solid ${storageType==="zip"?C.orangeBd:C.primaryBd}`}},storageType==="zip"?"压缩包":"文件夹"),
             React.createElement('span',{style:{fontSize:"11px",padding:"2px 8px",background:C.gray6,color:C.gray2,borderRadius:"4px",border:`1px solid ${C.border}`}},annotationType.toUpperCase()),
             React.createElement('span',{style:{fontSize:"13px",color:C.gray4}},`编号 #${ds.id}`)
@@ -405,15 +407,15 @@ function DatasetDetail({ds,onBack,onEditClassInfo,onRefresh}){
           React.createElement('div',{style:{fontSize:"12px",color:C.gray2,lineHeight:1.8}},
             React.createElement('div',{style:{display:"flex",justifyContent:"space-between",marginBottom:"6px",alignItems:"center"}},
               React.createElement('span',null,"算法类型"),
-              React.createElement(AlgoTag,{type:ds.algoType||"其他"})
+              React.createElement(MemoizedAlgoTag,{type:ds.algoType||"其他"})
             ),
             React.createElement('div',{style:{display:"flex",justifyContent:"space-between",marginBottom:"6px",alignItems:"center"}},
               React.createElement('span',null,"技术方法"),
-              React.createElement(TechMethodTag,{type:techMethod})
+              React.createElement(MemoizedTechMethodTag,{type:techMethod})
             ),
             React.createElement('div',{style:{display:"flex",justifyContent:"space-between",marginBottom:"6px",alignItems:"center"}},
               React.createElement('span',null,"数据来源"),
-              React.createElement(SiteTag,{site:ds.source})
+              React.createElement(MemoizedSiteTag,{site:ds.source})
             ),
             React.createElement('div',{style:{display:"flex",justifyContent:"space-between",marginBottom:"6px"}},
               React.createElement('span',null,"存储方式"),
@@ -511,14 +513,14 @@ function DatasetDetail({ds,onBack,onEditClassInfo,onRefresh}){
                     const count=typeof v==="number"?v:(v&&v.count?v.count:0);
                     const col=palette[i%palette.length];
                     return React.createElement('div',{key:k,style:{textAlign:"center"}},
-                      React.createElement(ClassHeatmap,{classInfo:{[k]:v},size:56}),
+                      React.createElement(MemoizedClassHeatmap,{classInfo:{[k]:v},size:56}),
                       React.createElement('div',{style:{fontSize:"10px",color:C.gray3,marginTop:"2px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"70px"}},name),
                       React.createElement('div',{style:{fontSize:"9px",color:col,fontWeight:600}},count)
                     );
                   })
                 ):
                 React.createElement('div',{style:{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"4px"}},
-                  ...Array.from({length:8},(_,i)=>React.createElement(MiniHeatmap,{key:i,seed:ds.id*7+i,size:64}))
+                  ...Array.from({length:8},(_,i)=>React.createElement(MemoizedMiniHeatmap,{key:i,seed:ds.id*7+i,size:64}))
                 )
             ),
             React.createElement('div',null,
@@ -714,8 +716,8 @@ function ModelDetail({model,onBack,onGotoDataset,datasets,onEditModel}){
       React.createElement('div',{style:{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:"16px",flexWrap:"wrap"}},
         React.createElement('div',{style:{flex:1,minWidth:"280px"}},
           React.createElement('div',{style:{display:"flex",alignItems:"center",gap:"8px",marginBottom:"8px",flexWrap:"wrap"}},
-            React.createElement(AlgoTag,{type:model.algoName}),
-            React.createElement(ModelCatTag,{cat:model.category}),
+            React.createElement(MemoizedAlgoTag,{type:model.algoName}),
+            React.createElement(MemoizedModelCatTag,{cat:model.category}),
             React.createElement('span',{style:{fontSize:"13px",color:C.gray4}},`#${model.id}`)
           ),
           React.createElement('div',{style:{fontSize:"18px",fontWeight:700,color:C.gray1,marginBottom:"10px"}},model.name),
@@ -738,10 +740,10 @@ function ModelDetail({model,onBack,onGotoDataset,datasets,onEditModel}){
     React.createElement(Card,{style:{padding:"16px 20px",marginBottom:"16px"}},
       React.createElement('div',{style:{display:"flex",alignItems:"center",gap:"12px",flexWrap:"wrap"}},
         React.createElement('span',{style:{fontSize:"13px",fontWeight:600,color:C.gray2}},"模型信息："),
-        React.createElement(AlgoTag,{type:model.algoName}),
-        React.createElement(TechMethodTag,{type:model.techMethod||"目标检测算法"}),
-        React.createElement(ModelCatTag,{cat:model.category}),
-        React.createElement(SiteTag,{site:model.site})
+        React.createElement(MemoizedAlgoTag,{type:model.algoName}),
+        React.createElement(MemoizedTechMethodTag,{type:model.techMethod||"目标检测算法"}),
+        React.createElement(MemoizedModelCatTag,{cat:model.category}),
+        React.createElement(MemoizedSiteTag,{site:model.site})
       )
     ),
     React.createElement('div',{style:{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"16px"}},
@@ -2132,8 +2134,8 @@ function App(){
                   onMouseLeave:e=>{e.currentTarget.style.background=idx%2===0?C.white:"#FAFCFE";},
                   style:{cursor:"pointer",background:idx%2===0?C.white:"#FAFCFE",transition:"background .1s"}},
                   React.createElement('td',{style:td("48px",true)},React.createElement('span',{style:{fontWeight:600,color:C.gray4}},ds.id)),
-                  React.createElement('td',{style:td("110px",true)},React.createElement(AlgoTag,{type:ds.algoType})),
-                  React.createElement('td',{style:td("110px",true)},React.createElement(TechMethodTag,{type:ds.techMethod||"目标检测算法"})),
+                  React.createElement('td',{style:td("110px",true)},React.createElement(MemoizedAlgoTag,{type:ds.algoType})),
+                  React.createElement('td',{style:td("110px",true)},React.createElement(MemoizedTechMethodTag,{type:ds.techMethod||"目标检测算法"})),
                   React.createElement('td',{style:td("210px")},React.createElement('div',{style:{color:C.primary,fontWeight:500,fontSize:"12px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"200px"},title:ds.name},ds.name)),
                   React.createElement('td',{style:td("70px",true)},React.createElement('span',{style:{background:C.primaryBg,color:C.primary,border:`1px solid ${C.primaryBd}`,borderRadius:"4px",padding:"2px 6px",fontSize:"11px",fontWeight:600}},ds.split)),
                   React.createElement('td',{style:td("72px",true)},React.createElement('span',{style:{fontWeight:700,color:C.gray1,fontSize:"13px"}},ds.total.toLocaleString())),
@@ -2153,7 +2155,7 @@ function App(){
                   ),
                   React.createElement('td',{style:td("160px")},React.createElement(TablePreviewGrid,{datasetName:ds.name,count:6,onPreview:setPreviewImage})),
                   React.createElement('td',{style:td("185px")},React.createElement('div',{style:{fontSize:"11px",color:C.gray2,lineHeight:1.6,display:"-webkit-box",WebkitLineClamp:3,WebkitBoxOrient:"vertical",overflow:"hidden"}},ds.desc)),
-                  React.createElement('td',{style:td("100px",true)},React.createElement(SiteTag,{site:ds.source})),
+                  React.createElement('td',{style:td("100px",true)},React.createElement(MemoizedSiteTag,{site:ds.source})),
                   React.createElement('td',{style:td("86px",true)},React.createElement('span',{style:{fontSize:"11px",color:C.gray3}},ds.maintainDate)),
                   React.createElement('td',{style:td("72px",true)},React.createElement('span',{style:{fontSize:"11px",color:C.gray2,fontWeight:500}},ds.maintainer)),
                   React.createElement('td',{style:td("110px",true)},React.createElement('div',{style:{display:"flex",gap:"6px"}},
@@ -2204,10 +2206,10 @@ function App(){
                     onMouseLeave:e=>{e.currentTarget.style.background=idx%2===0?C.white:"#FAFCFE";},
                     style:{cursor:"pointer",background:idx%2===0?C.white:"#FAFCFE",transition:"background .1s"}},
                     React.createElement('td',{style:td("48px",true)},React.createElement('span',{style:{fontWeight:600,color:C.gray4}},m.id)),
-                    React.createElement('td',{style:td("100px",true)},React.createElement(AlgoTag,{type:m.algoName})),
-                    React.createElement('td',{style:td("110px",true)},React.createElement(TechMethodTag,{type:m.techMethod||"目标检测算法"})),
+                    React.createElement('td',{style:td("100px",true)},React.createElement(MemoizedAlgoTag,{type:m.algoName})),
+                    React.createElement('td',{style:td("110px",true)},React.createElement(MemoizedTechMethodTag,{type:m.techMethod||"目标检测算法"})),
                     React.createElement('td',{style:td("220px")},React.createElement('div',{style:{color:C.primary,fontWeight:500,fontSize:"12px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"210px"},title:m.name},m.name)),
-                    React.createElement('td',{style:td("120px")},React.createElement(ModelCatTag,{cat:m.category})),
+                    React.createElement('td',{style:td("120px")},React.createElement(MemoizedModelCatTag,{cat:m.category})),
                     React.createElement('td',{style:td("140px")},React.createElement('div',{style:{fontSize:"11px",color:C.gray2,lineHeight:1.5,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}},m.description||"-")),
                     React.createElement('td',{style:td("80px",true)},
                       React.createElement('div',{style:{display:"flex",gap:"2px",flexWrap:"wrap",justifyContent:"center",maxWidth:"70px"},
@@ -2220,7 +2222,7 @@ function App(){
                       )
                     ),
                     React.createElement('td',{style:td("80px",true)},React.createElement(AccuracyBar,{value:m.accuracy,width:40})),
-                    React.createElement('td',{style:td("100px",true)},React.createElement(SiteTag,{site:m.site})),
+                    React.createElement('td',{style:td("100px",true)},React.createElement(MemoizedSiteTag,{site:m.site})),
                     React.createElement('td',{style:td("100px")},
                       React.createElement('span',{style:{color:C.primary,fontSize:"11px",cursor:"pointer",textDecoration:"underline",textDecorationColor:`${C.primary}50`,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",display:"block",maxWidth:"90px"},
                         onClick:e=>{e.stopPropagation();const ds=datasetsState.find(d=>d.name===m.dataset);if(ds)gotoDs(ds);},title:m.dataset},m.dataset||"-")
