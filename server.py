@@ -8,6 +8,7 @@ from datetime import datetime
 from flask import Flask, render_template_string, jsonify, request, send_from_directory
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import RequestEntityTooLarge
+from flasgger import Swagger
 from modules.database import (
     init_database, get_all_datasets, get_all_models,
     get_dataset_by_name, get_model_by_name,
@@ -24,7 +25,43 @@ from config import DATASETS_DIR, MODELS_DIR
 
 app = Flask(__name__)
 
-# 注册Flask Blueprint（可选，用于模块化路由）
+# Swagger配置
+swagger_config = {
+    "headers": [],
+    "specs": [
+        {
+            "endpoint": 'apispec',
+            "route": '/apispec.json',
+            "rule_filter": lambda rule: True,
+            "model_filter": lambda tag: True,
+        }
+    ],
+    "static_url_path": "/flasgger_static",
+    "swagger_ui": True,
+    "specs_route": "/api/docs/"
+}
+
+swagger_template = {
+    "info": {
+        "title": "SLSD Vision Platform API",
+        "description": "机器视觉管理平台 RESTful API",
+        "version": "1.7.0",
+        "contact": {
+            "name": "开发团队",
+            "email": "dev@slsd.vision"
+        }
+    },
+    "basePath": "/",
+    "schemes": ["http", "https"],
+    "tags": [
+        {"name": "datasets", "description": "数据集管理"},
+        {"name": "models", "description": "模型管理"},
+        {"name": "settings", "description": "系统设置"},
+        {"name": "stats", "description": "统计信息"}
+    ]
+}
+
+Swagger(app, config=swagger_config, template=swagger_template)
 try:
     from backend.routes import register_blueprints
     register_blueprints(app)
@@ -248,7 +285,33 @@ def index():
 
 @app.route('/api/settings')
 def get_settings():
-    """获取系统设置"""
+    """
+    获取系统设置
+    ---
+    tags:
+      - settings
+    responses:
+      200:
+        description: 系统设置
+        schema:
+          type: object
+          properties:
+            algo_types:
+              type: array
+              items:
+                type: string
+              description: 算法类型列表
+            tech_methods:
+              type: array
+              items:
+                type: string
+              description: 技术方法列表
+            sites:
+              type: array
+              items:
+                type: string
+              description: 应用现场列表
+    """
     from modules.database import get_settings
     settings = get_settings()
     return jsonify(settings)
@@ -256,7 +319,34 @@ def get_settings():
 
 @app.route('/api/settings', methods=['POST'])
 def update_settings():
-    """更新系统设置"""
+    """
+    更新系统设置
+    ---
+    tags:
+      - settings
+    parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          properties:
+            algo_types:
+              type: array
+              items:
+                type: string
+            tech_methods:
+              type: array
+              items:
+                type: string
+            sites:
+              type: array
+              items:
+                type: string
+    responses:
+      200:
+        description: 更新成功
+    """
     from modules.database import update_settings
 
     data = request.json or {}
@@ -296,7 +386,40 @@ def validate_dataset_name():
 
 @app.route('/api/datasets')
 def api_datasets():
-    """数据集API"""
+    """
+    获取所有数据集列表
+    ---
+    tags:
+      - datasets
+    parameters:
+      - name: q
+        in: query
+        type: string
+        required: false
+        description: 搜索关键词
+      - name: type
+        in: query
+        type: string
+        required: false
+        description: 算法类型过滤
+    responses:
+      200:
+        description: 数据集列表
+        schema:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                description: 数据集名称
+              algoType:
+                type: string
+                description: 算法类型
+              total:
+                type: integer
+                description: 样本总数
+    """
     query = request.args.get('q', '')
     algo_type = request.args.get('type', '')
 
@@ -368,7 +491,43 @@ def api_datasets():
 
 @app.route('/api/models')
 def api_models():
-    """模型API"""
+    """
+    获取所有模型列表
+    ---
+    tags:
+      - models
+    parameters:
+      - name: q
+        in: query
+        type: string
+        required: false
+        description: 搜索关键词
+      - name: name
+        in: query
+        type: string
+        required: false
+        description: 算法名称过滤
+    responses:
+      200:
+        description: 模型列表
+        schema:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                description: 模型名称
+              algoName:
+                type: string
+                description: 算法名称
+              accuracy:
+                type: number
+                description: 模型精度(%)
+              category:
+                type: string
+                description: 模型类别
+    """
     query = request.args.get('q', '')
     algo_name = request.args.get('name', '')
 
@@ -401,7 +560,36 @@ def api_models():
 
 @app.route('/api/stats')
 def api_stats():
-    """统计API"""
+    """
+    获取平台统计信息
+    ---
+    tags:
+      - stats
+    responses:
+      200:
+        description: 统计信息
+        schema:
+          type: object
+          properties:
+            datasets:
+              type: object
+              properties:
+                count:
+                  type: integer
+                  description: 数据集数量
+                totalImages:
+                  type: integer
+                  description: 样本总数
+            models:
+              type: object
+              properties:
+                count:
+                  type: integer
+                  description: 模型数量
+                avgAccuracy:
+                  type: number
+                  description: 平均精度
+    """
     ds_stats = get_dataset_stats()
     m_stats = get_model_stats()
     return jsonify({
