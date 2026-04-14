@@ -2,6 +2,7 @@ import React, { useState, useEffect, lazy, Suspense } from 'react'
 import { C } from './constants'
 import DatasetList from './components/DatasetList'
 import ModelList from './components/ModelList'
+import ModelCompare from './components/ModelCompare'
 import UploadModal from './components/UploadModal'
 import ModelUploadModal from './components/ModelUploadModal'
 import DatasetEditModal from './components/DatasetEditModal'
@@ -128,6 +129,7 @@ function App() {
           <NavItem active={currentPage === 'overview'} onClick={() => setCurrentPage('overview')}>🏠 全体总览</NavItem>
           <NavItem active={currentPage === 'datasets'} onClick={() => setCurrentPage('datasets')}>📁 数据集管理</NavItem>
           <NavItem active={currentPage === 'models'} onClick={() => setCurrentPage('models')}>🤖 模型管理</NavItem>
+          <NavItem active={currentPage === 'compare'} onClick={() => setCurrentPage('compare')}>📈 模型对比</NavItem>
           <NavItem active={currentPage === 'settings'} onClick={() => setCurrentPage('settings')}>⚙️ 设置</NavItem>
         </nav>
       </div>
@@ -152,6 +154,13 @@ function App() {
             onSelectModel={setSelectedModel}
             onRefresh={loadData}
             onShowUpload={() => setShowModelUpload(true)}
+          />
+        )}
+
+        {/* 模型对比页面 */}
+        {currentPage === 'compare' && (
+          <ModelCompare
+            models={models}
           />
         )}
 

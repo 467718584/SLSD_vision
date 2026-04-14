@@ -612,6 +612,70 @@ def api_models():
     return jsonify(models_data)
 
 
+@app.route('/api/models/compare')
+def api_models_compare():
+    """
+    模型性能对比
+    ---
+    tags:
+      - models
+    parameters:
+      - name: models
+        in: query
+        type: string
+        required: true
+        description: 模型名称列表，用逗号分隔
+    responses:
+      200:
+        description: 模型对比数据
+    """
+    models_param = request.args.get('models', '')
+    if not models_param:
+        return jsonify({"success": False, "error": "请指定要对比的模型"}), 400
+    
+    model_names = [m.strip() for m in models_param.split(',') if m.strip()]
+    if len(model_names) < 2:
+        return jsonify({"success": False, "error": "至少需要选择2个模型进行对比"}), 400
+    if len(model_names) > 5:
+        return jsonify({"success": False, "error": "最多支持5个模型同时对比"}), 400
+    
+    compare_data = []
+    for name in model_names:
+        model = get_model_by_name(name)
+        if not model:
+            continue
+        
+        # 获取模型图表
+        model_dir = os.path.join(MODELS_DIR, name)
+        charts = {}
+        chart_files = ['map50_curve.png', 'map50_95_curve.png', 'PR_curve.png', 
+                      'confusion_matrix.png', 'F1_curve.png', 'precision_curve.png',
+                      'recall_curve.png', 'train_box_loss_curve.png', 'val_box_loss_curve.png']
+        for cf in chart_files:
+            chart_path = os.path.join(model_dir, cf)
+            if os.path.exists(chart_path):
+                chart_key = cf.replace('.png', '').replace('_curve', '_curve').replace('map50_95', 'map50_95')
+                charts[chart_key] = f'/data/models/{name}/{cf}'
+        
+        compare_data.append({
+            "name": model.get('name', ''),
+            "algoName": model.get('algo_name', ''),
+            "category": model.get('category', ''),
+            "accuracy": model.get('accuracy', 0),
+            "techMethod": model.get('tech_method', ''),
+            "site": model.get('site', ''),
+            "dataset": model.get('dataset', ''),
+            "maintainer": model.get('maintainer', ''),
+            "maintainDate": model.get('maintain_date', ''),
+            "charts": charts
+        })
+    
+    return jsonify({
+        "success": True,
+        "models": compare_data
+    })
+
+
 @app.route('/api/stats')
 def api_stats():
     """
