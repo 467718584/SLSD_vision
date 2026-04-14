@@ -10,6 +10,7 @@ import DatasetEditModal from './components/DatasetEditModal'
 import ModelEditModal from './components/ModelEditModal'
 import SettingsDialog from './components/SettingsDialog'
 import { Login, Register, UserInfo } from './components/Auth'
+import { useKeyboardShortcuts, KEYBOARD_SHORTCUTS } from './hooks/useKeyboardShortcuts'
 
 // 懒加载详情页组件
 const DatasetDetail = lazy(() => import('./components/DatasetDetail'))
@@ -60,6 +61,33 @@ function App() {
     checkAuth()
     loadData()
   }, [])
+
+  // 键盘快捷键 - ESC关闭弹窗
+  useKeyboardShortcuts({
+    [KEYBOARD_SHORTCUTS.CLOSE]: () => {
+      if (showUpload) setShowUpload(false)
+      if (showModelUpload) setShowModelUpload(false)
+      if (showDatasetEdit) setShowDatasetEdit(false)
+      if (showModelEdit) setShowModelEdit(false)
+      if (showSettings) setShowSettings(false)
+    },
+    [KEYBOARD_SHORTCUTS.SAVE]: (e) => {
+      // Ctrl+S 保存（如果有编辑中的内容）
+      if (showDatasetEdit && editingDataset) {
+        e.preventDefault()
+        document.getElementById('saveDatasetBtn')?.click()
+      }
+      if (showModelEdit && editingModel) {
+        e.preventDefault()
+        document.getElementById('saveModelBtn')?.click()
+      }
+    },
+    [KEYBOARD_SHORTCUTS.DATASETS]: () => setCurrentPage('datasets'),
+    [KEYBOARD_SHORTCUTS.MODELS]: () => setCurrentPage('models'),
+    [KEYBOARD_SHORTCUTS.OVERVIEW]: () => setCurrentPage('overview'),
+    [KEYBOARD_SHORTCUTS.NEW_DATASET]: () => setShowUpload(true),
+    [KEYBOARD_SHORTCUTS.NEW_MODEL]: () => setShowModelUpload(true),
+  }, { enabled: !authLoading })
 
   // 检查认证状态
   async function checkAuth() {
