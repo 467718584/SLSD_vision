@@ -4,6 +4,8 @@ import DatasetList from './components/DatasetList'
 import ModelList from './components/ModelList'
 import UploadModal from './components/UploadModal'
 import ModelUploadModal from './components/ModelUploadModal'
+import DatasetEditModal from './components/DatasetEditModal'
+import ModelEditModal from './components/ModelEditModal'
 import SettingsDialog from './components/SettingsDialog'
 
 // 懒加载详情页组件
@@ -38,6 +40,10 @@ function App() {
   const [selectedModel, setSelectedModel] = useState(null)
   const [showUpload, setShowUpload] = useState(false)
   const [showModelUpload, setShowModelUpload] = useState(false)
+  const [showDatasetEdit, setShowDatasetEdit] = useState(false)
+  const [showModelEdit, setShowModelEdit] = useState(false)
+  const [editingDataset, setEditingDataset] = useState(null)
+  const [editingModel, setEditingModel] = useState(null)
   const [showSettings, setShowSettings] = useState(false)
   const [loading, setLoading] = useState(true)
 
@@ -78,6 +84,13 @@ function App() {
           ds={selectedDataset}
           onBack={() => setSelectedDataset(null)}
           onRefresh={loadData}
+          onEdit={(ds) => { setEditingDataset(ds); setShowDatasetEdit(true) }}
+        />
+        <DatasetEditModal
+          isOpen={showDatasetEdit}
+          onClose={() => { setShowDatasetEdit(false); setEditingDataset(null) }}
+          onSave={loadData}
+          dataset={editingDataset}
         />
       </Suspense>
     )
@@ -90,6 +103,14 @@ function App() {
           model={selectedModel}
           datasets={datasets}
           onBack={() => setSelectedModel(null)}
+          onEdit={(m) => { setEditingModel(m); setShowModelEdit(true) }}
+        />
+        <ModelEditModal
+          isOpen={showModelEdit}
+          onClose={() => { setShowModelEdit(false); setEditingModel(null) }}
+          onSave={loadData}
+          model={editingModel}
+          datasets={datasets}
         />
       </Suspense>
     )
@@ -148,61 +169,24 @@ function App() {
                   borderRadius: '7px',
                   padding: '8px 18px',
                   cursor: 'pointer',
-                  fontSize: '13px',
-                  fontWeight: 500
+                  fontSize: '13px'
                 }}
               >
                 编辑设置
               </button>
             </div>
-            <div className="card">
-              <p style={{ color: C.gray3, textAlign: 'center', padding: '40px' }}>
-                点击"编辑设置"按钮配置系统参数
-              </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+              <SettingsCard title="算法类型" items={stats.settings?.algo_types || []} />
+              <SettingsCard title="技术方法" items={stats.settings?.tech_methods || []} />
+              <SettingsCard title="应用现场" items={stats.settings?.sites || []} />
+              <SettingsCard title="标注格式" items={stats.settings?.annotation_formats || []} />
             </div>
           </div>
         )}
 
-        {/* 全体总览页面 */}
+        {/* 总览页面 */}
         {currentPage === 'overview' && (
-          <>
-            <div style={{ padding: '16px 0' }}>
-              <h1 style={{ fontSize: '18px', fontWeight: 700, color: C.gray1 }}>欢迎使用机器视觉管理平台</h1>
-              <p style={{ fontSize: '13px', color: C.gray3, marginTop: '4px' }}>
-                共 {stats.datasets.count} 个数据集，{stats.models.count} 个模型
-              </p>
-            </div>
-
-            {/* 统计卡片 */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px', marginTop: '20px' }}>
-              <StatCard title="数据集" value={stats.datasets.count} icon="📁" />
-              <StatCard title="模型" value={stats.models.count} icon="🤖" />
-              <StatCard title="总图片" value={stats.datasets.total_images || 0} icon="🖼️" />
-            </div>
-
-            {/* 最近数据集 */}
-            <div className="card" style={{ marginTop: '20px' }}>
-              <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '12px' }}>最近数据集</h3>
-              {datasets.length === 0 ? (
-                <p style={{ color: C.gray3, textAlign: 'center', padding: '20px' }}>暂无数据集</p>
-              ) : (
-                <div style={{ display: 'grid', gap: '8px' }}>
-                  {datasets.slice(0, 5).map(ds => (
-                    <div
-                      key={ds.id}
-                      onClick={() => { setSelectedDataset(ds); setCurrentPage('datasets') }}
-                      style={{ cursor: 'pointer', padding: '8px', borderRadius: '6px', background: '#F4F7FA' }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <AlgoTagInline type={ds.algoType} />
-                        <span style={{ fontSize: '13px', color: C.primary }}>{ds.name}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </>
+          <Overview datasets={datasets} models={models} stats={stats} />
         )}
       </div>
 
@@ -213,12 +197,6 @@ function App() {
         onSuccess={loadData}
       />
 
-      {/* 设置Modal */}
-      <SettingsDialog
-        isOpen={showSettings}
-        onClose={() => setShowSettings(false)}
-      />
-
       {/* 模型上传Modal */}
       <ModelUploadModal
         isOpen={showModelUpload}
@@ -226,48 +204,31 @@ function App() {
         onSuccess={loadData}
         datasets={datasets}
       />
+
+      {/* 设置Modal */}
+      <SettingsDialog
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+      />
     </div>
   )
 }
 
-// 内联算法标签组件（用于Overview）
-const AlgoTagInline = React.memo(({ type }) => {
-  const colors = {
-    "路面积水检测": { bg: C.primaryBg, border: C.primaryBd, text: C.primary },
-    "漂浮物检测": { bg: "#E8F5EE", border: "#A8D5C0", text: "#2E8B57" },
-    "墙面裂缝检测": { bg: "#FEF5E7", border: "#F9D9B0", text: "#E67E22" },
-    "游泳检测": { bg: "#FDE9E9", border: "#F5BCBC", text: "#C0392B" },
-  }[type] || { bg: C.gray6, border: C.border, text: C.gray2 }
+// ============== 子组件 ==============
 
-  return (
-    <span style={{
-      display: "inline-block",
-      padding: "2px 8px",
-      borderRadius: "4px",
-      fontSize: "11px",
-      fontWeight: 500,
-      background: colors.bg,
-      border: `1px solid ${colors.border}`,
-      color: colors.text,
-      whiteSpace: "nowrap"
-    }}>
-      {type}
-    </span>
-  )
-})
-
-// 导航项组件
 function NavItem({ children, active, onClick }) {
   return (
     <div
       onClick={onClick}
       style={{
         padding: '10px 16px',
-        fontSize: '13px',
+        cursor: 'pointer',
         color: active ? C.primary : C.gray2,
-        background: active ? C.primaryBg : 'transparent',
+        background: active ? `${C.primary}15` : 'transparent',
         borderLeft: active ? `3px solid ${C.primary}` : '3px solid transparent',
-        cursor: 'pointer'
+        fontSize: '13px',
+        fontWeight: active ? 500 : 400,
+        transition: 'all 0.2s'
       }}
     >
       {children}
@@ -275,13 +236,45 @@ function NavItem({ children, active, onClick }) {
   )
 }
 
-// 统计卡片组件
-function StatCard({ title, value, icon }) {
+function SettingsCard({ title, items }) {
   return (
-    <div className="card" style={{ textAlign: 'center' }}>
-      <div style={{ fontSize: '24px', marginBottom: '4px' }}>{icon}</div>
-      <div style={{ fontSize: '24px', fontWeight: 700, color: C.primary }}>{value}</div>
-      <div style={{ fontSize: '12px', color: C.gray3 }}>{title}</div>
+    <div className="card">
+      <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '12px', color: C.gray1 }}>{title}</h3>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+        {items.length > 0 ? items.map((item, i) => (
+          <span key={i} style={{
+            padding: '4px 12px',
+            background: C.gray7,
+            borderRadius: '4px',
+            fontSize: '12px',
+            color: C.gray2
+          }}>{item}</span>
+        )) : <span style={{ color: C.gray4, fontSize: '12px' }}>暂无</span>}
+      </div>
+    </div>
+  )
+}
+
+function Overview({ datasets, models, stats }) {
+  return (
+    <div style={{ padding: '20px' }}>
+      <h2 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '20px', color: C.gray1 }}>全体总览</h2>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
+        <StatCard label="数据集总数" value={datasets.length} icon="📁" color={C.primary} />
+        <StatCard label="模型总数" value={models.length} icon="🤖" color="#E8631A" />
+        <StatCard label="样本总数" value={(stats.datasets?.totalImages || 0).toLocaleString()} icon="🖼️" color={C.success} />
+        <StatCard label="总精度" value={models.length > 0 ? `${(models.reduce((s, m) => s + (parseFloat(m.accuracy) || 0), 0) / models.length).toFixed(1)}%` : '-'} icon="📊" color="#8E44AD" />
+      </div>
+    </div>
+  )
+}
+
+function StatCard({ label, value, icon, color }) {
+  return (
+    <div className="card" style={{ textAlign: 'center', padding: '20px' }}>
+      <div style={{ fontSize: '28px', marginBottom: '8px' }}>{icon}</div>
+      <div style={{ fontSize: '24px', fontWeight: 700, color }}>{value}</div>
+      <div style={{ fontSize: '12px', color: C.gray3, marginTop: '4px' }}>{label}</div>
     </div>
   )
 }
