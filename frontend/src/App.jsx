@@ -8,6 +8,7 @@ import ModelUploadModal from './components/ModelUploadModal'
 import DatasetEditModal from './components/DatasetEditModal'
 import ModelEditModal from './components/ModelEditModal'
 import SettingsDialog from './components/SettingsDialog'
+import { Login, Register, UserInfo } from './components/Auth'
 
 // 懒加载详情页组件
 const DatasetDetail = lazy(() => import('./components/DatasetDetail'))
@@ -48,9 +49,40 @@ function App() {
   const [showSettings, setShowSettings] = useState(false)
   const [loading, setLoading] = useState(true)
 
+  // 认证状态
+  const [user, setUser] = useState(null)
+  const [authLoading, setAuthLoading] = useState(true)
+  const [showRegister, setShowRegister] = useState(false)
+
   useEffect(() => {
+    checkAuth()
     loadData()
   }, [])
+
+  // 检查认证状态
+  async function checkAuth() {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      setAuthLoading(false)
+      return
+    }
+
+    try {
+      const res = await fetch('/api/auth/me', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      const data = await res.json()
+      if (data.success) {
+        setUser(data.user)
+      } else {
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+      }
+    } catch (err) {
+      console.error('Auth check failed:', err)
+    }
+    setAuthLoading(false)
+  }
 
   async function loadData() {
     setLoading(true)
@@ -65,8 +97,20 @@ function App() {
     setLoading(false)
   }
 
+  // 登出
+  function handleLogout() {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    setUser(null)
+  }
+
+  // 登录/注册成功
+  function handleAuthSuccess(userData) {
+    setUser(userData)
+  }
+
   // 加载动画
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
         <div style={{ textAlign: 'center' }}>
@@ -74,6 +118,24 @@ function App() {
           <div>加载中...</div>
         </div>
       </div>
+    )
+  }
+
+  // 未登录，显示登录页面
+  if (!user) {
+    if (showRegister) {
+      return (
+        <Register
+          onSuccess={handleAuthSuccess}
+          onSwitchToLogin={() => setShowRegister(false)}
+        />
+      )
+    }
+    return (
+      <Login
+        onSuccess={handleAuthSuccess}
+        onSwitchToRegister={() => setShowRegister(true)}
+      />
     )
   }
 
@@ -132,6 +194,9 @@ function App() {
           <NavItem active={currentPage === 'compare'} onClick={() => setCurrentPage('compare')}>📈 模型对比</NavItem>
           <NavItem active={currentPage === 'settings'} onClick={() => setCurrentPage('settings')}>⚙️ 设置</NavItem>
         </nav>
+        <div style={{ marginTop: 'auto', padding: '16px', borderTop: `1px solid ${C.border}` }}>
+          <UserInfo user={user} onLogout={handleLogout} />
+        </div>
       </div>
 
       {/* 主内容 */}

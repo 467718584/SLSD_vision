@@ -138,6 +138,10 @@ def handle_large_file(error):
 # 初始化数据库
 init_database()
 
+# 初始化用户认证表
+from modules.auth import init_users_table
+init_users_table()
+
 
 def dict_to_js(obj, indent=0):
     """将Python对象转换为JavaScript对象字面量格式"""
@@ -757,6 +761,158 @@ def api_performance_metrics():
         **performance_metrics,
         "uptime_seconds": time.time() - app.config.get('START_TIME', time.time())
     })
+
+
+# ==================== 用户认证API ====================
+from modules.auth import (
+    create_user, authenticate_user, generate_token, verify_token, get_user_by_id, get_all_users
+)
+
+@app.route('/api/auth/register', methods=['POST'])
+def api_register():
+    """
+    用户注册
+    ---
+    tags:
+      - auth
+    parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          required:
+            - username
+            - password
+          properties:
+            username:
+              type: string
+              description: 用户名
+            password:
+              type: string
+              description: 密码
+            email:
+              type: string
+              description: 邮箱
+    responses:
+      200:
+        description: 注册结果
+    """
+    data = request.json
+    username = data.get('username', '').strip()
+    password = data.get('password', '')
+    email = data.get('email', '')
+    
+    if not username or not password:
+        return jsonify({"success": False, "error": "用户名和密码不能为空"}), 400
+    
+    if len(password) < 6:
+        return jsonify({"success": False, "error": "密码长度至少6位"}), 400
+    
+    user_id, err = create_user(username, password, email)
+    if err:
+        return jsonify({"success": False, "error": err}), 400
+    
+    token = generate_token(user_id, username)
+    return jsonify({
+        "success": True,
+        "token": token,
+        "user": {"id": user_id, "username": username}
+    })
+
+
+@app.route('/api/auth/login', methods=['POST'])
+def api_login():
+    """
+    用户登录
+    ---
+    tags:
+      - auth
+    parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          required:
+            - username
+            - password
+          properties:
+            username:
+              type: string
+              description: 用户名
+            password:
+              type: string
+              description: 密码
+    responses:
+      200:
+        description: 登录结果
+    """
+    data = request.json
+    username = data.get('username', '').strip()
+    password = data.get('password', '')
+    
+    user, err = authenticate_user(username, password)
+    if err:
+        return jsonify({"success": False, "error": err}), 401
+    
+    token = generate_token(user['id'], user['username'], user['role'])
+    return jsonify({
+        "success": True,
+        "token": token,
+        "user": user
+    })
+
+
+@app.route('/api/auth/me')
+def api_me():
+    """
+    获取当前用户信息
+    ---
+    tags:
+      - auth
+    parameters:
+      - in: header
+        name: Authorization
+        type: string
+        required: true
+        description: Bearer token
+    responses:
+      200:
+        description: 用户信息
+    """
+    auth_header = request.headers.get('Authorization', '')
+    if not auth_header.startswith('Bearer '):
+        return jsonify({"success": False, "error": "未授权"}), 401
+    
+    token = auth_header[7:]
+    payload = verify_token(token)
+    if not payload:
+        return jsonify({"success": False, "error": "Token无效或已过期"}), 401
+    
+    user = get_user_by_id(payload['user_id'])
+    if not user:
+        return jsonify({"success": False, "error": "用户不存在"}), 404
+    
+    return jsonify({
+        "success": True,
+        "user": user
+    })
+
+
+@app.route('/api/auth/users')
+def api_users():
+    """
+    获取所有用户列表 (仅管理员)
+    ---
+    tags:
+      - auth
+    responses:
+      200:
+        description: 用户列表
+    """
+    users = get_all_users()
+    return jsonify({"success": True, "users": users})
 
 
 # ==================== YOLO格式校验函数 ====================
