@@ -141,6 +141,7 @@ init_database()
 # 初始化用户认证表
 from modules.auth import init_users_table
 from modules.auth_decorators import require_auth, require_admin, require_role
+from modules.upload_validator import validate_file_upload, validate_file_extension, validate_file_size, sanitize_filename, ALLOWED_DATASET_EXTENSIONS, MAX_FILE_SIZE
 init_users_table()
 
 
@@ -1162,6 +1163,22 @@ def upload_dataset():
             import shutil
             for f in files:
                 if f.filename:
+                    # 清理文件名
+                    safe_filename = sanitize_filename(f.filename)
+                    
+                    # 验证文件扩展名
+                    valid, error = validate_file_extension(safe_filename, ALLOWED_DATASET_EXTENSIONS)
+                    if not valid:
+                        return jsonify({"success": False, "error": f"文件 '{safe_filename}' {error}"}), 400
+                    
+                    # 验证文件大小
+                    f.seek(0, 2)  # Seek to end
+                    file_size = f.tell()
+                    f.seek(0)  # Reset to start
+                    valid, error = validate_file_size(file_size, MAX_FILE_SIZE)
+                    if not valid:
+                        return jsonify({"success": False, "error": f"文件 '{safe_filename}' {error}"}), 400
+                    
                     relative_path = f.filename
                     if hasattr(f, 'webkitRelativePath') and f.webkitRelativePath:
                         relative_path = f.webkitRelativePath
@@ -1169,7 +1186,7 @@ def upload_dataset():
                     if len(parts) > 1:
                         relative_path = '/'.join(parts[1:])
                     if relative_path:
-                        target_path = os.path.join(dataset_dir, relative_path)
+                        target_path = os.path.join(dataset_dir, sanitize_filename(relative_path))
                         os.makedirs(os.path.dirname(target_path), exist_ok=True)
                         f.save(target_path)
         else:
@@ -1186,7 +1203,20 @@ def upload_dataset():
             if file.filename == '':
                 return jsonify({"success": False, "error": "没有选择文件"}), 400
 
-            filename = secure_filename(file.filename)
+            # 验证文件扩展名
+            valid, error = validate_file_extension(file.filename, {'.zip'})
+            if not valid:
+                return jsonify({"success": False, "error": error}), 400
+            
+            # 验证文件大小
+            file.seek(0, 2)
+            file_size = file.tell()
+            file.seek(0)
+            valid, error = validate_file_size(file_size, MAX_FILE_SIZE)
+            if not valid:
+                return jsonify({"success": False, "error": error}), 400
+            
+            filename = sanitize_filename(secure_filename(file.filename))
             if filename.endswith('.zip'):
                 import zipfile
                 zip_path = os.path.join(dataset_dir, filename)
@@ -1461,6 +1491,20 @@ def upload_dataset_chart(name):
     if file.filename == '':
         return jsonify({"success": False, "error": "文件名为空"}), 400
 
+    # 验证文件扩展名
+    from modules.upload_validator import ALLOWED_IMAGE_EXTENSIONS, MAX_IMAGE_SIZE
+    valid, error = validate_file_extension(file.filename, ALLOWED_IMAGE_EXTENSIONS)
+    if not valid:
+        return jsonify({"success": False, "error": error}), 400
+    
+    # 验证文件大小
+    file.seek(0, 2)
+    file_size = file.tell()
+    file.seek(0)
+    valid, error = validate_file_size(file_size, MAX_IMAGE_SIZE)
+    if not valid:
+        return jsonify({"success": False, "error": error}), 400
+    
     # 创建charts目录
     charts_dir = os.path.join(dataset_dir, 'charts')
     os.makedirs(charts_dir, exist_ok=True)
@@ -1867,10 +1911,22 @@ def upload_model():
 
         for uploaded_file in file_list:
             if uploaded_file.filename:
-                # 获取相对路径
-                filename = uploaded_file.filename
-                # 处理路径分隔符
-                filename = filename.replace('\\', '/')
+                # 获取相对路径并清理
+                filename = sanitize_filename(uploaded_file.filename.replace('\\', '/'))
+                
+                # 验证文件扩展名
+                from modules.upload_validator import ALLOWED_MODEL_EXTENSIONS, MAX_MODEL_SIZE
+                valid, error = validate_file_extension(filename, ALLOWED_MODEL_EXTENSIONS)
+                if not valid:
+                    return jsonify({"success": False, "error": f"文件 '{filename}' {error}"}), 400
+                
+                # 验证文件大小
+                uploaded_file.seek(0, 2)
+                file_size = uploaded_file.tell()
+                uploaded_file.seek(0)
+                valid, error = validate_file_size(file_size, MAX_MODEL_SIZE)
+                if not valid:
+                    return jsonify({"success": False, "error": f"文件 '{filename}' {error}"}), 400
                 parts = filename.split('/')
 
                 if len(parts) >= 2 and parts[0] == 'weights':
