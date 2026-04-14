@@ -9,6 +9,7 @@ import ModelUploadModal from './components/ModelUploadModal'
 import DatasetEditModal from './components/DatasetEditModal'
 import ModelEditModal from './components/ModelEditModal'
 import SettingsDialog from './components/SettingsDialog'
+import AuditLogs from './components/AuditLogs'
 import { Login, Register, UserInfo } from './components/Auth'
 import { useKeyboardShortcuts, KEYBOARD_SHORTCUTS } from './hooks/useKeyboardShortcuts'
 
@@ -49,6 +50,7 @@ function App() {
   const [editingDataset, setEditingDataset] = useState(null)
   const [editingModel, setEditingModel] = useState(null)
   const [showSettings, setShowSettings] = useState(false)
+  const [showAuditLogs, setShowAuditLogs] = useState(false)
   const [versionsDataset, setVersionsDataset] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -226,6 +228,24 @@ function App() {
           <NavItem active={currentPage === 'settings'} onClick={() => setCurrentPage('settings')}>⚙️ 设置</NavItem>
         </nav>
         <div style={{ marginTop: 'auto', padding: '16px', borderTop: `1px solid ${C.border}` }}>
+          {user?.role === 'admin' && (
+            <button
+              onClick={() => setShowAuditLogs(true)}
+              style={{
+                width: '100%',
+                marginBottom: '12px',
+                padding: '8px',
+                background: '#F3F4F6',
+                border: '1px solid #E5E7EB',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '12px',
+                color: '#374151'
+              }}
+            >
+              📋 审计日志
+            </button>
+          )}
           <UserInfo user={user} onLogout={handleLogout} />
         </div>
       </div>
@@ -330,6 +350,12 @@ function App() {
       <SettingsDialog
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
+      />
+
+      {/* 审计日志 */}
+      <AuditLogs
+        isOpen={showAuditLogs}
+        onClose={() => setShowAuditLogs(false)}
       />
     </div>
   )
