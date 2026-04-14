@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
+import ErrorBoundary from './components/ErrorBoundary'
 import './styles.css'
 import './responsive.css'
 
@@ -30,8 +31,16 @@ window.fetch = async function(url, options = {}) {
   })
 }
 
+// 错误处理函数
+function handleError(error, errorInfo) {
+  console.error('Global error:', error, errorInfo)
+  // 可以在这里添加错误上报逻辑
+}
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <App />
+    <ErrorBoundary onError={handleError} showDetails={true}>
+      <App />
+    </ErrorBoundary>
   </React.StrictMode>
 )
