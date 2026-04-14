@@ -2,6 +2,7 @@ import React, { useState, useEffect, lazy, Suspense } from 'react'
 import { C } from './constants'
 import DatasetList from './components/DatasetList'
 import ModelList from './components/ModelList'
+import UploadModal from './components/UploadModal'
 
 // 懒加载详情页组件
 const DatasetDetail = lazy(() => import('./components/DatasetDetail'))
@@ -181,6 +182,13 @@ function App() {
           </>
         )}
       </div>
+
+      {/* 上传Modal */}
+      <UploadModal
+        isOpen={showUpload}
+        onClose={() => setShowUpload(false)}
+        onSuccess={loadData}
+      />
     </div>
   )
 }
