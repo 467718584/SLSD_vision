@@ -197,7 +197,7 @@ export const ALGO_COLORS = { ... }
 | DatasetDetail | ~50 | P1 | ✅ 完成基础 |
 | ModelDetail | ~50 | P1 | ✅ 完成基础 |
 | **DatasetList** | **~450** | **P1** | **✅ 完成** |
-| ModelList | ~350 | P1 | ⏳ 待开始 |
+| **ModelList** | **~400** | **P1** | **✅ 完成** |
 | UploadModal | ~300 | P2 | ⏳ 待开始 |
 | SettingsDialog | ~200 | P2 | ⏳ 待开始 |
 | EditClassInfoModal | ~100 | P2 | ⏳ 待开始 |
@@ -208,6 +208,15 @@ export const ALGO_COLORS = { ... }
 - ✅ 算法类型筛选
 - ✅ 数据集表格(14列)
 - ✅ DetailChart/DistChart懒加载组件
+- ✅ 下载/删除操作
+- ✅ React.memo优化
+
+**ModelList功能**：
+- ✅ 搜索输入框
+- ✅ 算法类型筛选
+- ✅ 模型表格(13列)
+- ✅ 精度进度条显示
+- ✅ 精度曲线缩略图(4个)
 - ✅ 下载/删除操作
 - ✅ React.memo优化
 
