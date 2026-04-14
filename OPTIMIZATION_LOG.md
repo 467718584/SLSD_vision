@@ -190,15 +190,26 @@ export const ALGO_COLORS = { ... }
 - 原2640行monolithic HTML仍包含大量业务逻辑
 - 新架构只有基础框架，需完整迁移
 
-**待迁移组件**：
+**迁移进度**：
 | 组件 | 行数 | 优先级 | 状态 |
 |------|------|--------|------|
-| DatasetList | ~200 | P1 | 🔄 进行中 |
-| ModelList | ~200 | P1 | ⏳ 待开始 |
-| UploadModal | ~300 | P1 | ⏳ 待开始 |
+| App.jsx框架 | ~120 | P0 | ✅ 完成 |
+| DatasetDetail | ~50 | P1 | ✅ 完成基础 |
+| ModelDetail | ~50 | P1 | ✅ 完成基础 |
+| **DatasetList** | **~450** | **P1** | **✅ 完成** |
+| ModelList | ~350 | P1 | ⏳ 待开始 |
+| UploadModal | ~300 | P2 | ⏳ 待开始 |
 | SettingsDialog | ~200 | P2 | ⏳ 待开始 |
 | EditClassInfoModal | ~100 | P2 | ⏳ 待开始 |
 | ModelEditModal | ~200 | P2 | ⏳ 待开始 |
+
+**DatasetList功能**：
+- ✅ 搜索输入框
+- ✅ 算法类型筛选
+- ✅ 数据集表格(14列)
+- ✅ DetailChart/DistChart懒加载组件
+- ✅ 下载/删除操作
+- ✅ React.memo优化
 
 ---
 
