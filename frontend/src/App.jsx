@@ -1,6 +1,7 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react'
 import { C } from './constants'
 import DatasetList from './components/DatasetList'
+import ModelList from './components/ModelList'
 
 // 懒加载详情页组件
 const DatasetDetail = lazy(() => import('./components/DatasetDetail'))
@@ -119,12 +120,13 @@ function App() {
 
         {/* 模型管理页面 */}
         {currentPage === 'models' && (
-          <div style={{ padding: '20px' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: 700, color: C.gray1 }}>模型管理</h2>
-            <p style={{ fontSize: '13px', color: C.gray3, marginTop: '8px' }}>
-              共 {models.length} 个模型（完整迁移中...）
-            </p>
-          </div>
+          <ModelList
+            models={models}
+            datasets={datasets}
+            onSelectModel={setSelectedModel}
+            onRefresh={loadData}
+            onShowUpload={() => {}}
+          />
         )}
 
         {/* 设置页面 */}
