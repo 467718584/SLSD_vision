@@ -199,7 +199,7 @@ export const ALGO_COLORS = { ... }
 | **DatasetList** | **~450** | **P1** | **✅ 完成** |
 | **ModelList** | **~400** | **P1** | **✅ 完成** |
 | **UploadModal** | **~400** | **P2** | **✅ 完成** |
-| SettingsDialog | ~200 | P2 | ⏳ 待开始 |
+| **SettingsDialog** | **~250** | **P2** | **✅ 完成** |
 | EditClassInfoModal | ~100 | P2 | ⏳ 待开始 |
 | ModelEditModal | ~200 | P2 | ⏳ 待开始 |
 
@@ -229,6 +229,13 @@ export const ALGO_COLORS = { ... }
 - ✅ 标注格式选择
 - ✅ 上传进度显示
 - ✅ 错误处理
+
+**SettingsDialog功能**：
+- ✅ 算法类型增删改
+- ✅ 技术方法增删改
+- ✅ 标注方法增删改
+- ✅ 应用现场增删改
+- ✅ 保存到后端API
 
 ---
 
