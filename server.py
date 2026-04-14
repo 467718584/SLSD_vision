@@ -24,6 +24,14 @@ from config import DATASETS_DIR, MODELS_DIR
 
 app = Flask(__name__)
 
+# 注册Flask Blueprint（可选，用于模块化路由）
+try:
+    from backend.routes import register_blueprints
+    register_blueprints(app)
+    print("[INFO] Blueprint路由已注册")
+except ImportError as e:
+    print(f"[WARN] Blueprint导入失败，将使用 monolithic 路由: {e}")
+
 # 配置上传文件大小限制为5GB
 app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024 * 1024
 
