@@ -3,6 +3,7 @@ import { C } from './constants'
 import DatasetList from './components/DatasetList'
 import ModelList from './components/ModelList'
 import UploadModal from './components/UploadModal'
+import ModelUploadModal from './components/ModelUploadModal'
 import SettingsDialog from './components/SettingsDialog'
 
 // 懒加载详情页组件
@@ -36,6 +37,7 @@ function App() {
   const [selectedDataset, setSelectedDataset] = useState(null)
   const [selectedModel, setSelectedModel] = useState(null)
   const [showUpload, setShowUpload] = useState(false)
+  const [showModelUpload, setShowModelUpload] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [loading, setLoading] = useState(true)
 
@@ -128,7 +130,7 @@ function App() {
             datasets={datasets}
             onSelectModel={setSelectedModel}
             onRefresh={loadData}
-            onShowUpload={() => {}}
+            onShowUpload={() => setShowModelUpload(true)}
           />
         )}
 
@@ -215,6 +217,14 @@ function App() {
       <SettingsDialog
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
+      />
+
+      {/* 模型上传Modal */}
+      <ModelUploadModal
+        isOpen={showModelUpload}
+        onClose={() => setShowModelUpload(false)}
+        onSuccess={loadData}
+        datasets={datasets}
       />
     </div>
   )
