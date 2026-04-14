@@ -258,8 +258,8 @@ export const ALGO_COLORS = { ... }
 3. 迁移UploadModal组件
 
 ### P2（中优）
-1. 迁移SettingsDialog组件
-2. Flask Blueprint路由拆分
+1. ✅ 迁移SettingsDialog组件
+2. ✅ Flask Blueprint路由拆分
 3. API层错误处理增强
 
 ### P3（长期）
@@ -277,3 +277,4 @@ export const ALGO_COLORS = { ... }
 | 2026-04-14 | P0完成 | 删除Babel + CDN安全加固 |
 | 2026-04-14 | P1完成 | React.memo + 懒加载 |
 | 2026-04-14 | P2完成 | Vite构建 + 模块化架构 |
+| 2026-04-14 | P2完成 | SettingsDialog + Blueprint |
