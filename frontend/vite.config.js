@@ -28,5 +28,21 @@ export default defineConfig({
         changeOrigin: true
       }
     }
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/test/setup.js',
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html'],
+      exclude: [
+        'node_modules/',
+        'dist/',
+        '**/*.config.js',
+        '**/*.test.jsx',
+        '**/setup.js'
+      ]
+    }
   }
 })
