@@ -158,6 +158,7 @@ def index():
             "imgCountVal": ds.get('img_count_val', 0),
             "imgCountTest": ds.get('img_count_test', 0),
             "classInfo": class_info_processed,
+            "source": ds.get('source', ''),
             # 使用 JavaScript 布尔值格式
             "hasFolder": file_status["hasFolder"],
             "hasZip": file_status["hasZip"]
@@ -172,7 +173,10 @@ def index():
             "name": m.get('name', ''),
             "category": m.get('category', ''),
             "accuracy": m.get('accuracy', 0),
-            "desc": m.get('description', ''),
+            "description": m.get('description', ''),
+            "techMethod": m.get('tech_method', '目标检测算法'),
+            "site": m.get('site', ''),
+            "modelType": m.get('model_type', 'yolo'),
             "dataset": m.get('dataset', ''),
             "maintainDate": m.get('maintain_date', ''),
             "maintainer": m.get('maintainer', ''),
@@ -346,6 +350,7 @@ def api_datasets():
             "imgCountVal": ds.get('img_count_val', 0),
             "imgCountTest": ds.get('img_count_test', 0),
             "classInfo": class_info_processed,
+            "source": ds.get('source', ''),
             "hasFolder": file_status["hasFolder"],
             "hasZip": file_status["hasZip"]
         })
@@ -364,7 +369,26 @@ def api_models():
     else:
         models = get_all_models()
 
-    return jsonify(models)
+    # 转换模型数据为驼峰命名
+    models_data = []
+    for m in models:
+        models_data.append({
+            "id": m.get('id', 0),
+            "algoName": m.get('algo_name', ''),
+            "name": m.get('name', ''),
+            "category": m.get('category', ''),
+            "accuracy": m.get('accuracy', 0),
+            "description": m.get('description', ''),
+            "techMethod": m.get('tech_method', '目标检测算法'),
+            "site": m.get('site', ''),
+            "modelType": m.get('model_type', 'yolo'),
+            "dataset": m.get('dataset', ''),
+            "maintainDate": m.get('maintain_date', ''),
+            "maintainer": m.get('maintainer', ''),
+            "previewCount": m.get('preview_count', 8)
+        })
+
+    return jsonify(models_data)
 
 
 @app.route('/api/stats')
@@ -1391,6 +1415,8 @@ def update_model(name):
             update_data['description'] = data['description']
         if 'site' in data:
             update_data['site'] = data['site']
+        if 'modelType' in data:
+            update_data['model_type'] = data['modelType']
         if 'dataset' in data:
             update_data['dataset'] = data['dataset']
         if 'maintainer' in data:
