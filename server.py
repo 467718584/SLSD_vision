@@ -4,8 +4,11 @@ Flask服务器 - 直接加载参考HTML并注入数据库数据
 import os
 import uuid
 import json
+import logging
+import time
 from datetime import datetime
-from flask import Flask, render_template_string, jsonify, request, send_from_directory
+from functools import wraps
+from flask import Flask, render_template_string, jsonify, request, send_from_directory, g
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import RequestEntityTooLarge
 from flasgger import Swagger
@@ -23,7 +26,58 @@ from modules.storage import format_size
 from modules.model_manager import get_model_files
 from config import DATASETS_DIR, MODELS_DIR
 
+# ==================== 日志配置 ====================
+LOG_DIR = os.path.join(os.path.dirname(__file__), 'logs')
+if not os.path.exists(LOG_DIR):
+    os.makedirs(LOG_DIR)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+    handlers=[
+        logging.FileHandler(os.path.join(LOG_DIR, 'app.log'), encoding='utf-8'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger('SLSD_Vision')
+
+# 请求日志中间件
+@app.before_request
+def before_request():
+    g.start_time = time.time()
+    logger.info(f"→ {request.method} {request.path}")
+
+@app.after_request
+def after_request(response):
+    if hasattr(g, 'start_time'):
+        elapsed = time.time() - g.start_time
+        log_msg = f"← {request.method} {request.path} - {response.status_code} ({elapsed*1000:.1f}ms)"
+        
+        # 更新性能指标
+        performance_metrics['total_requests'] += 1
+        if response.status_code >= 400:
+            performance_metrics['error_count'] += 1
+        if elapsed > 1.0:
+            performance_metrics['slow_requests'] += 1
+            logger.warning(f"SLOW REQUEST: {log_msg}")
+        else:
+            logger.info(log_msg)
+        
+        # 更新端点统计
+        endpoint = f"{request.method} {request.path}"
+        if endpoint not in performance_metrics['endpoint_stats']:
+            performance_metrics['endpoint_stats'][endpoint] = {
+                'count': 0, 'total_time': 0, 'avg_time': 0, 'max_time': 0
+            }
+        stats = performance_metrics['endpoint_stats'][endpoint]
+        stats['count'] += 1
+        stats['total_time'] += elapsed
+        stats['avg_time'] = stats['total_time'] / stats['count']
+        stats['max_time'] = max(stats['max_time'], elapsed)
+    return response
+
 app = Flask(__name__)
+app.config['START_TIME'] = time.time()
 
 # Swagger配置
 swagger_config = {
@@ -595,6 +649,49 @@ def api_stats():
     return jsonify({
         "datasets": ds_stats,
         "models": m_stats
+    })
+
+
+# ==================== 性能监控端点 ====================
+performance_metrics = {
+    "total_requests": 0,
+    "error_count": 0,
+    "slow_requests": 0,
+    "endpoint_stats": {}
+}
+
+@app.route('/api/metrics/performance')
+def api_performance_metrics():
+    """
+    获取性能监控指标
+    ---
+    tags:
+      - stats
+    responses:
+      200:
+        description: 性能指标
+        schema:
+          type: object
+          properties:
+            total_requests:
+              type: integer
+              description: 总请求数
+            error_count:
+              type: integer
+              description: 错误请求数
+            slow_requests:
+              type: integer
+              description: 慢请求数(>1秒)
+            uptime_seconds:
+              type: number
+              description: 运行时间(秒)
+            endpoint_stats:
+              type: object
+              description: 各端点统计
+    """
+    return jsonify({
+        **performance_metrics,
+        "uptime_seconds": time.time() - app.config.get('START_TIME', time.time())
     })
 
 
