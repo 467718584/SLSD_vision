@@ -1,4 +1,4 @@
-/* 南瑞蓝科技风格设计系统 v2.0 */
+/* 南瑞蓝科技风格设计系统 - 浅色主题 v3.0 */
 /* 基于国电南瑞品牌色 - 专业/科技/信赖 */
 
 /* ========== CSS 变量定义 ========== */
@@ -6,42 +6,42 @@
   /* 南瑞蓝主色系 */
   --accent: #0066CC;         /* 南瑞蓝 - 主色 */
   --accent-hover: #0052A3;   /* 深蓝 - 悬停 */
-  --accent-light: rgba(0, 102, 204, 0.15); /* 浅蓝背景 */
+  --accent-light: rgba(0, 102, 204, 0.1); /* 浅蓝背景 */
   --accent-secondary: #3399CC; /* 中蓝 - 次强调 */
   
-  /* 深色主题背景 */
-  --bg-primary: #0D1421;      /* 主背景 - 深蓝黑 */
-  --bg-secondary: #152032;    /* 次级背景 - 深蓝灰 */
-  --bg-tertiary: #1A2942;     /* 卡片背景 - 南瑞蓝暗 */
-  --bg-hover: #1F3050;        /* 悬停背景 */
+  /* 浅色主题背景 */
+  --bg-primary: #F5F7FA;      /* 主背景 - 浅灰蓝 */
+  --bg-secondary: #FFFFFF;     /* 次级背景 - 白 */
+  --bg-tertiary: #E8EEF4;     /* 卡片背景 - 淡蓝灰 */
+  --bg-hover: #EDF2F7;        /* 悬停背景 */
   
   /* 语义色 */
   --success: #10B981;         /* 成功绿 */
-  --success-bg: rgba(16, 185, 129, 0.15);
+  --success-bg: rgba(16, 185, 129, 0.1);
   --warning: #F59E0B;         /* 警告黄 */
-  --warning-bg: rgba(245, 158, 11, 0.15);
+  --warning-bg: rgba(245, 158, 11, 0.1);
   --error: #EF4444;           /* 错误红 */
-  --error-bg: rgba(239, 68, 68, 0.15);
+  --error-bg: rgba(239, 68, 68, 0.1);
   
   /* 南瑞蓝渐变 */
   --gradient-primary: linear-gradient(135deg, #0066CC 0%, #3399CC 100%);
   --gradient-hover: linear-gradient(135deg, #0052A3 0%, #0066CC 100%);
   
   /* 文字颜色 */
-  --text-primary: #FFFFFF;    /* 主文字 - 白 */
-  --text-secondary: #A8C5E2;   /* 次文字 - 淡蓝灰 */
-  --text-muted: #6B8AAB;       /* 弱文字 */
+  --text-primary: #1A202C;    /* 主文字 - 深灰 */
+  --text-secondary: #4A5568;   /* 次文字 - 中灰 */
+  --text-muted: #718096;       /* 弱文字 - 浅灰 */
   --text-inverse: #FFFFFF;
   
   /* 边框 */
-  --border: #2A3F5F;          /* 边框 - 蓝灰 */
-  --border-light: #3A5578;     /* 浅边框 */
+  --border: #E2E8F0;          /* 边框 - 浅灰 */
+  --border-light: #CBD5E0;     /* 浅边框 */
   
   /* 阴影 - 蓝色光晕 */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 102, 204, 0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 102, 204, 0.15);
-  --shadow-glow: 0 0 20px rgba(0, 102, 204, 0.3);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 102, 204, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 102, 204, 0.05);
+  --shadow-glow: 0 4px 12px rgba(0, 102, 204, 0.15);
   
   /* 圆角 */
   --radius-sm: 4px;
@@ -71,25 +71,25 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ========== 侧边栏 ========== */
+/* ========== 侧边栏 - 浅色主题 ========== */
 .sidebar-roboflow {
   position: fixed;
   left: 0;
   top: 0;
   bottom: 0;
   width: 260px;
-  background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+  background: var(--bg-secondary);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   z-index: 100;
-  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
 }
 
 .sidebar-header {
   padding: 24px 20px;
   border-bottom: 1px solid var(--border);
-  background: linear-gradient(90deg, var(--accent) 0%, var(--accent-secondary) 100%);
+  background: var(--gradient-primary);
   margin-bottom: 0;
 }
 
@@ -100,12 +100,12 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .sidebar-subtitle {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(255, 255, 255, 0.9);
   margin-top: 4px;
   font-weight: 400;
 }
@@ -160,7 +160,7 @@ body {
 
 .nav-item:hover {
   background: var(--bg-tertiary);
-  color: var(--text-primary);
+  color: var(--accent);
 }
 
 .nav-item:hover::before {
@@ -196,7 +196,7 @@ body {
   justify-content: space-between;
   padding: 0 24px;
   z-index: 90;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
 }
 
 .topbar-title {
@@ -227,6 +227,7 @@ body {
   border-radius: var(--radius-lg);
   padding: 20px;
   transition: all var(--transition-normal);
+  box-shadow: var(--shadow-sm);
 }
 
 .card:hover {
@@ -265,6 +266,7 @@ body {
   transition: all var(--transition-normal);
   position: relative;
   overflow: hidden;
+  box-shadow: var(--shadow-sm);
 }
 
 .stat-card::before {
@@ -282,7 +284,7 @@ body {
 .stat-card:hover {
   border-color: var(--accent);
   transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-glow);
 }
 
 .stat-card:hover::before {
@@ -313,7 +315,7 @@ body {
 }
 
 .stat-icon:hover::after {
-  opacity: 0.1;
+  opacity: 0.08;
 }
 
 .stat-info {
@@ -377,22 +379,22 @@ body {
 .btn-primary {
   background: var(--gradient-primary);
   color: white;
-  box-shadow: 0 2px 8px rgba(0, 102, 204, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 102, 204, 0.25);
 }
 
 .btn-primary:hover {
   background: var(--gradient-hover);
-  box-shadow: 0 4px 12px rgba(0, 102, 204, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 102, 204, 0.35);
 }
 
 .btn-secondary {
-  background: var(--bg-tertiary);
+  background: var(--bg-secondary);
   color: var(--text-primary);
   border: 1px solid var(--border);
 }
 
 .btn-secondary:hover {
-  background: var(--bg-hover);
+  background: var(--bg-tertiary);
   border-color: var(--accent);
   color: var(--accent);
 }
@@ -404,7 +406,7 @@ body {
 
 .btn-danger:hover {
   background: #DC2626;
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
 .btn-success {
@@ -414,7 +416,7 @@ body {
 
 .btn-success:hover {
   background: #059669;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
 .btn-ghost {
@@ -442,7 +444,7 @@ body {
   width: 100%;
   padding: 10px 14px;
   font-size: 14px;
-  background: var(--bg-primary);
+  background: var(--bg-secondary);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   color: var(--text-primary);
@@ -465,6 +467,7 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   overflow: hidden;
+  box-shadow: var(--shadow-sm);
 }
 
 .table {
@@ -496,7 +499,7 @@ body {
 }
 
 .table tr:nth-child(even) {
-  background: rgba(0, 0, 0, 0.1);
+  background: var(--bg-primary);
 }
 
 .table tr:hover td {
@@ -547,7 +550,7 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
@@ -560,7 +563,7 @@ body {
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-lg), 0 0 40px rgba(0, 102, 204, 0.1);
+  box-shadow: var(--shadow-lg);
   max-width: 90vw;
   max-height: 90vh;
   overflow: hidden;
@@ -573,7 +576,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: var(--bg-tertiary);
+  background: var(--bg-secondary);
 }
 
 .modal-title {
