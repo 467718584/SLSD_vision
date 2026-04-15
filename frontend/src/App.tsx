@@ -113,18 +113,6 @@ function NavItem({ children, active, onClick }: NavItemProps) {
     <div
       onClick={onClick}
       className={`nav-item ${active ? 'active' : ''}`}
-      style={{
-        ...(!active ? {
-          padding: '10px 16px',
-          cursor: 'pointer',
-          color: C.gray2,
-          borderRadius: '8px',
-          fontSize: '13px',
-          fontWeight: 400,
-          transition: 'all 0.15s ease',
-          marginBottom: '2px',
-        } : {})
-      }}
     >
       {children}
     </div>
@@ -384,22 +372,34 @@ function App() {
 
   return (
     <div className="page-container">
-      {/* 侧边栏 */}
-      <div className="sidebar">
-        <div style={{ padding: '0 16px', marginBottom: '20px' }}>
-          <h2 style={{ fontSize: '16px', fontWeight: 700, color: C.primary }}>SLSD Vision</h2>
-          <p style={{ fontSize: '11px', color: C.gray3, marginTop: '2px' }}>机器视觉管理平台</p>
+      {/* 侧边栏 - Roboflow 风格 */}
+      <div className="sidebar-roboflow">
+        <div className="sidebar-header">
+          <div className="sidebar-logo">🤖 SLSD Vision</div>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>机器视觉管理平台</div>
         </div>
-        <nav>
-          <NavItem active={currentPage === 'overview'} onClick={() => setCurrentPage('overview')}>🏠 全体总览</NavItem>
-          <NavItem active={currentPage === 'datasets'} onClick={() => setCurrentPage('datasets')}>📁 数据集管理</NavItem>
-          <NavItem active={currentPage === 'rawdata'} onClick={() => setCurrentPage('rawdata')}>🗂️ 原始数据管理</NavItem>
-          <NavItem active={currentPage === 'versions'} onClick={() => setCurrentPage('versions')}>📦 版本管理</NavItem>
-          <NavItem active={currentPage === 'models'} onClick={() => setCurrentPage('models')}>🤖 模型管理</NavItem>
-          <NavItem active={currentPage === 'compare'} onClick={() => setCurrentPage('compare')}>📈 模型对比</NavItem>
-          <NavItem active={currentPage === 'usage'} onClick={() => setCurrentPage('usage')}>📊 使用统计</NavItem>
-          <NavItem active={currentPage === 'settings'} onClick={() => setCurrentPage('settings')}>⚙️ 设置</NavItem>
-          <NavItem active={currentPage === 'sites'} onClick={() => setCurrentPage('sites')}>🏗️ 应用现场管理</NavItem>
+        <nav className="sidebar-nav">
+          <div className="nav-section">
+            <div className="nav-section-title">项目管理</div>
+            <NavItem active={currentPage === 'overview'} onClick={() => setCurrentPage('overview')}>🏠 总览</NavItem>
+            <NavItem active={currentPage === 'datasets'} onClick={() => setCurrentPage('datasets')}>📁 数据集</NavItem>
+            <NavItem active={currentPage === 'models'} onClick={() => setCurrentPage('models')}>🤖 模型</NavItem>
+            <NavItem active={currentPage === 'compare'} onClick={() => setCurrentPage('compare')}>📈 模型对比</NavItem>
+          </div>
+          <div className="nav-section">
+            <div className="nav-section-title">数据管理</div>
+            <NavItem active={currentPage === 'rawdata'} onClick={() => setCurrentPage('rawdata')}>🗂️ 原始数据</NavItem>
+            <NavItem active={currentPage === 'versions'} onClick={() => setCurrentPage('versions')}>📦 版本管理</NavItem>
+            <NavItem active={currentPage === 'sites'} onClick={() => setCurrentPage('sites')}>🏗️ 应用现场</NavItem>
+          </div>
+          <div className="nav-section">
+            <div className="nav-section-title">系统</div>
+            <NavItem active={currentPage === 'usage'} onClick={() => setCurrentPage('usage')}>📊 使用统计</NavItem>
+            <NavItem active={currentPage === 'settings'} onClick={() => setCurrentPage('settings')}>⚙️ 设置</NavItem>
+            {user?.role === 'admin' && (
+              <NavItem active={showAuditLogs} onClick={() => setShowAuditLogs(true)}>📋 审计日志</NavItem>
+            )}
+          </div>
         </nav>
         <div style={{ marginTop: 'auto', padding: '16px', borderTop: `1px solid ${C.border}` }}>
           {user?.role === 'admin' && (
