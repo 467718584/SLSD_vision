@@ -2215,6 +2215,64 @@ def batch_export_models():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@app.route('/api/dataset/batch-export', methods=['POST'])
+@require_auth
+@csrf_protect
+def batch_export_datasets():
+    """批量导出数据集为ZIP文件"""
+    try:
+        import zipfile
+        import io
+        data = request.json or {}
+        names = data.get('names', [])
+        
+        if not names or not isinstance(names, list):
+            return jsonify({"success": False, "error": "无效的数据集名称列表"}), 400
+        
+        if len(names) > 10:
+            return jsonify({"success": False, "error": "单次最多导出10个数据集"}), 400
+        
+        # 过滤不存在的模型
+        valid_names = []
+        for name in names:
+            dataset_dir = os.path.join(DATASETS_DIR, name)
+            if os.path.exists(dataset_dir):
+                valid_names.append(name)
+        
+        if not valid_names:
+            return jsonify({"success": False, "error": "没有找到有效的数据集"}), 404
+        
+        # 创建临时ZIP文件
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for name in valid_names:
+                dataset_dir = os.path.join(DATASETS_DIR, name)
+                # 遍历数据集目录下的所有文件
+                for root, dirs, files in os.walk(dataset_dir):
+                    for file in files:
+                        file_path = os.path.join(root, file)
+                        # 计算ZIP内的相对路径
+                        arcname = os.path.join(name, os.path.relpath(file_path, dataset_dir))
+                        zipf.write(file_path, arcname)
+        
+        zip_buffer.seek(0)
+        
+        # 生成文件名
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        zip_filename = f"datasets_export_{timestamp}.zip"
+        
+        log_audit('export', 'dataset', ','.join(valid_names), {'action': 'batch_export', 'count': len(valid_names)})
+        
+        return send_file(
+            zip_buffer,
+            mimetype='application/zip',
+            as_attachment=True,
+            download_name=zip_filename
+        )
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @app.route('/api/dataset/<name>', methods=['PUT'])
 @require_auth
 @csrf_protect

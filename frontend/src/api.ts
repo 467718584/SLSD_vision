@@ -265,6 +265,48 @@ export async function batchExportModels(names: string[]): Promise<void> {
   window.URL.revokeObjectURL(url)
 }
 
+/**
+ * 批量导出数据集为ZIP
+ */
+export async function batchExportDatasets(names: string[]): Promise<void> {
+  if (names.length === 0) throw new Error('请选择要导出的数据集')
+  if (names.length > 10) throw new Error('最多只能导出10个数据集')
+  
+  const res = await fetch('/api/dataset/batch-export', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': getCsrfToken(),
+      'Authorization': localStorage.getItem('token') ? `Bearer ${localStorage.getItem('token')}` : ''
+    },
+    body: JSON.stringify({ names })
+  })
+  
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: '导出失败' }))
+    throw new Error(err.error || '导出失败')
+  }
+  
+  // 获取ZIP文件名
+  const contentDisposition = res.headers.get('Content-Disposition')
+  let filename = `datasets_export_${Date.now()}.zip`
+  if (contentDisposition) {
+    const match = contentDisposition.match(/filename[*]?=[\"']?(.+?)[\"']?(?:;|$)/)
+    if (match) filename = match[1]
+  }
+  
+  // 下载文件
+  const blob = await res.blob()
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  window.URL.revokeObjectURL(url)
+}
+
 // ============== 版本管理 API ==============
 
 /**

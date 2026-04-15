@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react'
 import { C, ALGO_COLORS, SITE_COLORS, TECH_METHOD_COLORS } from '../constants'
+import { batchExportDatasets } from '../api'
 import ConfirmDialog from './ConfirmDialog'
 
 // 高级搜索筛选类型
@@ -456,6 +457,23 @@ function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload }: Dat
     setBatchDeleteTarget({ names: selectedNames })
   }
 
+  // 批量导出数据集
+  async function handleBatchExport() {
+    const selectedNames = filteredDatasets
+      .filter(ds => selectedIds.has(ds.id))
+      .map(ds => ds.name)
+    if (selectedNames.length === 0) {
+      alert('请先选择要导出的数据集')
+      return
+    }
+    try {
+      await batchExportDatasets(selectedNames)
+      setSelectedIds(new Set())
+    } catch (err: any) {
+      alert('导出失败: ' + err.message)
+    }
+  }
+
   // 下载数据集
   function downloadDataset(name: string, e: React.MouseEvent) {
     e.stopPropagation()
@@ -802,6 +820,21 @@ function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload }: Dat
             }}
           >
             批量删除
+          </button>
+          <button
+            onClick={handleBatchExport}
+            style={{
+              background: C.primary,
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              padding: "6px 14px",
+              fontSize: "12px",
+              cursor: "pointer",
+              fontWeight: 500
+            }}
+          >
+            批量导出
           </button>
           <button
             onClick={() => setSelectedIds(new Set())}
