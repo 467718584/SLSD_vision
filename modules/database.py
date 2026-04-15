@@ -86,6 +86,7 @@ def init_database():
             tech_methods TEXT DEFAULT '["目标检测算法","实例分割算法"]',
             annotation_types TEXT DEFAULT '["YOLO格式","VOC格式","COCO格式"]',
             sites TEXT DEFAULT '["苏北灌溉总渠","南水北调宝应站","慈溪北排","慈溪周巷","瓯江引水","互联网"]',
+            sources TEXT DEFAULT '["互联网","本地采集","合作伙伴","公开数据集"]',
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
@@ -141,11 +142,12 @@ def init_database():
     ''')
 
     # 初始化默认设置
-    cursor.execute('INSERT OR IGNORE INTO settings (id, algo_types, tech_methods, annotation_types, sites) VALUES (1, ?, ?, ?, ?)',
+    cursor.execute('INSERT OR IGNORE INTO settings (id, algo_types, tech_methods, annotation_types, sites, sources) VALUES (1, ?, ?, ?, ?, ?)',
         (json.dumps(["路面积水检测","漂浮物检测","墙面裂缝检测","游泳检测","其他"]),
          json.dumps(["目标检测算法","实例分割算法"]),
          json.dumps(["YOLO格式","VOC格式","COCO格式"]),
-         json.dumps(["苏北灌溉总渠","南水北调宝应站","慈溪北排","慈溪周巷","瓯江引水","互联网"])))
+         json.dumps(["苏北灌溉总渠","南水北调宝应站","慈溪北排","慈溪周巷","瓯江引水","互联网"]),
+         json.dumps(["互联网","本地采集","合作伙伴","公开数据集"])))
 
     # 操作审计日志表
     cursor.execute('''
@@ -229,12 +231,17 @@ def migrate_database(conn, cursor):
 
     if 'sites' not in settings_columns:
         try:
-            # 先添加sites列，不设置默认值
             cursor.execute('ALTER TABLE settings ADD COLUMN sites TEXT')
-            # 然后更新已有行设置默认值
-            cursor.execute("UPDATE settings SET sites = '[\"苏北灌溉总渠\",\"南水北调宝应站\",\"慈溪北排\",\"慈溪周巷\",\"瓯江引水\",\"互联网\"]' WHERE id = 1")
+            cursor.execute("UPDATE settings SET sites = '[\"苏北灌溉总渠\",\"南水北调宝应站\",\"慈溪北排\",\"慈溪周巷\",\"瓯江引水\"]' WHERE id = 1")
         except Exception as e:
             print(f"[WARN] Migration sites column: {e}")
+
+    if 'sources' not in settings_columns:
+        try:
+            cursor.execute('ALTER TABLE settings ADD COLUMN sources TEXT')
+            cursor.execute("UPDATE settings SET sources = '[\"苏北灌溉总渠\",\"南水北调宝应站\",\"慈溪北排\",\"慈溪周巷\",\"瓯江引水\",\"互联网\"]' WHERE id = 1")
+        except Exception as e:
+            print(f"[WARN] Migration sources column: {e}")
 
 
 def add_dataset(data):
@@ -283,7 +290,7 @@ def get_settings():
     """获取系统设置"""
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute('SELECT algo_types, tech_methods, annotation_types, sites FROM settings WHERE id = 1')
+    cursor.execute('SELECT algo_types, tech_methods, annotation_types, sites, sources FROM settings WHERE id = 1')
     row = cursor.fetchone()
     conn.close()
     if row:
@@ -291,17 +298,19 @@ def get_settings():
             'algo_types': json.loads(row[0]) if row[0] else ["路面积水检测","漂浮物检测","墙面裂缝检测","游泳检测","其他"],
             'tech_methods': json.loads(row[1]) if row[1] else ["目标检测算法","实例分割算法"],
             'annotation_types': json.loads(row[2]) if row[2] else ["YOLO格式","VOC格式","COCO格式"],
-            'sites': json.loads(row[3]) if row[3] else ["苏北灌溉总渠","南水北调宝应站","慈溪北排","慈溪周巷","瓯江引水","互联网"]
+            'sites': json.loads(row[3]) if row[3] else ["苏北灌溉总渠","南水北调宝应站","慈溪北排","慈溪周巷","瓯江引水"],
+            'sources': json.loads(row[4]) if row[4] else ["苏北灌溉总渠","南水北调宝应站","慈溪北排","慈溪周巷","瓯江引水","互联网"]
         }
     return {
         'algo_types': ["路面积水检测","漂浮物检测","墙面裂缝检测","游泳检测","其他"],
         'tech_methods': ["目标检测算法","实例分割算法"],
         'annotation_types': ["YOLO格式","VOC格式","COCO格式"],
-        'sites': ["苏北灌溉总渠","南水北调宝应站","慈溪北排","慈溪周巷","瓯江引水","互联网"]
+        'sites': ["苏北灌溉总渠","南水北调宝应站","慈溪北排","慈溪周巷","瓯江引水"],
+        'sources': ["苏北灌溉总渠","南水北调宝应站","慈溪北排","慈溪周巷","瓯江引水","互联网"]
     }
 
 
-def update_settings(algo_types=None, tech_methods=None, annotation_types=None, sites=None):
+def update_settings(algo_types=None, tech_methods=None, annotation_types=None, sites=None, sources=None):
     """更新系统设置"""
     conn = get_connection()
     cursor = conn.cursor()
@@ -318,6 +327,9 @@ def update_settings(algo_types=None, tech_methods=None, annotation_types=None, s
     if sites is not None:
         cursor.execute('UPDATE settings SET sites = ?, updated_at = ? WHERE id = 1',
             (json.dumps(sites, ensure_ascii=False), datetime.now().isoformat()))
+    if sources is not None:
+        cursor.execute('UPDATE settings SET sources = ?, updated_at = ? WHERE id = 1',
+            (json.dumps(sources, ensure_ascii=False), datetime.now().isoformat()))
 
     conn.commit()
     conn.close()

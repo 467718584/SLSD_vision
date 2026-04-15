@@ -53,13 +53,9 @@ function DatasetEditModal({ isOpen, onClose, onSave, dataset }: DatasetEditModal
           if (data.tech_methods && data.tech_methods.length > 0) {
             setTechMethods(data.tech_methods)
           }
-          if (data.sites && data.sites.length > 0) {
-            // 从应用现场词条获取，并添加"互联网"选项
-            const siteList = [...data.sites]
-            if (!siteList.includes('互联网')) {
-              siteList.push('互联网')
-            }
-            setSources(siteList)
+          if (data.sources && data.sources.length > 0) {
+            // 从数据来源词条获取
+            setSources(data.sources)
           }
         })
         .catch(() => { })

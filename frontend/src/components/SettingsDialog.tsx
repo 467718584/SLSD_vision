@@ -15,12 +15,16 @@ function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
   const [techMethods, setTechMethods] = useState<string[]>(['目标检测算法', '实例分割算法'])
   const [annotationTypes, setAnnotationTypes] = useState<string[]>(['YOLO格式', 'VOC格式', 'COCO格式'])
   const [sites, setSites] = useState<string[]>([
+    '苏北灌溉总渠', '南水北调宝应站', '慈溪北排', '慈溪周巷', '瓯江引水'
+  ])
+  const [sources, setSources] = useState<string[]>([
     '苏北灌溉总渠', '南水北调宝应站', '慈溪北排', '慈溪周巷', '瓯江引水', '互联网'
   ])
   const [newAlgoType, setNewAlgoType] = useState('')
   const [newTechMethod, setNewTechMethod] = useState('')
   const [newAnnotationType, setNewAnnotationType] = useState('')
   const [newSite, setNewSite] = useState('')
+  const [newSource, setNewSource] = useState('')
   const [loading, setLoading] = useState(true)
 
   // 加载设置
@@ -34,6 +38,7 @@ function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
           if (data.tech_methods) setTechMethods(data.tech_methods)
           if (data.annotation_types) setAnnotationTypes(data.annotation_types)
           if (data.sites) setSites(data.sites)
+          if (data.sources) setSources(data.sources)
           setLoading(false)
         })
         .catch(() => {
@@ -53,10 +58,11 @@ function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
         algoTypes,
         techMethods,
         annotationTypes,
-        sites
+        sites,
+        sources
       })
     })
-      .then(res => res.json())
+    .then(res => res.json())
       .then(data => {
         if (data.success) {
           alert('设置已保存')
@@ -99,6 +105,14 @@ function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
     if (newSite && !sites.includes(newSite)) {
       setSites(sites.concat(newSite))
       setNewSite('')
+    }
+  }
+
+  // 添加数据来源
+  function handleAddSource() {
+    if (newSource && !sources.includes(newSource)) {
+      setSources(sources.concat(newSource))
+      setNewSource('')
     }
   }
 
@@ -213,6 +227,30 @@ function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
                   onKeyPress={e => e.key === 'Enter' && handleAddSite()}
                 />
                 <button onClick={handleAddSite} style={{ ...styles.addBtn, background: '#1565C0' }}>添加</button>
+              </div>
+            </div>
+
+            {/* 数据来源 */}
+            <div style={styles.section}>
+              <h4 style={styles.sectionTitle}>数据来源</h4>
+              <div style={styles.tagList}>
+                {sources.map(type => (
+                  <span key={type} style={{ ...styles.tag, background: '#FFF3E0', borderColor: '#FFCC80', color: '#E65100' }}>
+                    {type}
+                    <button onClick={() => handleRemove(sources, setSources, type)} style={{ ...styles.tagRemove, color: '#E65100' }}>×</button>
+                  </span>
+                ))}
+              </div>
+              <div style={styles.addRow}>
+                <input
+                  type="text"
+                  value={newSource}
+                  onChange={e => setNewSource(e.target.value)}
+                  placeholder="新增数据来源"
+                  style={styles.input}
+                  onKeyPress={e => e.key === 'Enter' && handleAddSource()}
+                />
+                <button onClick={handleAddSource} style={{ ...styles.addBtn, background: '#E65100' }}>添加</button>
               </div>
             </div>
           </div>

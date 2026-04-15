@@ -501,6 +501,10 @@ def update_settings():
               type: array
               items:
                 type: string
+            sources:
+              type: array
+              items:
+                type: string
     responses:
       200:
         description: 更新成功
@@ -513,12 +517,13 @@ def update_settings():
     tech_methods = data.get('techMethods')
     annotation_types = data.get('annotationTypes')
     sites = data.get('sites')
+    sources = data.get('sources')
 
-    if algo_types is None and tech_methods is None and annotation_types is None and sites is None:
+    if algo_types is None and tech_methods is None and annotation_types is None and sites is None and sources is None:
         return jsonify({"success": False, "error": "没有要更新的内容"}), 400
 
     try:
-        update_settings(algo_types, tech_methods, annotation_types, sites)
+        update_settings(algo_types, tech_methods, annotation_types, sites, sources)
         return jsonify({"success": True, "message": "设置已更新"})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
