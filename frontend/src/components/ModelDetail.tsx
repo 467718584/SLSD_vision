@@ -44,8 +44,8 @@ interface ModelDetailResponse {
 function InfoItem({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
-      <label style={{ fontSize: '12px', color: C.gray3 }}>{label}</label>
-      <div style={{ marginTop: '4px', fontSize: '13px', color: C.gray1 }}>
+      <label style={{ fontSize: '12px', color: var(--text-muted) }}>{label}</label>
+      <div style={{ marginTop: '4px', fontSize: '13px', color: var(--text-primary) }}>
         {value}
       </div>
     </div>
@@ -66,7 +66,7 @@ const ChartItem = React.memo(function ChartItem({
     return (
       <div style={styles.chartItem}>
         <div style={styles.chartPlaceholder}>
-          <div style={{ fontSize: '12px', color: C.gray3 }}>{title}</div>
+          <div style={{ fontSize: '12px', color: var(--text-muted) }}>{title}</div>
           <div style={{ fontSize: '11px', color: C.gray4, marginTop: '4px' }}>暂无数据</div>
         </div>
       </div>
@@ -99,7 +99,7 @@ function AccuracyCurves({
 
   return (
     <div className="card" style={{ marginBottom: '16px' }}>
-      <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '16px', color: C.gray1 }}>
+      <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '16px', color: var(--text-primary) }}>
         训练曲线
       </h3>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
@@ -160,7 +160,7 @@ function ModelDetail({ model, datasets, onBack, onEdit }: ModelDetailProps) {
           <button onClick={onBack} className="btn" style={{ marginRight: '12px' }}>
             ← 返回
           </button>
-          <span style={{ fontSize: '18px', fontWeight: 600, color: C.gray1 }}>
+          <span style={{ fontSize: '18px', fontWeight: 600, color: var(--text-primary) }}>
             {model.name}
           </span>
         </div>
@@ -168,7 +168,7 @@ function ModelDetail({ model, datasets, onBack, onEdit }: ModelDetailProps) {
           <button
             onClick={() => onEdit(model)}
             className="btn"
-            style={{ background: C.primary, color: 'white' }}
+            className="btn btn-primary"
           >
             编辑
           </button>
@@ -177,7 +177,7 @@ function ModelDetail({ model, datasets, onBack, onEdit }: ModelDetailProps) {
 
       {/* 基本信息卡片 */}
       <div className="card" style={{ marginBottom: '16px' }}>
-        <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '16px', color: C.gray1 }}>
+        <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '16px', color: var(--text-primary) }}>
           基本信息
         </h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
@@ -256,7 +256,7 @@ function ModelDetail({ model, datasets, onBack, onEdit }: ModelDetailProps) {
         </div>
         {model.description && (
           <div style={{ marginTop: '16px' }}>
-            <label style={{ fontSize: '12px', color: C.gray3 }}>描述</label>
+            <label style={{ fontSize: '12px', color: var(--text-muted) }}>描述</label>
             <p style={{ marginTop: '4px', color: C.gray2, fontSize: '13px' }}>{model.description}</p>
           </div>
         )}
@@ -267,7 +267,7 @@ function ModelDetail({ model, datasets, onBack, onEdit }: ModelDetailProps) {
 
       {/* PR曲线和混淆矩阵 - 使用 metadata.charts */}
       <div className="card" style={{ marginBottom: '16px' }}>
-        <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '16px', color: C.gray1 }}>
+        <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '16px', color: var(--text-primary) }}>
           PR曲线与混淆矩阵
         </h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '16px' }}>
@@ -317,7 +317,7 @@ const styles = {
   },
   chartLabel: {
     fontSize: '11px',
-    color: C.gray3,
+    color: var(--text-muted),
     marginTop: '6px',
   },
   previewOverlay: {

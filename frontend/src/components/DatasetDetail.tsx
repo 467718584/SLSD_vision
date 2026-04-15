@@ -34,7 +34,7 @@ function InfoItem({ label, value }: { label: string; value?: string | number }) 
   return (
     <div>
       <label style={{ fontSize: '12px', color: C.gray3 }}>{label}</label>
-      <div style={{ marginTop: '4px', fontSize: '13px', fontWeight: 500, color: C.gray1 }}>
+      <div style={{ marginTop: '4px', fontSize: '13px', fontWeight: 500, color: var(--text-primary) }}>
         {value || '-'}
       </div>
     </div>
@@ -113,12 +113,12 @@ function DatasetDetail({ ds, onBack, onRefresh, onEdit }: DatasetDetailProps) {
           <button onClick={onBack} className="btn" style={{ marginRight: '12px' }}>
             ← 返回
           </button>
-          <span style={{ fontSize: '18px', fontWeight: 600, color: C.gray1 }}>
+          <span style={{ fontSize: '18px', fontWeight: 600, color: var(--text-primary) }}>
             {ds.name}
           </span>
         </div>
         {onEdit && (
-          <button onClick={() => onEdit(ds)} className="btn" style={{ background: C.primary, color: 'white' }}>
+          <button onClick={() => onEdit(ds)} className="btn btn-primary">
             编辑
           </button>
         )}
@@ -126,7 +126,7 @@ function DatasetDetail({ ds, onBack, onRefresh, onEdit }: DatasetDetailProps) {
 
       {/* 基本信息卡片 */}
       <div className="card" style={{ marginBottom: '16px' }}>
-        <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '16px', color: C.gray1 }}>
+        <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '16px', color: var(--text-primary) }}>
           基本信息
         </h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
@@ -168,7 +168,7 @@ function DatasetDetail({ ds, onBack, onRefresh, onEdit }: DatasetDetailProps) {
       {/* 类别统计卡片 */}
       {ds.classInfo && Object.keys(ds.classInfo).length > 0 && (
         <div className="card" style={{ marginBottom: '16px' }}>
-          <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '16px', color: C.gray1 }}>
+          <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '16px', color: var(--text-primary) }}>
             类别统计
           </h3>
           <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '12px' }}>
@@ -196,7 +196,7 @@ function DatasetDetail({ ds, onBack, onRefresh, onEdit }: DatasetDetailProps) {
 
       {/* 数据集预览卡片 */}
       <div className="card" style={{ marginBottom: '16px' }}>
-        <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '16px', color: C.gray1 }}>
+        <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '16px', color: var(--text-primary) }}>
           数据集预览
         </h3>
         {loading ? (
