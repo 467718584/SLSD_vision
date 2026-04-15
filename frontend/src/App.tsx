@@ -542,9 +542,11 @@ function App() {
       />
 
       {/* 审计日志 */}
-      <AuditLogs
-        onClose={() => setShowAuditLogs(false)}
-      />
+      {showAuditLogs && (
+        <AuditLogs
+          onClose={() => setShowAuditLogs(false)}
+        />
+      )}
     </div>
   )
 }
