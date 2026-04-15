@@ -32,7 +32,7 @@
 - [x] 2.1 引入 React Query / SWR ✅
 - [x] 2.2 图片懒加载优化 (IntersectionObserver) ✅
 - [x] 2.3 API响应缓存策略 ✅ (React Query 默认实现)
-- [ ] 2.4 组件 memo 优化 (逐步进行)
+- [x] 2.4 组件 memo 优化 ✅ (DatasetList/ModelList 各6个memo组件)
 
 #### 3. Docker部署优化 ✅
 - [x] 3.1 docker-compose.yml 多容器编排 ✅
@@ -56,7 +56,7 @@
 
 #### 2. 用户体验优化
 - [ ] 2.1 拖拽排序功能
-- [ ] 2.2 高级搜索过滤器
+- [ ] 2.2 高级搜索过滤器 (子代理生成文件有语法错误，待手动完成)
 - [ ] 2.3 通知系统
 
 #### 3. 监控与告警

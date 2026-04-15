@@ -1,6 +1,27 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { C, ALGO_COLORS, SITE_COLORS, TECH_METHOD_COLORS, MODEL_CAT_COLORS } from '../constants'
 import ConfirmDialog from './ConfirmDialog'
+
+// 高级搜索筛选类型
+interface DatasetSearchFilters {
+  searchQuery: string
+  algoType: string
+  techMethod: string
+  source: string
+  dateRange: { start: string; end: string }
+  sampleRange: { min: string; max: string }
+  split: string
+}
+
+interface ModelSearchFilters {
+  searchQuery: string
+  algoName: string
+  techMethod: string
+  site: string
+  category: string
+  dateRange: { start: string; end: string }
+  accuracyRange: { min: string; max: string }
+}
 
 // 类型定义
 interface Model {
@@ -115,8 +136,22 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
     techMethod: '目标检测算法',
     site: '全部',
     category: '全部',
-    dateRange: { start: '', end: '' }
+    dateRange: { start: '', end: '' },
+    accuracyRange: { min: '', max: '' }
   })
+
+  // 高级筛选面板显示状态
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
+
+  // 计算活跃筛选条件数量
+  const activeFilterCount = useMemo(() => {
+    let count = 0
+    if (searchFilters.dateRange.start) count++
+    if (searchFilters.dateRange.end) count++
+    if (searchFilters.accuracyRange.min) count++
+    if (searchFilters.accuracyRange.max) count++
+    return count
+  }, [searchFilters.dateRange, searchFilters.accuracyRange])
 
   // 初始化从localStorage加载保存的搜索条件
   useEffect(() => {
@@ -177,7 +212,13 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
         if (searchFilters.dateRange.end && mDate > searchFilters.dateRange.end) matchDate = false
       }
       
-      return matchSearch && matchType && matchTech && matchSite && matchCat && matchDate
+      // 精度范围
+      let matchAccuracy = true
+      const accuracy = m.accuracy || 0
+      if (searchFilters.accuracyRange.min && accuracy < parseFloat(searchFilters.accuracyRange.min)) matchAccuracy = false
+      if (searchFilters.accuracyRange.max && accuracy > parseFloat(searchFilters.accuracyRange.max)) matchAccuracy = false
+      
+      return matchSearch && matchType && matchTech && matchSite && matchCat && matchDate && matchAccuracy
     })
   }, [models, searchFilters])
 
@@ -309,21 +350,284 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
         </button>
       </div>
 
-      {/* 搜索和筛选 - 使用高级搜索面板 */}
-      <AdvancedSearchPanel
-        type="model"
-        filters={searchFilters}
-        onFiltersChange={(filters) => {
-          const f = filters as ModelSearchFilters
-          setSearchFilters(f)
-          setSearchQuery(f.searchQuery)
-          setFilterType(f.algoName)
-          persistFilters(f)
-        }}
-        algoTypes={modelAlgos}
-        techMethods={['目标检测算法', '实例分割算法']}
-        extraFilters={{ sites, categories }}
-      />
+        <div style={{
+          background: C.white,
+          border: `1px solid ${C.border}`,
+          borderRadius: "10px",
+          padding: "16px",
+          marginBottom: "12px"
+        }}>
+          {/* 搜索栏 */}
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
+            <input
+              type="text"
+              value={searchFilters.searchQuery}
+              onChange={e => {
+                const newFilters = { ...searchFilters, searchQuery: e.target.value }
+                setSearchFilters(newFilters)
+                setSearchQuery(e.target.value)
+                persistFilters(newFilters)
+              }}
+              placeholder="搜索模型名称..."
+              style={{
+                flex: 1,
+                padding: "8px 12px",
+                border: `1px solid ${C.border}`,
+                borderRadius: "6px",
+                fontSize: "13px",
+                outline: "none",
+                transition: "border-color .2s"
+              }}
+              onFocus={e => { e.target.style.borderColor = C.primary }}
+              onBlur={e => { e.target.style.borderColor = C.border }}
+            />
+          </div>
+
+          {/* 筛选按钮组 */}
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+            <span style={{ fontSize: "12px", color: C.gray3, marginRight: "4px" }}>算法:</span>
+            {modelAlgos.slice(0, 6).map(algo => (
+              <button
+                key={algo}
+                onClick={() => {
+                  const newFilters = { ...searchFilters, algoName: algo }
+                  setSearchFilters(newFilters)
+                  setFilterType(algo)
+                  persistFilters(newFilters)
+                }}
+                style={{
+                  padding: "4px 10px",
+                  borderRadius: "4px",
+                  fontSize: "12px",
+                  cursor: "pointer",
+                  border: `1px solid ${searchFilters.algoName === algo ? C.primary : C.border}`,
+                  background: searchFilters.algoName === algo ? C.primaryBg : C.white,
+                  color: searchFilters.algoName === algo ? C.primary : C.gray2,
+                  fontWeight: searchFilters.algoName === algo ? 600 : 400,
+                  transition: "all .15s"
+                }}
+              >
+                {algo}
+              </button>
+            ))}
+            <span style={{ fontSize: "12px", color: C.gray3, marginLeft: "8px", marginRight: "4px" }}>技术:</span>
+            {['目标检测算法', '实例分割算法'].map(tech => (
+              <button
+                key={tech}
+                onClick={() => {
+                  const newFilters = { ...searchFilters, techMethod: tech }
+                  setSearchFilters(newFilters)
+                  persistFilters(newFilters)
+                }}
+                style={{
+                  padding: "4px 10px",
+                  borderRadius: "4px",
+                  fontSize: "12px",
+                  cursor: "pointer",
+                  border: `1px solid ${searchFilters.techMethod === tech ? C.primary : C.border}`,
+                  background: searchFilters.techMethod === tech ? C.primaryBg : C.white,
+                  color: searchFilters.techMethod === tech ? C.primary : C.gray2,
+                  fontWeight: searchFilters.techMethod === tech ? 600 : 400,
+                  transition: "all .15s"
+                }}
+              >
+                {tech}
+              </button>
+            ))}
+            <span style={{ fontSize: "12px", color: C.gray3, marginLeft: "8px", marginRight: "4px" }}>现场:</span>
+            {sites.slice(0, 5).map(site => (
+              <button
+                key={site}
+                onClick={() => {
+                  const newFilters = { ...searchFilters, site: site }
+                  setSearchFilters(newFilters)
+                  persistFilters(newFilters)
+                }}
+                style={{
+                  padding: "4px 10px",
+                  borderRadius: "4px",
+                  fontSize: "12px",
+                  cursor: "pointer",
+                  border: `1px solid ${searchFilters.site === site ? C.primary : C.border}`,
+                  background: searchFilters.site === site ? C.primaryBg : C.white,
+                  color: searchFilters.site === site ? C.primary : C.gray2,
+                  fontWeight: searchFilters.site === site ? 600 : 400,
+                  transition: "all .15s"
+                }}
+              >
+                {site}
+              </button>
+            ))}
+            <span style={{ fontSize: "12px", color: C.gray3, marginLeft: "8px", marginRight: "4px" }}>类别:</span>
+            {categories.slice(0, 5).map(cat => (
+              <button
+                key={cat}
+                onClick={() => {
+                  const newFilters = { ...searchFilters, category: cat }
+                  setSearchFilters(newFilters)
+                  persistFilters(newFilters)
+                }}
+                style={{
+                  padding: "4px 10px",
+                  borderRadius: "4px",
+                  fontSize: "12px",
+                  cursor: "pointer",
+                  border: `1px solid ${searchFilters.category === cat ? C.primary : C.border}`,
+                  background: searchFilters.category === cat ? C.primaryBg : C.white,
+                  color: searchFilters.category === cat ? C.primary : C.gray2,
+                  fontWeight: searchFilters.category === cat ? 600 : 400,
+                  transition: "all .15s"
+                }}
+              >
+                {cat}
+              </button>
+            ))}
+            <div style={{ marginLeft: "auto", display: "flex", gap: "8px", alignItems: "center" }}>
+              {/* 高级筛选按钮 */}
+              <button
+                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                style={{
+                  padding: "4px 12px",
+                  borderRadius: "4px",
+                  fontSize: "12px",
+                  cursor: "pointer",
+                  border: `1px solid ${showAdvancedFilters ? C.primary : C.border}`,
+                  background: showAdvancedFilters ? C.primaryBg : C.white,
+                  color: showAdvancedFilters ? C.primary : C.gray2,
+                  fontWeight: showAdvancedFilters ? 600 : 400,
+                  transition: "all .15s",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px"
+                }}
+              >
+                高级 {activeFilterCount > 0 && `(${activeFilterCount})`}
+              </button>
+              {/* 重置按钮 */}
+              {(searchFilters.dateRange.start || searchFilters.dateRange.end || searchFilters.accuracyRange.min || searchFilters.accuracyRange.max) && (
+                <button
+                  onClick={() => {
+                    const newFilters = { ...searchFilters, dateRange: { start: '', end: '' }, accuracyRange: { min: '', max: '' } }
+                    setSearchFilters(newFilters)
+                    persistFilters(newFilters)
+                  }}
+                  style={{
+                    padding: "4px 10px",
+                    borderRadius: "4px",
+                    fontSize: "12px",
+                    cursor: "pointer",
+                    border: `1px solid ${C.border}`,
+                    background: C.white,
+                    color: C.gray2,
+                    transition: "all .15s"
+                  }}
+                >
+                  重置
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* 高级筛选面板 */}
+          {showAdvancedFilters && (
+            <div style={{
+              marginTop: "12px",
+              paddingTop: "12px",
+              borderTop: `1px solid ${C.border}`,
+              display: "flex",
+              gap: "24px",
+              flexWrap: "wrap"
+            }}>
+              {/* 日期范围 */}
+              <div>
+                <div style={{ fontSize: "11px", color: C.gray3, marginBottom: "4px", fontWeight: 500 }}>维护日期范围</div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <input
+                    type="date"
+                    value={searchFilters.dateRange.start}
+                    onChange={e => {
+                      const newFilters = { ...searchFilters, dateRange: { ...searchFilters.dateRange, start: e.target.value } }
+                      setSearchFilters(newFilters)
+                      persistFilters(newFilters)
+                    }}
+                    style={{
+                      padding: "4px 8px",
+                      border: `1px solid ${C.border}`,
+                      borderRadius: "4px",
+                      fontSize: "12px",
+                      outline: "none"
+                    }}
+                  />
+                  <span style={{ color: C.gray3 }}>至</span>
+                  <input
+                    type="date"
+                    value={searchFilters.dateRange.end}
+                    onChange={e => {
+                      const newFilters = { ...searchFilters, dateRange: { ...searchFilters.dateRange, end: e.target.value } }
+                      setSearchFilters(newFilters)
+                      persistFilters(newFilters)
+                    }}
+                    style={{
+                      padding: "4px 8px",
+                      border: `1px solid ${C.border}`,
+                      borderRadius: "4px",
+                      fontSize: "12px",
+                      outline: "none"
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* 精度范围 */}
+              <div>
+                <div style={{ fontSize: "11px", color: C.gray3, marginBottom: "4px", fontWeight: 500 }}>模型精度范围 (%)</div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <input
+                    type="number"
+                    value={searchFilters.accuracyRange.min}
+                    onChange={e => {
+                      const newFilters = { ...searchFilters, accuracyRange: { ...searchFilters.accuracyRange, min: e.target.value } }
+                      setSearchFilters(newFilters)
+                      persistFilters(newFilters)
+                    }}
+                    placeholder="最低"
+                    min="0"
+                    max="100"
+                    style={{
+                      width: "70px",
+                      padding: "4px 8px",
+                      border: `1px solid ${C.border}`,
+                      borderRadius: "4px",
+                      fontSize: "12px",
+                      outline: "none"
+                    }}
+                  />
+                  <span style={{ color: C.gray3 }}>至</span>
+                  <input
+                    type="number"
+                    value={searchFilters.accuracyRange.max}
+                    onChange={e => {
+                      const newFilters = { ...searchFilters, accuracyRange: { ...searchFilters.accuracyRange, max: e.target.value } }
+                      setSearchFilters(newFilters)
+                      persistFilters(newFilters)
+                    }}
+                    placeholder="最高"
+                    min="0"
+                    max="100"
+                    style={{
+                      width: "70px",
+                      padding: "4px 8px",
+                      border: `1px solid ${C.border}`,
+                      borderRadius: "4px",
+                      fontSize: "12px",
+                      outline: "none"
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
       <span style={{ marginLeft: "0", marginBottom: "12px", display: "block", fontSize: "12px", color: C.gray4 }}>
         {selectedIds.size > 0 && (
