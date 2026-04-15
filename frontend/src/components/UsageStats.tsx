@@ -29,7 +29,7 @@ interface UsageStatsData {
 }
 
 interface UsageStatsProps {
-  onClose?: () => void
+  onBack?: () => void
 }
 
 // 样式
@@ -342,7 +342,8 @@ function SimpleLineChart({ data, color, height = 200 }: { data: { label: string;
   )
 }
 
-export default function UsageStats(_props: UsageStatsProps) {
+export default function UsageStats(props: UsageStatsProps) {
+  const { onBack } = props
   const [period, setPeriod] = useState<'day' | 'week' | 'month'>('day')
   const [days, setDays] = useState(30)
   const [loading, setLoading] = useState(true)
@@ -410,7 +411,24 @@ export default function UsageStats(_props: UsageStatsProps) {
   return (
     <div style={styles.container}>
       <div style={styles.header}>
+        <button
+          onClick={onBack}
+          style={{
+            background: 'none',
+            border: `1px solid ${C.border}`,
+            borderRadius: '6px',
+            padding: '6px 12px',
+            cursor: 'pointer',
+            fontSize: '13px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+          }}
+        >
+          ← 返回
+        </button>
         <h2 style={styles.title}>📊 使用统计报表</h2>
+        <div style={{ width: '80px' }}></div>
       </div>
 
       {/* 筛选器 */}

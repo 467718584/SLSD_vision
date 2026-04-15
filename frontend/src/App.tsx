@@ -112,15 +112,18 @@ function NavItem({ children, active, onClick }: NavItemProps) {
   return (
     <div
       onClick={onClick}
+      className={`nav-item ${active ? 'active' : ''}`}
       style={{
-        padding: '10px 16px',
-        cursor: 'pointer',
-        color: active ? C.primary : C.gray2,
-        background: active ? `${C.primary}15` : 'transparent',
-        borderLeft: active ? `3px solid ${C.primary}` : '3px solid transparent',
-        fontSize: '13px',
-        fontWeight: active ? 500 : 400,
-        transition: 'all 0.2s'
+        ...(!active ? {
+          padding: '10px 16px',
+          cursor: 'pointer',
+          color: C.gray2,
+          borderRadius: '8px',
+          fontSize: '13px',
+          fontWeight: 400,
+          transition: 'all 0.15s ease',
+          marginBottom: '2px',
+        } : {})
       }}
     >
       {children}
@@ -508,7 +511,7 @@ function App() {
 
         {/* 使用统计页面 */}
         {currentPage === 'usage' && (
-          <UsageStats />
+          <UsageStats onBack={() => setCurrentPage('overview')} />
         )}
 
         {/* 总览页面 */}
