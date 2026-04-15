@@ -5,7 +5,6 @@ import ErrorBoundary from './components/ErrorBoundary'
 import { ReactQueryProvider } from './components/ReactQueryProvider'
 import { NotificationProvider } from './hooks/useNotification'
 import './styles.css'
-import './styles_v2.css'
 import './responsive.css'
 
 // CSRF Token管理
