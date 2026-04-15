@@ -18,7 +18,7 @@ export function useKeyboardShortcuts(
     if (event.shiftKey) keys.push('shift')
     if (event.altKey) keys.push('alt')
     
-    const key = event.key.toLowerCase()
+    const key = (event.key || '').toLowerCase()
     if (key !== 'control' && key !== 'shift' && key !== 'alt' && key !== 'meta') {
       keys.push(key)
     }

@@ -8,7 +8,7 @@ import logging
 import time
 from datetime import datetime
 from functools import wraps
-from flask import Flask, render_template_string, jsonify, request, send_from_directory, g
+from flask import Flask, render_template_string, jsonify, request, send_from_directory, g, session
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import RequestEntityTooLarge
 from flasgger import Swagger
