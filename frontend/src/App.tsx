@@ -1,5 +1,4 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react'
-import { C } from './constants'
 import DatasetList from './components/DatasetList'
 import RawData from './components/RawData'
 import ModelList from './components/ModelList'
@@ -15,6 +14,11 @@ import UsageStats from './components/UsageStats'
 import SiteManagement from './components/SiteManagement'
 import { Login, Register, UserInfo } from './components/Auth'
 import { useKeyboardShortcuts, KEYBOARD_SHORTCUTS } from './hooks/useKeyboardShortcuts'
+import {
+  HomeIcon, DatabaseIcon, BoxIcon, CpuIcon, BarChartIcon,
+  SettingsIcon, FileTextIcon, LayersIcon, MapPinIcon,
+  ActivityIcon, SearchIcon, BellIcon, UserIcon
+} from './components/Icons'
 
 // 类型定义
 interface User {
@@ -172,21 +176,21 @@ function Overview({ datasets, models, stats }: OverviewProps) {
 
   return (
     <div>
-      <h2 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '20px', color: 'var(--text-primary)' }}>全体总览</h2>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
-        <StatCard label="数据集总数" value={datasets.length} icon="📁" />
-        <StatCard label="模型总数" value={models.length} icon="🤖" />
-        <StatCard label="样本总数" value={(stats.datasets?.totalImages || 0).toLocaleString()} icon="🖼️" />
-        <StatCard label="总精度" value={`${avgAccuracy}%`} icon="📊" />
+      <h2 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>Overview</h2>
+      <div className="stats-grid">
+        <StatCard label="Datasets" value={datasets.length} icon={<DatabaseIcon size={20} />} color="blue" />
+        <StatCard label="Models" value={models.length} icon={<CpuIcon size={20} />} color="green" />
+        <StatCard label="Images" value={(stats.datasets?.totalImages || 0).toLocaleString()} icon={<FileTextIcon size={20} />} color="orange" />
+        <StatCard label="Accuracy" value={`${avgAccuracy}%`} icon={<BarChartIcon size={20} />} color="blue" />
       </div>
     </div>
   )
 }
 
-function StatCard({ label, value, icon }: StatCardProps) {
+function StatCard({ label, value, icon, color }: StatCardProps) {
   return (
     <div className="stat-card">
-      <div className="stat-icon">{icon}</div>
+      <div className={`stat-icon ${color}`}>{icon}</div>
       <div className="stat-info">
         <div className="stat-value">{value}</div>
         <div className="stat-label">{label}</div>
@@ -375,35 +379,37 @@ function App() {
   return (
     <div className="page-container">
       {/* 侧边栏 - Roboflow 风格 */}
-      <div className="sidebar-roboflow">
+      <div className="sidebar">
         <div className="sidebar-header">
-          <div className="sidebar-logo">🤖 SLSD Vision</div>
-          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>机器视觉管理平台</div>
+          <div className="sidebar-logo">
+            <BoxIcon size={24} />
+            SLSD Vision
+          </div>
         </div>
         <nav className="sidebar-nav">
           <div className="nav-section">
-            <div className="nav-section-title">项目管理</div>
-            <NavItem active={currentPage === 'overview'} onClick={() => setCurrentPage('overview')}>🏠 总览</NavItem>
-            <NavItem active={currentPage === 'datasets'} onClick={() => setCurrentPage('datasets')}>📁 数据集</NavItem>
-            <NavItem active={currentPage === 'models'} onClick={() => setCurrentPage('models')}>🤖 模型</NavItem>
-            <NavItem active={currentPage === 'compare'} onClick={() => setCurrentPage('compare')}>📈 模型对比</NavItem>
+            <div className="nav-section-title">Project</div>
+            <NavItem active={currentPage === 'overview'} onClick={() => setCurrentPage('overview')}><HomeIcon /> Overview</NavItem>
+            <NavItem active={currentPage === 'datasets'} onClick={() => setCurrentPage('datasets')}><DatabaseIcon /> Datasets</NavItem>
+            <NavItem active={currentPage === 'models'} onClick={() => setCurrentPage('models')}><CpuIcon /> Models</NavItem>
+            <NavItem active={currentPage === 'compare'} onClick={() => setCurrentPage('compare')}><BarChartIcon /> Compare</NavItem>
           </div>
           <div className="nav-section">
-            <div className="nav-section-title">数据管理</div>
-            <NavItem active={currentPage === 'rawdata'} onClick={() => setCurrentPage('rawdata')}>🗂️ 原始数据</NavItem>
-            <NavItem active={currentPage === 'versions'} onClick={() => setCurrentPage('versions')}>📦 版本管理</NavItem>
-            <NavItem active={currentPage === 'sites'} onClick={() => setCurrentPage('sites')}>🏗️ 应用现场</NavItem>
+            <div className="nav-section-title">Data</div>
+            <NavItem active={currentPage === 'rawdata'} onClick={() => setCurrentPage('rawdata')}><FileTextIcon /> Raw Data</NavItem>
+            <NavItem active={currentPage === 'versions'} onClick={() => setCurrentPage('versions')}><LayersIcon /> Versions</NavItem>
+            <NavItem active={currentPage === 'sites'} onClick={() => setCurrentPage('sites')}><MapPinIcon /> Sites</NavItem>
           </div>
           <div className="nav-section">
-            <div className="nav-section-title">系统</div>
-            <NavItem active={currentPage === 'usage'} onClick={() => setCurrentPage('usage')}>📊 使用统计</NavItem>
-            <NavItem active={currentPage === 'settings'} onClick={() => setCurrentPage('settings')}>⚙️ 设置</NavItem>
+            <div className="nav-section-title">System</div>
+            <NavItem active={currentPage === 'usage'} onClick={() => setCurrentPage('usage')}><ActivityIcon /> Usage</NavItem>
+            <NavItem active={currentPage === 'settings'} onClick={() => setCurrentPage('settings')}><SettingsIcon /> Settings</NavItem>
             {user?.role === 'admin' && (
-              <NavItem active={showAuditLogs} onClick={() => setShowAuditLogs(true)}>📋 审计日志</NavItem>
+              <NavItem active={showAuditLogs} onClick={() => setShowAuditLogs(true)}><FileTextIcon /> Audit</NavItem>
             )}
           </div>
         </nav>
-        <div style={{ marginTop: 'auto', padding: '16px', borderTop: `1px solid ${C.border}` }}>
+        <div className="sidebar-footer">
           {user?.role === 'admin' && (
             <button
               onClick={() => setShowAuditLogs(true)}
