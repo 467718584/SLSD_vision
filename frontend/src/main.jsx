@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
 import ErrorBoundary from './components/ErrorBoundary'
+import { ReactQueryProvider } from './components/ReactQueryProvider'
 import './styles.css'
 import './responsive.css'
 
@@ -73,7 +74,9 @@ function handleError(error, errorInfo) {
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ErrorBoundary onError={handleError} showDetails={true}>
-      <App />
+      <ReactQueryProvider>
+        <App />
+      </ReactQueryProvider>
     </ErrorBoundary>
   </React.StrictMode>
 )

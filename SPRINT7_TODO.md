@@ -14,10 +14,10 @@
 - [ ] 1.2 utils.js → utils.ts (无此文件，跳过)
 
 #### 2. 性能优化 ✅
-- [ ] 2.1 引入 React Query / SWR
-- [ ] 2.2 图片懒加载优化 (IntersectionObserver)
-- [ ] 2.3 API响应缓存策略
-- [ ] 2.4 组件 memo 优化
+- [x] 2.1 引入 React Query / SWR ✅
+- [x] 2.2 图片懒加载优化 (IntersectionObserver) ✅
+- [x] 2.3 API响应缓存策略 ✅ (React Query 默认实现)
+- [ ] 2.4 组件 memo 优化 (逐步进行)
 
 #### 3. Docker部署优化 ✅
 - [ ] 3.1 docker-compose.yml 多容器编排
