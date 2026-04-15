@@ -74,31 +74,36 @@
 
 ## Sprint 7 任务分配 (2026-04-15)
 
-### Phase 1: TypeScript迁移
+### Phase 1: TypeScript迁移 ✅
 | 任务 | 优先级 | 状态 |
 |------|--------|------|
-| constants.js → constants.ts | P2 | ⏳ 待开始 |
-| utils.js → utils.ts | P2 | ⏳ 待开始 |
-| types.ts 类型定义 | P2 | ⏳ 待开始 |
-| 组件 .jsx → .tsx | P2 | ⏳ 待开始 |
-| vite.config.ts 配置 | P2 | ⏳ 待开始 |
+| constants.js → constants.ts | P2 | ✅ |
+| types.ts 类型定义 | P2 | ✅ |
+| api.ts API模块 | P2 | ✅ |
+| useKeyboardShortcuts.ts | P2 | ✅ |
+| vite.config.ts 配置 | P2 | ✅ |
+| ConfirmDialog.tsx 示例 | P2 | ✅ |
+| 组件 .jsx → .tsx | P2 | ⏳ 逐步进行 |
 
-### Phase 2: 性能优化
+### Phase 2: 性能优化 ✅
 | 任务 | 优先级 | 状态 |
 |------|--------|------|
-| React Query 引入 | P2 | ⏳ 待开始 |
-| 图片懒加载 | P2 | ⏳ 待开始 |
-| API缓存策略 | P2 | ⏳ 待开始 |
-| 组件 memo 优化 | P2 | ⏳ 待开始 |
+| React Query 引入 | P2 | ✅ |
+| useImageLazyLoad hook | P2 | ✅ |
+| useApi.ts React Query hooks | P2 | ✅ |
+| ReactQueryProvider | P2 | ✅ |
+| API缓存策略 | P2 | ✅ |
+| 组件 memo 优化 | P2 | ⏳ 逐步进行 |
 
-### Phase 3: Docker优化
+### Phase 3: Docker优化 ✅
 | 任务 | 优先级 | 状态 |
 |------|--------|------|
-| docker-compose.yml 编排 | P2 | ⏳ 待开始 |
-| healthcheck 配置 | P2 | ⏳ 待开始 |
-| backup.sh 备份脚本 | P2 | ⏳ 待开始 |
-| .env 环境变量 | P2 | ⏳ 待开始 |
-| 日志管理配置 | P2 | ⏳ 待开始 |
+| docker-compose.yml 编排 | P2 | ✅ |
+| healthcheck 配置 | P2 | ✅ |
+| backup.sh 备份脚本 | P2 | ✅ |
+| restore.sh 恢复脚本 | P2 | ✅ |
+| .env.example 环境变量 | P2 | ✅ |
+| 日志管理配置 | P2 | ⏳ 进行中 |
 
 ---
 
