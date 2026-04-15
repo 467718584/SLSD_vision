@@ -171,24 +171,26 @@ function Overview({ datasets, models, stats }: OverviewProps) {
     : '-'
 
   return (
-    <div style={{ padding: '20px' }}>
-      <h2 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '20px', color: C.gray1 }}>全体总览</h2>
+    <div>
+      <h2 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '20px', color: 'var(--text-primary)' }}>全体总览</h2>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
-        <StatCard label="数据集总数" value={datasets.length} icon="📁" color={C.primary} />
-        <StatCard label="模型总数" value={models.length} icon="🤖" color="#E8631A" />
-        <StatCard label="样本总数" value={(stats.datasets?.totalImages || 0).toLocaleString()} icon="🖼️" color={C.success} />
-        <StatCard label="总精度" value={`${avgAccuracy}%`} icon="📊" color="#8E44AD" />
+        <StatCard label="数据集总数" value={datasets.length} icon="📁" />
+        <StatCard label="模型总数" value={models.length} icon="🤖" />
+        <StatCard label="样本总数" value={(stats.datasets?.totalImages || 0).toLocaleString()} icon="🖼️" />
+        <StatCard label="总精度" value={`${avgAccuracy}%`} icon="📊" />
       </div>
     </div>
   )
 }
 
-function StatCard({ label, value, icon, color }: StatCardProps) {
+function StatCard({ label, value, icon }: StatCardProps) {
   return (
-    <div className="card" style={{ textAlign: 'center' as const, padding: '20px' }}>
-      <div style={{ fontSize: '28px', marginBottom: '8px' }}>{icon}</div>
-      <div style={{ fontSize: '24px', fontWeight: 700, color }}>{value}</div>
-      <div style={{ fontSize: '12px', color: C.gray3, marginTop: '4px' }}>{label}</div>
+    <div className="stat-card">
+      <div className="stat-icon">{icon}</div>
+      <div className="stat-info">
+        <div className="stat-value">{value}</div>
+        <div className="stat-label">{label}</div>
+      </div>
     </div>
   )
 }

@@ -485,8 +485,8 @@ function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload }: Dat
       {/* 头部 */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
         <div>
-          <h2 style={{ fontSize: "18px", fontWeight: 700, color: C.gray1 }}>数据集管理</h2>
-          <p style={{ fontSize: "13px", color: C.gray3, marginTop: "2px" }}>
+          <h2 style={{ fontSize: "18px", fontWeight: 700, color: 'var(--text-primary)' }}>数据集管理</h2>
+          <p style={{ fontSize: "13px", color: 'var(--text-muted)', marginTop: "2px" }}>
             共 {datasets.length} 个数据集 · {totalSamples.toLocaleString()} 个样本
           </p>
         </div>
@@ -507,11 +507,7 @@ function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload }: Dat
         </button>
       </div>
 
-        <div style={{
-          background: C.white,
-          border: `1px solid ${C.border}`,
-          borderRadius: "10px",
-          padding: "16px",
+        <div className="card" style={{
           marginBottom: "12px"
         }}>
           {/* 搜索栏 */}
