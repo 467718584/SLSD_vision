@@ -850,11 +850,11 @@ function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload }: Dat
       )}
 
       {/* 数据表格 */}
-      <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: "10px", overflow: "hidden" }}>
+      <div className="table-container">
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "1180px" }}>
             <thead>
-              <tr style={{ background: C.gray7, borderBottom: `2px solid ${C.border}` }}>
+              <tr>
                 <th style={th("36px", true)}>
                   <input
                     type="checkbox"

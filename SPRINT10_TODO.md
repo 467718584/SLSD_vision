@@ -21,12 +21,12 @@
 ### P2 组件重构 (进行中)
 - [x] 3.1 统计卡片组件 (stat-card className)
 - [x] 3.2 基础卡片组件 (card className)
-- [ ] 3.3 按钮/表单组件 (btn/input className)
-- [ ] 3.4 标签/徽章组件 (tag className)
+- [x] 3.3 数据表格组件 (table-container className) ✅ 新增
+- [ ] 3.4 按钮/表单组件 (btn/input className)
 
-### P3 页面重构 (待开始)
-- [ ] 4.1 总览页面
-- [ ] 4.2 数据集管理页面
+### P3 页面重构 (进行中)
+- [x] 4.1 总览页面
+- [x] 4.2 数据集管理页面 ✅ 新增
 - [ ] 4.3 模型管理页面
 - [ ] 4.4 详情页面
 
