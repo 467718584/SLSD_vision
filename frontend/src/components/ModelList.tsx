@@ -794,7 +794,7 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
       )}
 
       {/* 模型表格 */}
-      <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: "10px", overflow: "hidden" }}>
+      <div className="table-container">
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "1100px" }}>
             <thead>
