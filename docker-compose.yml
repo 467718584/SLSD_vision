@@ -15,6 +15,7 @@ services:
     environment:
       - FLASK_ENV=${FLASK_ENV:-production}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - LOG_FORMAT=${LOG_FORMAT:-json}
       - DB_PATH=/app/data/vision_platform.db
       - DATASETS_DIR=/app/data/datasets
       - MODELS_DIR=/app/data/models
@@ -29,9 +30,17 @@ services:
       - vision-network
     mem_limit: ${MEM_LIMIT:-2g}
     cpus: ${CPUS:-1.0}
+    # Docker 日志配置
+    logging:
+      driver: ${LOG_DRIVER:-json-file}
+      options:
+        max-size: ${LOG_MAX_SIZE:-10m}
+        max-file: ${LOG_MAX_FILES:-7}
+        labels: ${LOG_LABELS:-app,service}
+        env: ${LOG_ENV:-FLASK_ENV,LOG_LEVEL}
 
-# 数据备份服务 (按需启用)
-# 使用方式: docker-compose run --rm backup
+  # 数据备份服务 (按需启用)
+  # 使用方式: docker-compose run --rm backup
   backup:
     image: sldsvision/platform:latest
     container_name: sldsvision-backup
@@ -43,6 +52,8 @@ services:
       - maintenance
     networks:
       - vision-network
+    logging:
+      driver: "none"
 
 networks:
   vision-network:

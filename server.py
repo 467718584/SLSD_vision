@@ -54,18 +54,82 @@ def log_audit(action, resource_type, resource_name, details=None, status='succes
 
 
 # ==================== 日志配置 ====================
+import logging.handlers
+import json
+
 LOG_DIR = os.path.join(os.path.dirname(__file__), 'logs')
 if not os.path.exists(LOG_DIR):
     os.makedirs(LOG_DIR)
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
-    handlers=[
-        logging.FileHandler(os.path.join(LOG_DIR, 'app.log'), encoding='utf-8'),
-        logging.StreamHandler()
-    ]
+# 日志配置
+LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO').upper()
+LOG_FORMAT = os.environ.get('LOG_FORMAT', 'text')  # text 或 json
+
+class JSONFormatter(logging.Formatter):
+    """JSON格式日志格式化器"""
+    def __init__(self):
+        super().__init__()
+        self.hostname = os.environ.get('HOSTNAME', 'localhost')
+        
+    def format(self, record):
+        log_data = {
+            'timestamp': datetime.utcnow().isoformat() + 'Z',
+            'level': record.levelname,
+            'logger': record.name,
+            'message': record.getMessage(),
+            'module': record.module,
+            'function': record.funcName,
+            'line': record.lineno,
+            'hostname': self.hostname,
+            'app': 'SLSD_Vision'
+        }
+        # 添加异常信息
+        if record.exc_info:
+            log_data['exception'] = self.formatException(record.exc_info)
+        # 添加请求信息（如果存在）
+        if hasattr(record, 'request_info'):
+            log_data['request'] = record.request_info
+        return json.dumps(log_data, ensure_ascii=False)
+
+class StandardFormatter(logging.Formatter):
+    """标准格式日志格式化器"""
+    def __init__(self):
+        super().__init__(
+            fmt='%(asctime)s [%(levelname)8s] %(name)s: %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S'
+        )
+
+# 根据配置选择格式化器
+if LOG_FORMAT == 'json':
+    formatter = JSONFormatter()
+else:
+    formatter = StandardFormatter()
+
+# 配置根日志记录器
+root_logger = logging.getLogger()
+root_logger.setLevel(getattr(logging, LOG_LEVEL, logging.INFO))
+
+# 清除现有处理器
+root_logger.handlers.clear()
+
+# 文件处理器 - 使用循环日志（保留备份）
+file_handler = logging.handlers.RotatingFileHandler(
+    os.path.join(LOG_DIR, 'app.log'),
+    maxBytes=10*1024*1024,  # 10MB
+    backupCount=7,
+    encoding='utf-8'
 )
+file_handler.setLevel(logging.DEBUG)
+file_handler.setFormatter(formatter)
+root_logger.addHandler(file_handler)
+
+# 控制台处理器
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+console_handler.setFormatter(formatter)
+root_logger.addHandler(console_handler)
+
+# 应用日志记录器
 logger = logging.getLogger('SLSD_Vision')
 
 app = Flask(__name__)

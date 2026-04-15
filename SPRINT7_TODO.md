@@ -4,18 +4,12 @@
 
 ### P2 - 中优先级
 
-#### 1. TypeScript迁移 ✅
+#### 1. TypeScript迁移 ✅ 全部完成！
 - [x] 1.1 迁移 constants.js → constants.ts ✅
 - [x] 1.3 迁移 API模块 → api.ts ✅
 - [x] 1.5 添加类型定义文件 types.ts ✅
 - [x] 1.6 配置 Vite/TypeScript 构建 ✅
-- [x] ConfirmDialog.tsx 迁移完成 ✅
-- [x] ErrorBoundary.tsx 迁移完成 ✅
-- [x] Auth.tsx 迁移完成 ✅
-- [x] SettingsDialog.tsx 迁移完成 ✅
-- [x] DatasetEditModal.tsx 迁移完成 ✅
-- [x] ModelEditModal.tsx 迁移完成 ✅
-- [x] 1.4 其他组件 .tsx 迁移 (12/17 完成) ✅
+- [x] 1.4 组件 .tsx 迁移 (17/17 完成) ✅
   - ✅ ConfirmDialog.tsx
   - ✅ ErrorBoundary.tsx
   - ✅ Auth.tsx
@@ -28,15 +22,11 @@
   - ✅ DatasetVersions.tsx
   - ✅ main.tsx
   - ✅ App.tsx
-  - ⏳ 继续迁移剩余组件 (5个)...
-
-剩余组件:
-- UploadModal.jsx
-- DatasetList.jsx
-- DatasetDetail.jsx
-- ModelList.jsx
-- ModelDetail.jsx
-- [ ] 1.2 utils.js → utils.ts (无此文件，跳过)
+  - ✅ UploadModal.tsx
+  - ✅ DatasetDetail.tsx
+  - ✅ ModelDetail.tsx
+  - ✅ DatasetList.tsx
+  - ✅ ModelList.tsx
 
 #### 2. 性能优化 ✅
 - [x] 2.1 引入 React Query / SWR ✅
@@ -50,7 +40,12 @@
 - [x] 3.3 数据备份脚本 (backup.sh) ✅
 - [x] 3.4 恢复脚本 (restore.sh) ✅
 - [x] 3.5 环境变量配置 (.env.example) ✅
-- [ ] 3.6 日志管理配置 (进行中)
+- [x] 3.6 日志管理配置 ✅
+  - Docker logging driver 配置 (json-file, 10MB, 7 files)
+  - logrotate.conf 配置文件
+  - JSON 格式日志支持
+  - 应用循环日志 (RotatingFileHandler)
+  - DEPLOYMENT_CHECKLIST.md 部署文档
 
 ### P3 - 低优先级
 
