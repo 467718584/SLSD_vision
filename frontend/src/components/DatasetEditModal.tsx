@@ -22,6 +22,7 @@ function DatasetEditModal({ isOpen, onClose, onSave, dataset }: DatasetEditModal
   const [algoType, setAlgoType] = useState('其他')
   const [techMethod, setTechMethod] = useState('目标检测算法')
   const [source, setSource] = useState('')
+  const [sources, setSources] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
   const [detailChart, setDetailChart] = useState<File | null>(null)
   const [distChart, setDistChart] = useState<File | null>(null)
@@ -51,6 +52,14 @@ function DatasetEditModal({ isOpen, onClose, onSave, dataset }: DatasetEditModal
           }
           if (data.tech_methods && data.tech_methods.length > 0) {
             setTechMethods(data.tech_methods)
+          }
+          if (data.sites && data.sites.length > 0) {
+            // 从应用现场词条获取，并添加"互联网"选项
+            const siteList = [...data.sites]
+            if (!siteList.includes('互联网')) {
+              siteList.push('互联网')
+            }
+            setSources(siteList)
           }
         })
         .catch(() => { })
@@ -152,13 +161,14 @@ function DatasetEditModal({ isOpen, onClose, onSave, dataset }: DatasetEditModal
           {/* 数据来源 */}
           <div style={styles.field}>
             <label style={styles.label}>数据来源</label>
-            <input
-              type="text"
+            <select
               value={source}
               onChange={e => setSource(e.target.value)}
-              placeholder="请输入数据来源"
-              style={styles.input}
-            />
+              style={styles.select}
+            >
+              <option value="">请选择数据来源</option>
+              {sources.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
           </div>
 
           {/* 样本分布图 */}
