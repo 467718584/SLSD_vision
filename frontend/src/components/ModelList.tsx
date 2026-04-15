@@ -1,7 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react'
+import React, { useState, useMemo } from 'react'
 import { C, ALGO_COLORS, SITE_COLORS, TECH_METHOD_COLORS, MODEL_CAT_COLORS } from '../constants'
 import ConfirmDialog from './ConfirmDialog'
-import { AdvancedSearchPanel, ModelSearchFilters } from './AdvancedSearchPanel'
 
 // 类型定义
 interface Model {
