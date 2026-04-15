@@ -15,7 +15,16 @@
 - [x] SettingsDialog.tsx 迁移完成 ✅
 - [x] DatasetEditModal.tsx 迁移完成 ✅
 - [x] ModelEditModal.tsx 迁移完成 ✅
-- [ ] 1.4 其他组件 .jsx → .tsx (6/17 完成，继续进行)
+- [x] 1.4 其他组件 .jsx → .tsx (8/17 完成)
+  - ✅ ConfirmDialog.tsx
+  - ✅ ErrorBoundary.tsx
+  - ✅ Auth.tsx
+  - ✅ SettingsDialog.tsx
+  - ✅ DatasetEditModal.tsx
+  - ✅ ModelEditModal.tsx
+  - ✅ AuditLogs.tsx
+  - ✅ ModelUploadModal.tsx
+  - ⏳ 继续迁移剩余组件...
 - [ ] 1.2 utils.js → utils.ts (无此文件，跳过)
 
 #### 2. 性能优化 ✅
