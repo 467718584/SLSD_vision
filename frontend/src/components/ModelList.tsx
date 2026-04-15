@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { C, ALGO_COLORS, SITE_COLORS, TECH_METHOD_COLORS, MODEL_CAT_COLORS } from '../constants'
 import ConfirmDialog from './ConfirmDialog'
+import { AdvancedSearchPanel, ModelSearchFilters } from './AdvancedSearchPanel'
 
 // 类型定义
 interface Model {
@@ -108,20 +109,78 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [batchDeleteTarget, setBatchDeleteTarget] = useState<{ names: string[] } | null>(null)
 
+  // 高级搜索条件
+  const [searchFilters, setSearchFilters] = useState<ModelSearchFilters>({
+    searchQuery: '',
+    algoName: '全部',
+    techMethod: '目标检测算法',
+    site: '全部',
+    category: '全部',
+    dateRange: { start: '', end: '' }
+  })
+
+  // 初始化从localStorage加载保存的搜索条件
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('model_search_filters')
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        setSearchFilters(prev => ({ ...prev, ...parsed }))
+        setSearchQuery(parsed.searchQuery || '')
+        setFilterType(parsed.algoName || '全部')
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, [])
+
+  // 保存搜索条件到localStorage
+  const persistFilters = (filters: ModelSearchFilters) => {
+    try {
+      localStorage.setItem('model_search_filters', JSON.stringify(filters))
+    } catch (e) {
+      // ignore
+    }
+  }
+
   // 获取所有算法类型
   const modelAlgos = useMemo(() => {
     const algos = new Set(models.map(m => m.algoName))
     return ['全部', ...Array.from(algos)]
   }, [models])
 
+  // 获取所有应用现场
+  const sites = useMemo(() => {
+    const s = new Set(models.map(m => m.site).filter(Boolean))
+    return ['全部', ...Array.from(s)]
+  }, [models])
+
+  // 获取所有模型类别
+  const categories = useMemo(() => {
+    const c = new Set(models.map(m => m.category).filter(Boolean))
+    return ['全部', ...Array.from(c)]
+  }, [models])
+
   // 过滤模型
   const filteredModels = useMemo(() => {
     return models.filter(m => {
-      const matchSearch = m.name.toLowerCase().includes(searchQuery.toLowerCase())
-      const matchType = filterType === '全部' || m.algoName === filterType
-      return matchSearch && matchType
+      const matchSearch = m.name.toLowerCase().includes(searchFilters.searchQuery.toLowerCase())
+      const matchType = searchFilters.algoName === '全部' || m.algoName === searchFilters.algoName
+      const matchTech = searchFilters.techMethod === '全部' || searchFilters.techMethod === '目标检测算法' || m.techMethod === searchFilters.techMethod
+      const matchSite = searchFilters.site === '全部' || m.site === searchFilters.site
+      const matchCat = searchFilters.category === '全部' || m.category === searchFilters.category
+      
+      // 日期范围
+      let matchDate = true
+      if (searchFilters.dateRange.start || searchFilters.dateRange.end) {
+        const mDate = m.maintainDate || ''
+        if (searchFilters.dateRange.start && mDate < searchFilters.dateRange.start) matchDate = false
+        if (searchFilters.dateRange.end && mDate > searchFilters.dateRange.end) matchDate = false
+      }
+      
+      return matchSearch && matchType && matchTech && matchSite && matchCat && matchDate
     })
-  }, [models, searchQuery, filterType])
+  }, [models, searchFilters])
 
   // 删除模型
   function deleteModel(name: string, e: React.MouseEvent) {
@@ -251,63 +310,30 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
         </button>
       </div>
 
-      {/* 搜索和筛选 */}
-      <div style={{
-        background: C.white,
-        border: `1px solid ${C.border}`,
-        borderRadius: "10px",
-        padding: "14px 18px",
-        marginBottom: "14px",
-        display: "flex",
-        alignItems: "center",
-        gap: "12px",
-        flexWrap: "wrap" as const
-      }}>
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          placeholder="搜索模型名称..."
-          style={{
-            border: `1px solid ${C.border}`,
-            borderRadius: "6px",
-            padding: "6px 12px",
-            fontSize: "13px",
-            color: C.gray1,
-            background: C.gray7,
-            width: "220px",
-            outline: "none"
-          }}
-        />
-        <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" as const }}>
-          {modelAlgos.map(t => (
-            <button
-              key={t}
-              onClick={() => setFilterType(t)}
-              style={{
-                background: filterType === t ? C.primary : "none",
-                border: `1px solid ${filterType === t ? C.primary : C.border}`,
-                borderRadius: "20px",
-                padding: "3px 12px",
-                fontSize: "12px",
-                cursor: "pointer",
-                color: filterType === t ? "white" : C.gray3,
-                transition: "all .15s"
-              }}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
-        <span style={{ marginLeft: "auto", fontSize: "12px", color: C.gray4 }}>
-          {selectedIds.size > 0 && (
-            <span style={{ marginRight: '12px', color: C.primary }}>
-              已选 {selectedIds.size} 项
-            </span>
-          )}
-          显示 {filteredModels.length} 条
-        </span>
-      </div>
+      {/* 搜索和筛选 - 使用高级搜索面板 */}
+      <AdvancedSearchPanel
+        type="model"
+        filters={searchFilters}
+        onFiltersChange={(filters) => {
+          const f = filters as ModelSearchFilters
+          setSearchFilters(f)
+          setSearchQuery(f.searchQuery)
+          setFilterType(f.algoName)
+          persistFilters(f)
+        }}
+        algoTypes={modelAlgos}
+        techMethods={['目标检测算法', '实例分割算法']}
+        extraFilters={{ sites, categories }}
+      />
+
+      <span style={{ marginLeft: "0", marginBottom: "12px", display: "block", fontSize: "12px", color: C.gray4 }}>
+        {selectedIds.size > 0 && (
+          <span style={{ marginRight: '12px', color: C.primary }}>
+            已选 {selectedIds.size} 项
+          </span>
+        )}
+        显示 {filteredModels.length} 条
+      </span>
 
       {/* 批量操作栏 */}
       {selectedIds.size > 0 && (

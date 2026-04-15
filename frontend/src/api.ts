@@ -383,3 +383,75 @@ export async function fetchAuditLogs(params?: { page?: number; page_size?: numbe
   const res = await fetch(url, { headers: getHeaders() })
   return res.json()
 }
+
+// ============== 健康检查 API ==============
+
+interface HealthStatus {
+  status: 'healthy' | 'degraded' | 'unhealthy'
+  timestamp: string
+  uptime_seconds: number
+  database: {
+    ok: boolean
+    size_bytes: number
+    size_mb: number
+  }
+  disk: {
+    free_gb: number
+    total_gb: number
+    usage_percent: number
+    status: 'ok' | 'warning' | 'critical'
+  }
+  memory: {
+    used_gb: number
+    total_gb: number
+    percent: number
+    status: 'ok' | 'warning' | 'critical'
+  }
+  cpu: {
+    percent: number
+    count: number
+    status: 'ok' | 'warning' | 'critical'
+  }
+  services: {
+    api: string
+    database: string
+  }
+}
+
+interface StorageInfo {
+  datasets: {
+    path: string
+    size_bytes: number
+    size_mb: number
+    size_gb: number
+  }
+  models: {
+    path: string
+    size_bytes: number
+    size_mb: number
+    size_gb: number
+  }
+  total_used_bytes: number
+  total_used_gb: number
+  disk: {
+    total_gb: number
+    free_gb: number
+    usage_percent: number
+  }
+}
+
+/**
+ * 获取系统健康状态
+ */
+export async function fetchHealth(): Promise<ApiResponse<HealthStatus>> {
+  const res = await fetch('/api/health', { headers: getHeaders() })
+  return res.json()
+}
+
+/**
+ * 获取存储空间信息
+ */
+export async function fetchStorage(): Promise<ApiResponse<StorageInfo>> {
+  const res = await fetch('/api/storage', { headers: getHeaders() })
+  return res.json()
+}

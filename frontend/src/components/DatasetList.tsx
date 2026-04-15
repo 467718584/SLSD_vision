@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { C, ALGO_COLORS, SITE_COLORS, TECH_METHOD_COLORS } from '../constants'
 import ConfirmDialog from './ConfirmDialog'
+import { AdvancedSearchPanel, DatasetSearchFilters } from './AdvancedSearchPanel'
 
 // 类型定义
 interface Dataset {
@@ -159,20 +160,85 @@ function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload }: Dat
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [batchDeleteTarget, setBatchDeleteTarget] = useState<{ names: string[] } | null>(null)
 
+  // 高级搜索条件
+  const [searchFilters, setSearchFilters] = useState<DatasetSearchFilters>({
+    searchQuery: '',
+    algoType: '全部',
+    techMethod: '目标检测算法',
+    source: '全部',
+    dateRange: { start: '', end: '' },
+    sampleRange: { min: '', max: '' },
+    split: '全部'
+  })
+
+  // 初始化从localStorage加载保存的搜索条件
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('dataset_search_filters')
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        setSearchFilters(prev => ({ ...prev, ...parsed }))
+        setSearchQuery(parsed.searchQuery || '')
+        setFilterType(parsed.algoType || '全部')
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, [])
+
+  // 保存搜索条件到localStorage
+  const persistFilters = (filters: DatasetSearchFilters) => {
+    try {
+      localStorage.setItem('dataset_search_filters', JSON.stringify(filters))
+    } catch (e) {
+      // ignore
+    }
+  }
+
   // 获取所有算法类型
   const algoTypes = useMemo(() => {
     const types = new Set(datasets.map(ds => ds.algoType))
     return ['全部', ...Array.from(types)]
   }, [datasets])
 
+  // 获取所有数据来源
+  const sources = useMemo(() => {
+    const srcs = new Set(datasets.map(ds => ds.source).filter(Boolean))
+    return ['全部', ...Array.from(srcs)]
+  }, [datasets])
+
+  // 获取所有分配比例
+  const splits = useMemo(() => {
+    const sp = new Set(datasets.map(ds => ds.split).filter(Boolean))
+    return ['全部', ...Array.from(sp)]
+  }, [datasets])
+
   // 过滤数据集
   const filteredDatasets = useMemo(() => {
     return datasets.filter(ds => {
-      const matchSearch = ds.name.toLowerCase().includes(searchQuery.toLowerCase())
-      const matchType = filterType === '全部' || ds.algoType === filterType
-      return matchSearch && matchType
+      const matchSearch = ds.name.toLowerCase().includes(searchFilters.searchQuery.toLowerCase())
+      const matchType = searchFilters.algoType === '全部' || ds.algoType === searchFilters.algoType
+      const matchTech = searchFilters.techMethod === '全部' || searchFilters.techMethod === '目标检测算法' || ds.techMethod === searchFilters.techMethod
+      const matchSource = searchFilters.source === '全部' || ds.source === searchFilters.source
+      const matchSplit = searchFilters.split === '全部' || ds.split === searchFilters.split
+      
+      // 日期范围
+      let matchDate = true
+      if (searchFilters.dateRange.start || searchFilters.dateRange.end) {
+        const dsDate = ds.maintainDate || ''
+        if (searchFilters.dateRange.start && dsDate < searchFilters.dateRange.start) matchDate = false
+        if (searchFilters.dateRange.end && dsDate > searchFilters.dateRange.end) matchDate = false
+      }
+      
+      // 样本数量范围
+      let matchSample = true
+      const total = ds.total || 0
+      if (searchFilters.sampleRange.min && total < parseInt(searchFilters.sampleRange.min)) matchSample = false
+      if (searchFilters.sampleRange.max && total > parseInt(searchFilters.sampleRange.max)) matchSample = false
+      
+      return matchSearch && matchType && matchTech && matchSource && matchSplit && matchDate && matchSample
     })
-  }, [datasets, searchQuery, filterType])
+  }, [datasets, searchFilters])
 
   // 计算总样本数
   const totalSamples = useMemo(() => {
@@ -298,63 +364,30 @@ function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload }: Dat
         </button>
       </div>
 
-      {/* 搜索和筛选 */}
-      <div style={{
-        background: C.white,
-        border: `1px solid ${C.border}`,
-        borderRadius: "10px",
-        padding: "14px 18px",
-        marginBottom: "14px",
-        display: "flex",
-        alignItems: "center",
-        gap: "12px",
-        flexWrap: "wrap" as const
-      }}>
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          placeholder="搜索数据集名称..."
-          style={{
-            border: `1px solid ${C.border}`,
-            borderRadius: "6px",
-            padding: "6px 12px",
-            fontSize: "13px",
-            color: C.gray1,
-            background: C.gray7,
-            width: "220px",
-            outline: "none"
-          }}
-        />
-        <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" as const }}>
-          {algoTypes.map(t => (
-            <button
-              key={t}
-              onClick={() => setFilterType(t)}
-              style={{
-                background: filterType === t ? C.primary : "none",
-                border: `1px solid ${filterType === t ? C.primary : C.border}`,
-                borderRadius: "20px",
-                padding: "3px 12px",
-                fontSize: "12px",
-                cursor: "pointer",
-                color: filterType === t ? "white" : C.gray3,
-                transition: "all .15s"
-              }}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
-        <span style={{ marginLeft: "auto", fontSize: "12px", color: C.gray4 }}>
-          {selectedIds.size > 0 && (
-            <span style={{ marginRight: '12px', color: C.primary }}>
-              已选 {selectedIds.size} 项
-            </span>
-          )}
-          显示 {filteredDatasets.length} 条
-        </span>
-      </div>
+      {/* 搜索和筛选 - 使用高级搜索面板 */}
+      <AdvancedSearchPanel
+        type="dataset"
+        filters={searchFilters}
+        onFiltersChange={(filters) => {
+          const f = filters as DatasetSearchFilters
+          setSearchFilters(f)
+          setSearchQuery(f.searchQuery)
+          setFilterType(f.algoType)
+          persistFilters(f)
+        }}
+        algoTypes={algoTypes}
+        techMethods={['目标检测算法', '实例分割算法']}
+        extraFilters={{ sources, splits }}
+      />
+
+      <span style={{ marginLeft: "0", marginBottom: "12px", display: "block", fontSize: "12px", color: C.gray4 }}>
+        {selectedIds.size > 0 && (
+          <span style={{ marginRight: '12px', color: C.primary }}>
+            已选 {selectedIds.size} 项
+          </span>
+        )}
+        显示 {filteredDatasets.length} 条
+      </span>
 
       {/* 批量操作栏 */}
       {selectedIds.size > 0 && (
