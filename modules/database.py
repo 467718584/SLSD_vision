@@ -957,6 +957,104 @@ def get_audit_stats(days=7):
     }
 
 
+def get_usage_stats(period='day', days=30):
+    """获取使用统计信息
+    
+    Args:
+        period: 统计周期 - 'day'(按日), 'week'(按周), 'month'(按月)
+        days: 统计天数范围
+    
+    Returns:
+        包含数据集上传数、模型上传数、原始数据上传数、活跃用户数的统计
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # 根据周期确定日期范围
+    if period == 'day':
+        date_format = '%Y-%m-%d'
+        date_trunc = "DATE(created_at)"
+    elif period == 'week':
+        date_format = '%Y-%u'
+        date_trunc = "strftime('%Y-W%W', created_at)"
+    else:  # month
+        date_format = '%Y-%m'
+        date_trunc = "strftime('%Y-%m', created_at)"
+    
+    # 数据集上传统计
+    cursor.execute(f'''
+        SELECT {date_trunc} as date_period, COUNT(*) as count
+        FROM datasets
+        WHERE created_at >= DATE('now', '-' || ? || ' days')
+        GROUP BY date_period
+        ORDER BY date_period
+    ''', (days,))
+    dataset_stats = [dict(row) for row in cursor.fetchall()]
+    
+    # 模型上传统计
+    cursor.execute(f'''
+        SELECT {date_trunc} as date_period, COUNT(*) as count
+        FROM models
+        WHERE created_at >= DATE('now', '-' || ? || ' days')
+        GROUP BY date_period
+        ORDER BY date_period
+    ''', (days,))
+    model_stats = [dict(row) for row in cursor.fetchall()]
+    
+    # 原始数据上传统计
+    cursor.execute(f'''
+        SELECT {date_trunc} as date_period, COUNT(*) as count
+        FROM raw_data
+        WHERE created_at >= DATE('now', '-' || ? || ' days')
+        GROUP BY date_period
+        ORDER BY date_period
+    ''', (days,))
+    raw_data_stats = [dict(row) for row in cursor.fetchall()]
+    
+    # 活跃用户统计（基于审计日志）
+    cursor.execute('''
+        SELECT COUNT(DISTINCT username) as count
+        FROM audit_logs
+        WHERE created_at >= DATE('now', '-' || ? || ' days')
+    ''', (days,))
+    row = cursor.fetchone()
+    active_users = row[0] if row else 0
+    
+    # 每日用户活跃详情（用于前端图表）
+    cursor.execute(f'''
+        SELECT {date_trunc} as date_period, COUNT(DISTINCT username) as count
+        FROM audit_logs
+        WHERE created_at >= DATE('now', '-' || ? || ' days')
+        GROUP BY date_period
+        ORDER BY date_period
+    ''', (days,))
+    user_activity_stats = [dict(row) for row in cursor.fetchall()]
+    
+    conn.close()
+    
+    # 汇总数据
+    total_datasets = sum(s['count'] for s in dataset_stats)
+    total_models = sum(s['count'] for s in model_stats)
+    total_raw_data = sum(s['count'] for s in raw_data_stats)
+    
+    return {
+        'period': period,
+        'days': days,
+        'summary': {
+            'total_datasets': total_datasets,
+            'total_models': total_models,
+            'total_raw_data': total_raw_data,
+            'active_users': active_users
+        },
+        'daily': {
+            'datasets': dataset_stats,
+            'models': model_stats,
+            'raw_data': raw_data_stats,
+            'users': user_activity_stats
+        }
+    }
+
+
 if __name__ == '__main__':
     init_database()
     print(f"Database initialized at: {DB_PATH}")

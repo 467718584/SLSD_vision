@@ -11,6 +11,7 @@ import DatasetEditModal from './components/DatasetEditModal'
 import ModelEditModal from './components/ModelEditModal'
 import SettingsDialog from './components/SettingsDialog'
 import AuditLogs from './components/AuditLogs'
+import UsageStats from './components/UsageStats'
 import SiteManagement from './components/SiteManagement'
 import { Login, Register, UserInfo } from './components/Auth'
 import { useKeyboardShortcuts, KEYBOARD_SHORTCUTS } from './hooks/useKeyboardShortcuts'
@@ -393,6 +394,7 @@ function App() {
           <NavItem active={currentPage === 'versions'} onClick={() => setCurrentPage('versions')}>📦 版本管理</NavItem>
           <NavItem active={currentPage === 'models'} onClick={() => setCurrentPage('models')}>🤖 模型管理</NavItem>
           <NavItem active={currentPage === 'compare'} onClick={() => setCurrentPage('compare')}>📈 模型对比</NavItem>
+          <NavItem active={currentPage === 'usage'} onClick={() => setCurrentPage('usage')}>📊 使用统计</NavItem>
           <NavItem active={currentPage === 'settings'} onClick={() => setCurrentPage('settings')}>⚙️ 设置</NavItem>
           <NavItem active={currentPage === 'sites'} onClick={() => setCurrentPage('sites')}>🏗️ 应用现场管理</NavItem>
         </nav>
@@ -502,6 +504,11 @@ function App() {
               <SettingsCard title="标注格式" items={stats.settings?.annotation_formats || []} />
             </div>
           </div>
+        )}
+
+        {/* 使用统计页面 */}
+        {currentPage === 'usage' && (
+          <UsageStats />
         )}
 
         {/* 总览页面 */}

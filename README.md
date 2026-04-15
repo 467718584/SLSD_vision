@@ -1,6 +1,8 @@
-# 机器视觉管理平台 (SLSD Vision Platform)
+# SLSD Vision Platform (机器视觉管理平台)
 
-基于 Flask + React/Babel 的数据集与模型管理系统，用于管理和展示机器视觉相关的数据集和训练模型。
+**当前版本：v1.7.0**
+
+基于 Flask + React/Babel 的数据集与模型管理系统，用于管理和展示机器视觉相关的数据集、训练模型、应用现场和原始数据。
 
 ## 项目文档
 
@@ -17,12 +19,18 @@
 ## 项目概述
 
 本系统是一个 Web 化管理平台，主要功能包括：
-- 数据集管理：上传（支持ZIP压缩包和文件夹）、查看、删除数据集
-- 模型管理：上传、查看、删除训练模型
-- 数据预览：查看数据集图片和标注信息
-- 搜索筛选：通过算法类型、名称等条件筛选数据
-- 大文件上传：支持最大5GB的文件上传
-- 数据集校验：YOLO格式4步校验、标签编辑、类别统计
+- **数据集管理**：上传（支持ZIP压缩包和文件夹）、查看、删除数据集
+- **模型管理**：上传、查看、删除训练模型
+- **应用现场管理**：管理应用现场站点，关联数据集和模型
+- **原始数据管理**：管理未标注或已标注的原始数据
+- **数据预览**：查看数据集图片和标注信息
+- **版本管理**：数据集版本化管理，支持版本对比
+- **搜索筛选**：通过算法类型、名称等条件筛选数据
+- **大文件上传**：支持最大5GB的文件上传
+- **数据集校验**：YOLO格式4步校验、标签编辑、类别统计
+- **审计日志**：记录所有操作行为，支持查询和统计分析
+- **用户认证**：用户注册、登录、会话管理
+- **性能监控**：实时监控系统性能指标
 
 ## 技术栈
 
@@ -30,6 +38,8 @@
 - **前端**: React 18 + Babel (通过 CDN 加载)
 - **数据库**: SQLite
 - **数据存储**: 本地文件系统
+- **图表生成**: Matplotlib
+- **图像处理**: Pillow (PIL)
 
 ## Docker 部署
 
@@ -287,6 +297,58 @@ SLSD_vision/
 - SUPPORTED_ANNOTATION_FORMATS - 支持的标注格式
 - SUPPORTED_IMAGE_FORMATS - 支持的图片格式
 
+## v1.7 新增功能 (2026-04-15)
+
+### 1. 应用现场管理
+- 新增「应用现场」管理模块（sites表）
+- 预置应用现场列表：苏北灌溉总渠、南水北调宝应站、慈溪北排、慈溪周巷、瓯江引水
+- 数据集可关联应用现场（source字段）
+- 模型可关联应用现场（site字段）
+- 应用现场详情展示：数据集数量、模型数量、维护人、维护日期
+
+### 2. 原始数据管理
+- 新增「原始数据」管理模块（raw_data表）
+- 支持添加/删除原始数据记录
+- 原始数据字段：名称、算法类型、描述、关联数据集、数据来源、是否已标注、维护日期、维护人
+- 数据来源可选：互联网、本地采集、合作伙伴、公开数据集
+
+### 3. 数据集版本管理
+- 支持为数据集创建版本快照
+- 支持查看版本详情和历史版本列表
+- 支持版本对比分析
+- 支持删除指定版本
+
+### 4. 审计日志
+- 记录所有关键操作行为（数据集/模型增删改）
+- 审计字段：用户、操作类型、资源类型、资源名称、详情、IP地址、操作状态、错误信息、时间
+- 提供审计日志查询接口
+- 提供审计统计数据（按操作类型/资源类型统计）
+
+### 5. 用户认证
+- 用户注册接口（用户名、密码）
+- 用户登录接口（会话Cookie）
+- 当前用户信息查询
+- CSRF令牌保护
+
+### 6. 性能监控
+- 实时性能指标端点（响应时间、请求量）
+- 系统健康检查端点
+- 存储空间详情统计
+
+### 7. 批量操作
+- 批量删除数据集
+- 批量删除模型
+- 批量导出模型（ZIP打包下载）
+
+### 8. 模型详情页增强
+- 模型验证集识别结果分离：标注图片 vs 预测图片
+- PR曲线、F1曲线、精确率曲线、召回率曲线、混淆矩阵展示
+- 训练曲线自动生成（mAP50、mAP50-95、边框损失）
+
+### 9. 设置页面增强
+- 支持配置应用现场列表
+- 支持配置数据来源列表
+
 ## v1.3 新增功能 (2026-03-05)
 
 ### 1. 新增字段：算法类型与技术方法
@@ -493,6 +555,7 @@ SLSD_vision/
 | img_count_test | INTEGER | 测试集图片数 |
 | class_info | TEXT | 类别信息（JSON） |
 | tech_method | TEXT | 技术方法 |
+| source | TEXT | 数据来源/应用现场 |
 
 ### 模型表 (models)
 
@@ -508,6 +571,68 @@ SLSD_vision/
 | maintain_date | TEXT | 维护日期 |
 | maintainer | TEXT | 维护人员 |
 | preview_count | INTEGER | 预览数量 |
+| site | TEXT | 关联应用现场 |
+
+### 数据集版本表 (dataset_versions)
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | INTEGER | 主键 |
+| dataset_name | TEXT | 数据集名称 |
+| version | TEXT | 版本号 |
+| description | TEXT | 版本描述 |
+| total | INTEGER | 样本总数 |
+| label_count | INTEGER | 标签数量 |
+| class_info | TEXT | 类别信息（JSON） |
+| parent_version | TEXT | 父版本号 |
+| created_at | TIMESTAMP | 创建时间 |
+
+### 原始数据表 (raw_data)
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | INTEGER | 主键 |
+| name | TEXT | 原始数据名称（唯一） |
+| algo_type | TEXT | 算法类型 |
+| description | TEXT | 描述 |
+| dataset | TEXT | 关联数据集 |
+| source | TEXT | 数据来源 |
+| is_annotated | BOOLEAN | 是否已标注 |
+| maintain_date | TEXT | 维护日期 |
+| maintainer | TEXT | 维护人员 |
+| created_at | TIMESTAMP | 创建时间 |
+| updated_at | TIMESTAMP | 更新时间 |
+
+### 应用现场表 (sites)
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | INTEGER | 主键 |
+| name | TEXT | 应用现场名称（唯一） |
+| description | TEXT | 描述 |
+| dataset | TEXT | 关联数据集 |
+| model | TEXT | 关联模型 |
+| maintain_date | TEXT | 维护日期 |
+| maintainer | TEXT | 维护人员 |
+| created_at | TIMESTAMP | 创建时间 |
+| updated_at | TIMESTAMP | 更新时间 |
+
+### 审计日志表 (audit_logs)
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | INTEGER | 主键 |
+| user_id | TEXT | 用户ID |
+| username | TEXT | 用户名 |
+| action | TEXT | 操作类型 |
+| resource_type | TEXT | 资源类型 |
+| resource_name | TEXT | 资源名称 |
+| details | TEXT | 操作详情（JSON） |
+| ip_address | TEXT | IP地址 |
+| user_agent | TEXT | User-Agent |
+| status | TEXT | 操作状态 |
+| error_message | TEXT | 错误信息 |
+| created_at | TIMESTAMP | 操作时间 |
 
 ### 设置表 (settings)
 
@@ -517,6 +642,8 @@ SLSD_vision/
 | algo_types | TEXT | 算法类型列表（JSON） |
 | tech_methods | TEXT | 技术方法列表（JSON） |
 | annotation_types | TEXT | 标注格式列表（JSON） |
+| sites | TEXT | 应用现场列表（JSON） |
+| sources | TEXT | 数据来源列表（JSON） |
 | updated_at | TIMESTAMP | 更新时间 |
 
 ## 启动方式
@@ -591,6 +718,24 @@ streamlit run app.py
 - 目标检测算法
 - 实例分割算法
 
+## 应用现场
+
+系统支持的应用现场（可在设置页面或数据库中配置）：
+- 苏北灌溉总渠
+- 南水北调宝应站
+- 慈溪北排
+- 慈溪周巷
+- 瓯江引水
+- 其他（默认灰色）
+
+## 数据来源
+
+系统支持的数据来源（可在设置页面或数据库中配置）：
+- 互联网
+- 本地采集
+- 合作伙伴
+- 公开数据集
+
 ## 模型类别
 
 系统支持的模型类别（可在 MODEL_CAT_COLORS 中扩展）：
@@ -629,6 +774,27 @@ werkzeug>=2.0.0
 ```
 
 ## 版本历史
+
+### v1.7.0 (2026-04-15)
+- 新增：应用现场管理模块（sites表、/api/sites接口）
+- 新增：原始数据管理模块（raw_data表、/api/raw-data接口）
+- 新增：数据集版本管理（/api/dataset/<name>/versions接口）
+- 新增：审计日志模块（/api/audit/logs、/api/audit/stats接口）
+- 新增：用户认证模块（注册、登录、会话管理）
+- 新增：性能监控端点（/api/performance）
+- 新增：系统健康检查端点（/api/health）
+- 新增：存储空间详情端点（/api/storage）
+- 新增：批量删除数据集接口（/api/datasets/batch-delete）
+- 新增：批量删除模型接口（/api/models/batch-delete）
+- 新增：批量导出模型接口（/api/models/batch-export）
+- 新增：模型详情v2页面（/api/model/<name>/detail-v2）
+- 新增：数据集版本对比接口（/api/versions/compare）
+- 优化：PR曲线、混淆矩阵等图表展示
+- 优化：验证集识别结果分离显示（标注vs预测）
+- 修复：多项Bug修复和稳定性优化
+
+### v1.6 (2026-03-??)
+- (功能迭代中，与v1.7合并发布)
 
 ### v1.5 (2026-03-07)
 - 新增：模型文件夹上传功能（支持results.csv解析）
@@ -705,12 +871,27 @@ werkzeug>=2.0.0
 | GET | `/api/model/<name>/detail` | 获取模型详情（含图表路径） |
 | POST | `/api/model/upload` | 上传模型（文件夹模式） |
 | DELETE | `/api/model/<name>` | 删除模型 |
+| POST | `/api/models/batch-delete` | 批量删除模型 |
+| POST | `/api/models/batch-export` | 批量导出模型（ZIP） |
+
+#### 数据集版本 API
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/dataset/<name>/versions` | 获取数据集版本列表 |
+| POST | `/api/dataset/<name>/versions` | 创建数据集版本 |
+| GET | `/api/version/<version_id>` | 获取版本详情 |
+| POST | `/api/versions/compare` | 对比两个版本 |
+| DELETE | `/api/version/<version_id>` | 删除指定版本 |
 
 #### 统计 API
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | GET | `/api/stats` | 获取统计信息 |
+| GET | `/api/performance` | 获取性能指标 |
+| GET | `/api/health` | 系统健康检查 |
+| GET | `/api/storage` | 存储空间详情 |
 
 #### 设置 API
 
@@ -724,6 +905,39 @@ werkzeug>=2.0.0
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | GET | `/api/dataset/<name>/charts` | 获取数据集图表 |
+| POST | `/api/dataset/<name>/chart-upload` | 上传图表文件 |
+
+#### 应用现场管理 API
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/sites` | 获取应用现场列表（含关联统计） |
+| POST | `/api/sites` | 添加应用现场 |
+| DELETE | `/api/sites/<name>` | 删除应用现场 |
+
+#### 原始数据管理 API
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/raw-data` | 获取原始数据列表 |
+| POST | `/api/raw-data` | 添加原始数据 |
+| DELETE | `/api/raw-data/<name>` | 删除原始数据 |
+
+#### 审计日志 API
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/audit/logs` | 查询审计日志 |
+| GET | `/api/audit/stats` | 获取审计统计数据 |
+
+#### 用户认证 API
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | `/api/register` | 用户注册 |
+| POST | `/api/login` | 用户登录 |
+| GET | `/api/me` | 获取当前用户信息 |
+| GET | `/api/csrf` | 获取CSRF令牌 |
 
 ### 上传示例
 
