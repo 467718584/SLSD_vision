@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react'
 import { C, ALGO_COLORS, SITE_COLORS, TECH_METHOD_COLORS, MODEL_CAT_COLORS } from '../constants'
+import { batchExportModels } from '../api'
 import ConfirmDialog from './ConfirmDialog'
 
 // 高级搜索筛选类型
@@ -306,6 +307,26 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
       return
     }
     setBatchDeleteTarget({ names: selectedNames })
+  }
+
+  // 批量导出
+  async function handleBatchExport() {
+    const selectedNames = filteredModels
+      .filter(m => selectedIds.has(m.id))
+      .map(m => m.name)
+    if (selectedNames.length === 0) {
+      alert('请先选择要导出的模型')
+      return
+    }
+    if (selectedNames.length > 10) {
+      alert('最多只能导出10个模型')
+      return
+    }
+    try {
+      await batchExportModels(selectedNames)
+    } catch (err: any) {
+      alert(`导出失败: ${err.message}`)
+    }
   }
 
   // 下载模型
@@ -653,6 +674,21 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
           <span style={{ fontSize: "13px", color: C.primary, fontWeight: 500 }}>
             已选择 {selectedIds.size} 个模型
           </span>
+          <button
+            onClick={handleBatchExport}
+            style={{
+              background: C.primary,
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              padding: "6px 14px",
+              fontSize: "12px",
+              cursor: "pointer",
+              fontWeight: 500
+            }}
+          >
+            批量导出
+          </button>
           <button
             onClick={handleBatchDelete}
             style={{
