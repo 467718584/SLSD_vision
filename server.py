@@ -2768,12 +2768,42 @@ def delete_raw_data(name):
 # ========== 应用现场管理 API ==========
 @app.route('/api/sites', methods=['GET'])
 def get_sites_list():
-    """获取应用现场列表"""
+    """获取应用现场列表（含关联统计）"""
     try:
-        from modules.database import get_all_sites
-        sites = get_all_sites()
-        return jsonify({"success": True, "data": sites})
+        from modules.database import get_settings, get_all_datasets, get_all_models, get_all_sites
+        settings = get_settings()
+        site_names = settings.get('sites', [])
+        
+        # Filter out "互联网"
+        site_names = [s for s in site_names if s != '互联网']
+        
+        # Get all datasets and models
+        datasets = get_all_datasets()
+        models = get_all_models()
+        
+        # Get sites table info (maintainer, maintain_date)
+        sites_table = {s['name']: s for s in get_all_sites()}
+        
+        # Build result with counts
+        result = []
+        for idx, name in enumerate(site_names, 1):
+            site_info = sites_table.get(name, {})
+            dataset_count = sum(1 for ds in datasets if ds.get('source') == name)
+            model_count = sum(1 for m in models if m.get('site') == name)
+            result.append({
+                'id': idx,
+                'name': name,
+                'dataset_count': dataset_count,
+                'model_count': model_count,
+                'maintainer': site_info.get('maintainer') or '-',
+                'maintain_date': site_info.get('maintain_date') or '-',
+                'description': site_info.get('description') or ''
+            })
+        
+        return jsonify({"success": True, "data": result})
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({"success": False, "error": str(e)}), 500
 
 

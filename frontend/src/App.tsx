@@ -1,6 +1,7 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react'
 import { C } from './constants'
 import DatasetList from './components/DatasetList'
+import RawData from './components/RawData'
 import ModelList from './components/ModelList'
 import ModelCompare from './components/ModelCompare'
 import DatasetVersions from './components/DatasetVersions'
@@ -10,6 +11,7 @@ import DatasetEditModal from './components/DatasetEditModal'
 import ModelEditModal from './components/ModelEditModal'
 import SettingsDialog from './components/SettingsDialog'
 import AuditLogs from './components/AuditLogs'
+import SiteManagement from './components/SiteManagement'
 import { Login, Register, UserInfo } from './components/Auth'
 import { useKeyboardShortcuts, KEYBOARD_SHORTCUTS } from './hooks/useKeyboardShortcuts'
 
@@ -387,10 +389,12 @@ function App() {
         <nav>
           <NavItem active={currentPage === 'overview'} onClick={() => setCurrentPage('overview')}>🏠 全体总览</NavItem>
           <NavItem active={currentPage === 'datasets'} onClick={() => setCurrentPage('datasets')}>📁 数据集管理</NavItem>
+          <NavItem active={currentPage === 'rawdata'} onClick={() => setCurrentPage('rawdata')}>🗂️ 原始数据管理</NavItem>
           <NavItem active={currentPage === 'versions'} onClick={() => setCurrentPage('versions')}>📦 版本管理</NavItem>
           <NavItem active={currentPage === 'models'} onClick={() => setCurrentPage('models')}>🤖 模型管理</NavItem>
           <NavItem active={currentPage === 'compare'} onClick={() => setCurrentPage('compare')}>📈 模型对比</NavItem>
           <NavItem active={currentPage === 'settings'} onClick={() => setCurrentPage('settings')}>⚙️ 设置</NavItem>
+          <NavItem active={currentPage === 'sites'} onClick={() => setCurrentPage('sites')}>🏗️ 应用现场管理</NavItem>
         </nav>
         <div style={{ marginTop: 'auto', padding: '16px', borderTop: `1px solid ${C.border}` }}>
           {user?.role === 'admin' && (
@@ -417,6 +421,11 @@ function App() {
 
       {/* 主内容 */}
       <div className="main-content">
+        {/* 原始数据管理页面 */}
+        {currentPage === 'rawdata' && (
+          <RawData onRefresh={loadData} />
+        )}
+
         {/* 数据集管理页面 */}
         {currentPage === 'datasets' && (
           <DatasetList
@@ -459,6 +468,11 @@ function App() {
             datasetName={versionsDataset}
             onBack={() => { setVersionsDataset(null); setCurrentPage('versions') }}
           />
+        )}
+
+        {/* 应用现场管理页面 */}
+        {currentPage === 'sites' && (
+          <SiteManagement />
         )}
 
         {/* 设置页面 */}
