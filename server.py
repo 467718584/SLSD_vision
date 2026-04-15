@@ -863,6 +863,153 @@ def api_performance_metrics():
     })
 
 
+# ==================== 系统健康检查 ====================
+
+@app.route('/api/health')
+def api_health():
+    """
+    系统健康检查
+    ---
+    tags:
+      - health
+    responses:
+      200:
+        description: 健康状态
+    """
+    import psutil
+    import shutil
+    
+    # 检查数据库
+    db_ok = True
+    db_size = 0
+    try:
+        db_path = os.environ.get('DB_PATH', 'data/vision_platform.db')
+        if os.path.exists(db_path):
+            db_size = os.path.getsize(db_path)
+        else:
+            # 尝试备用路径
+            alt_path = os.path.join(os.path.dirname(__file__), 'data', 'vision_platform.db')
+            if os.path.exists(alt_path):
+                db_path = alt_path
+                db_size = os.path.getsize(alt_path)
+    except Exception:
+        db_ok = False
+    
+    # 检查磁盘空间
+    data_dir = os.environ.get('DATA_DIR', 'data')
+    disk_usage = shutil.disk_usage(data_dir if os.path.exists(data_dir) else '.')
+    disk_free_gb = round(disk_usage.free / (1024**3), 2)
+    disk_total_gb = round(disk_usage.total / (1024**3), 1)
+    disk_usage_percent = round((disk_usage.used / disk_usage.total) * 100, 1)
+    
+    # 检查内存
+    memory = psutil.virtual_memory()
+    memory_used_gb = round(memory.used / (1024**3), 2)
+    memory_total_gb = round(memory.total / (1024**3), 1)
+    memory_percent = memory.percent
+    
+    # 检查CPU
+    cpu_percent = psutil.cpu_percent(interval=0.1)
+    cpu_count = psutil.cpu_count()
+    
+    # 整体状态
+    status = 'healthy'
+    if disk_free_gb < 1 or memory_percent > 90 or cpu_percent > 95:
+        status = 'degraded'
+    if disk_free_gb < 0.5 or memory_percent > 95:
+        status = 'unhealthy'
+    
+    return jsonify({
+        "status": status,
+        "timestamp": datetime.utcnow().isoformat() + 'Z',
+        "uptime_seconds": round(time.time() - app.config.get('START_TIME', time.time())),
+        "database": {
+            "ok": db_ok,
+            "size_bytes": db_size,
+            "size_mb": round(db_size / (1024*1024), 2) if db_size > 0 else 0
+        },
+        "disk": {
+            "free_gb": disk_free_gb,
+            "total_gb": disk_total_gb,
+            "usage_percent": disk_usage_percent,
+            "status": "ok" if disk_free_gb > 5 else ("warning" if disk_free_gb > 1 else "critical")
+        },
+        "memory": {
+            "used_gb": memory_used_gb,
+            "total_gb": memory_total_gb,
+            "percent": memory_percent,
+            "status": "ok" if memory_percent < 85 else ("warning" if memory_percent < 95 else "critical")
+        },
+        "cpu": {
+            "percent": cpu_percent,
+            "count": cpu_count,
+            "status": "ok" if cpu_percent < 80 else ("warning" if cpu_percent < 95 else "critical")
+        },
+        "services": {
+            "api": "ok",
+            "database": "ok" if db_ok else "error"
+        }
+    })
+
+
+# ==================== 存储空间详情 ====================
+
+@app.route('/api/storage')
+@require_auth
+def api_storage():
+    """
+    获取存储空间使用详情
+    ---
+    tags:
+      - stats
+    responses:
+      200:
+        description: 存储空间信息
+    """
+    import shutil
+    
+    data_dir = os.environ.get('DATA_DIR', 'data')
+    datasets_dir = os.environ.get('DATASETS_DIR', os.path.join(data_dir, 'datasets'))
+    models_dir = os.environ.get('MODELS_DIR', os.path.join(data_dir, 'models'))
+    
+    def get_dir_size(path):
+        total = 0
+        if os.path.exists(path):
+            for dirpath, dirnames, filenames in os.walk(path):
+                for f in filenames:
+                    fp = os.path.join(dirpath, f)
+                    if os.path.exists(fp):
+                        total += os.path.getsize(fp)
+        return total
+    
+    datasets_size = get_dir_size(datasets_dir)
+    models_size = get_dir_size(models_dir)
+    
+    disk_usage = shutil.disk_usage(data_dir if os.path.exists(data_dir) else '.')
+    
+    return jsonify({
+        "datasets": {
+            "path": datasets_dir,
+            "size_bytes": datasets_size,
+            "size_mb": round(datasets_size / (1024*1024), 2),
+            "size_gb": round(datasets_size / (1024**3), 3)
+        },
+        "models": {
+            "path": models_dir,
+            "size_bytes": models_size,
+            "size_mb": round(models_size / (1024*1024), 2),
+            "size_gb": round(models_size / (1024**3), 3)
+        },
+        "total_used_bytes": datasets_size + models_size,
+        "total_used_gb": round((datasets_size + models_size) / (1024**3), 3),
+        "disk": {
+            "total_gb": round(disk_usage.total / (1024**3), 1),
+            "free_gb": round(disk_usage.free / (1024**3), 2),
+            "usage_percent": round((disk_usage.used / disk_usage.total) * 100, 1)
+        }
+    })
+
+
 # ==================== 审计日志API ====================
 
 @app.route('/api/audit/logs')
