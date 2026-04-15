@@ -137,6 +137,18 @@ export async function deleteDataset(name: string): Promise<ApiResponse<void>> {
 }
 
 /**
+ * 批量删除数据集
+ */
+export async function batchDeleteDatasets(names: string[]): Promise<ApiResponse<{ results: { success: string[]; failed: { name: string; error: string }[] } }>> {
+  const res = await fetch('/api/dataset/batch-delete', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ names })
+  })
+  return res.json()
+}
+
+/**
  * 校验数据集名称
  */
 export async function validateDatasetName(name: string): Promise<ApiResponse<{ valid: boolean }>> {
@@ -195,6 +207,18 @@ export async function deleteModel(name: string): Promise<ApiResponse<void>> {
   const res = await fetch(`/api/model/${encodeURIComponent(name)}`, {
     method: 'DELETE',
     headers: getHeaders()
+  })
+  return res.json()
+}
+
+/**
+ * 批量删除模型
+ */
+export async function batchDeleteModels(names: string[]): Promise<ApiResponse<{ results: { success: string[]; failed: { name: string; error: string }[] } }>> {
+  const res = await fetch('/api/model/batch-delete', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ names })
   })
   return res.json()
 }

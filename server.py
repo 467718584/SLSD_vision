@@ -1925,6 +1925,84 @@ def delete_dataset(name):
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@app.route('/api/dataset/batch-delete', methods=['POST'])
+@require_auth
+@csrf_protect
+def batch_delete_datasets():
+    """批量删除数据集"""
+    try:
+        data = request.json or {}
+        names = data.get('names', [])
+        
+        if not names or not isinstance(names, list):
+            return jsonify({"success": False, "error": "无效的数据集名称列表"}), 400
+        
+        if len(names) > 50:
+            return jsonify({"success": False, "error": "单次最多删除50个数据集"}), 400
+        
+        results = {'success': [], 'failed': []}
+        
+        import shutil
+        for name in names:
+            try:
+                dataset_dir = os.path.join(DATASETS_DIR, name)
+                if os.path.exists(dataset_dir):
+                    shutil.rmtree(dataset_dir)
+                delete_dataset_by_name(name)
+                log_audit('delete', 'dataset', name, {'action': 'batch_delete'})
+                results['success'].append(name)
+            except Exception as e:
+                results['failed'].append({'name': name, 'error': str(e)})
+                log_audit('delete', 'dataset', name, status='error', error=str(e))
+        
+        return jsonify({
+            "success": True,
+            "message": f"删除完成: {len(results['success'])}成功, {len(results['failed'])}失败",
+            "results": results
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/model/batch-delete', methods=['POST'])
+@require_auth
+@csrf_protect
+def batch_delete_models():
+    """批量删除模型"""
+    try:
+        data = request.json or {}
+        names = data.get('names', [])
+        
+        if not names or not isinstance(names, list):
+            return jsonify({"success": False, "error": "无效的模型名称列表"}), 400
+        
+        if len(names) > 50:
+            return jsonify({"success": False, "error": "单次最多删除50个模型"}), 400
+        
+        results = {'success': [], 'failed': []}
+        
+        import shutil
+        for name in names:
+            try:
+                model_dir = os.path.join(MODELS_DIR, name)
+                if os.path.exists(model_dir):
+                    shutil.rmtree(model_dir)
+                delete_model_by_name(name)
+                log_audit('delete', 'model', name, {'action': 'batch_delete'})
+                results['success'].append(name)
+            except Exception as e:
+                results['failed'].append({'name': name, 'error': str(e)})
+                log_audit('delete', 'model', name, status='error', error=str(e))
+        
+        return jsonify({
+            "success": True,
+            "message": f"删除完成: {len(results['success'])}成功, {len(results['failed'])}失败",
+            "results": results
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @app.route('/api/dataset/<name>', methods=['PUT'])
 @require_auth
 @csrf_protect
