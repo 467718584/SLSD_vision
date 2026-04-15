@@ -2932,7 +2932,7 @@ def generate_model_csv_charts(model_dir, curves_dir):
         plt.grid(True, alpha=0.3)
         plt.tight_layout()
         map50_path = os.path.join(curves_dir, 'map50_curve.png')
-        plt.savefig(map50_path, dpi=80)
+        plt.savefig(map50_path, dpi=200)
         plt.close()
         chart_paths.append(os.path.relpath(map50_path, base_dir).replace('\\', '/'))
 
@@ -2945,7 +2945,7 @@ def generate_model_csv_charts(model_dir, curves_dir):
         plt.grid(True, alpha=0.3)
         plt.tight_layout()
         map50_95_path = os.path.join(curves_dir, 'map50_95_curve.png')
-        plt.savefig(map50_95_path, dpi=80)
+        plt.savefig(map50_95_path, dpi=200)
         plt.close()
         chart_paths.append(os.path.relpath(map50_95_path, base_dir).replace('\\', '/'))
 
@@ -2958,7 +2958,7 @@ def generate_model_csv_charts(model_dir, curves_dir):
         plt.grid(True, alpha=0.3)
         plt.tight_layout()
         train_box_path = os.path.join(curves_dir, 'train_box_loss_curve.png')
-        plt.savefig(train_box_path, dpi=80)
+        plt.savefig(train_box_path, dpi=200)
         plt.close()
         chart_paths.append(os.path.relpath(train_box_path, base_dir).replace('\\', '/'))
 
@@ -2971,7 +2971,7 @@ def generate_model_csv_charts(model_dir, curves_dir):
         plt.grid(True, alpha=0.3)
         plt.tight_layout()
         val_box_path = os.path.join(curves_dir, 'val_box_loss_curve.png')
-        plt.savefig(val_box_path, dpi=80)
+        plt.savefig(val_box_path, dpi=200)
         plt.close()
         chart_paths.append(os.path.relpath(val_box_path, base_dir).replace('\\', '/'))
 
