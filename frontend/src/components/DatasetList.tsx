@@ -246,6 +246,98 @@ function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload }: Dat
     return ['全部', ...Array.from(sp)]
   }, [datasets])
 
+  // 拖拽排序状态
+  const [draggedIdx, setDraggedIdx] = useState<number | null>(null)
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null)
+
+  // 初始化从localStorage加载排序顺序
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('dataset_order')
+      if (saved) {
+        const orderMap = JSON.parse(saved) as Record<number, number>
+        // 应用保存的排序顺序
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, [])
+
+  // 拖拽排序后的数据集
+  const sortedDatasets = useMemo(() => {
+    const orderKey = 'dataset_order'
+    try {
+      const saved = localStorage.getItem(orderKey)
+      if (saved) {
+        const orderMap = JSON.parse(saved) as Record<number, number>
+        return [...filteredDatasets].sort((a, b) => {
+          const orderA = orderMap[a.id] ?? filteredDatasets.indexOf(a)
+          const orderB = orderMap[b.id] ?? filteredDatasets.indexOf(b)
+          return orderA - orderB
+        })
+      }
+    } catch (e) {
+      // ignore
+    }
+    return filteredDatasets
+  }, [filteredDatasets])
+
+  // 拖拽处理
+  function handleDragStart(e: React.DragEvent, idx: number) {
+    setDraggedIdx(idx)
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', String(idx))
+  }
+
+  function handleDragOver(e: React.DragEvent, idx: number) {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    setDragOverIdx(idx)
+  }
+
+  function handleDragLeave() {
+    setDragOverIdx(null)
+  }
+
+  function handleDrop(e: React.DragEvent, targetIdx: number) {
+    e.preventDefault()
+    if (draggedIdx === null || draggedIdx === targetIdx) {
+      setDraggedIdx(null)
+      setDragOverIdx(null)
+      return
+    }
+    // 构建新的排序顺序
+    const orderKey = 'dataset_order'
+    try {
+      const saved = localStorage.getItem(orderKey)
+      const orderMap = (saved ? JSON.parse(saved) : {}) as Record<number, number>
+      // 调整受影响的项的顺序
+      const draggedId = sortedDatasets[draggedIdx].id
+      const targetId = sortedDatasets[targetIdx].id
+      // 重新计算所有项的顺序
+      const newOrder: Record<number, number> = {}
+      sortedDatasets.forEach((ds, i) => {
+        if (ds.id === draggedId) {
+          newOrder[ds.id] = targetIdx
+        } else if (ds.id === targetId) {
+          newOrder[ds.id] = draggedIdx
+        } else {
+          newOrder[ds.id] = i
+        }
+      })
+      localStorage.setItem(orderKey, JSON.stringify(newOrder))
+    } catch (e) {
+      // ignore
+    }
+    setDraggedIdx(null)
+    setDragOverIdx(null)
+  }
+
+  function handleDragEnd() {
+    setDraggedIdx(null)
+    setDragOverIdx(null)
+  }
+
   // 过滤数据集
   const filteredDatasets = useMemo(() => {
     return datasets.filter(ds => {
@@ -759,18 +851,29 @@ function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload }: Dat
               </tr>
             </thead>
             <tbody>
-              {filteredDatasets.map((ds, idx) => {
+              {sortedDatasets.map((ds, idx) => {
                 const isSelected = selectedIds.has(ds.id)
+                const isDragging = draggedIdx === idx
+                const isDragOver = dragOverIdx === idx
                 return (
                 <tr
                   key={ds.id}
+                  draggable
+                  onDragStart={e => handleDragStart(e, idx)}
+                  onDragOver={e => handleDragOver(e, idx)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={e => handleDrop(e, idx)}
+                  onDragEnd={handleDragEnd}
                   onClick={() => onSelectDataset(ds)}
                   onMouseEnter={e => { e.currentTarget.style.background = isSelected ? C.primaryBg : C.primaryBg }}
                   onMouseLeave={e => { e.currentTarget.style.background = isSelected ? C.primaryBg : (idx % 2 === 0 ? C.white : "#FAFCFE") }}
                   style={{
                     cursor: "pointer",
-                    background: isSelected ? C.primaryBg : (idx % 2 === 0 ? C.white : "#FAFCFE"),
-                    transition: "background .1s"
+                    background: isDragOver ? C.primaryBg : isSelected ? C.primaryBg : (idx % 2 === 0 ? C.white : "#FAFCFE"),
+                    transition: "background .1s",
+                    opacity: isDragging ? 0.5 : 1,
+                    borderTop: isDragOver && draggedIdx !== null && draggedIdx < idx ? `2px solid ${C.primary}` : undefined,
+                    borderBottom: isDragOver && draggedIdx !== null && draggedIdx > idx ? `2px solid ${C.primary}` : undefined,
                   }}
                 >
                   <td style={td("36px", true)} onClick={e => { e.stopPropagation(); toggleSelect(ds.id, ds.name) }}>

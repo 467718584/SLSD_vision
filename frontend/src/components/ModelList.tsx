@@ -223,6 +223,78 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
     })
   }, [models, searchFilters])
 
+  // 拖拽排序状态
+  const [draggedIdx, setDraggedIdx] = useState<number | null>(null)
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null)
+
+  // 拖拽排序后的模型
+  const sortedModels = useMemo(() => {
+    const orderKey = 'model_order'
+    try {
+      const saved = localStorage.getItem(orderKey)
+      if (saved) {
+        const orderMap = JSON.parse(saved) as Record<number, number>
+        return [...filteredModels].sort((a, b) => {
+          const orderA = orderMap[a.id] ?? filteredModels.indexOf(a)
+          const orderB = orderMap[b.id] ?? filteredModels.indexOf(b)
+          return orderA - orderB
+        })
+      }
+    } catch (e) {
+      // ignore
+    }
+    return filteredModels
+  }, [filteredModels])
+
+  // 拖拽处理
+  function handleDragStart(e: React.DragEvent, idx: number) {
+    setDraggedIdx(idx)
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', String(idx))
+  }
+
+  function handleDragOver(e: React.DragEvent, idx: number) {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    setDragOverIdx(idx)
+  }
+
+  function handleDragLeave() {
+    setDragOverIdx(null)
+  }
+
+  function handleDrop(e: React.DragEvent, targetIdx: number) {
+    e.preventDefault()
+    if (draggedIdx === null || draggedIdx === targetIdx) {
+      setDraggedIdx(null)
+      setDragOverIdx(null)
+      return
+    }
+    const orderKey = 'model_order'
+    try {
+      const newOrder: Record<number, number> = {}
+      sortedModels.forEach((m, i) => {
+        if (i === draggedIdx) {
+          newOrder[m.id] = targetIdx
+        } else if (i === targetIdx) {
+          newOrder[m.id] = draggedIdx
+        } else {
+          newOrder[m.id] = i
+        }
+      })
+      localStorage.setItem(orderKey, JSON.stringify(newOrder))
+    } catch (err) {
+      // ignore
+    }
+    setDraggedIdx(null)
+    setDragOverIdx(null)
+  }
+
+  function handleDragEnd() {
+    setDraggedIdx(null)
+    setDragOverIdx(null)
+  }
+
   // 删除模型
   function deleteModel(name: string, e: React.MouseEvent) {
     e.stopPropagation()
@@ -751,19 +823,30 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
               </tr>
             </thead>
             <tbody>
-              {filteredModels.map((m, idx) => {
+              {sortedModels.map((m, idx) => {
                 const isSelected = selectedIds.has(m.id)
+                const isDragging = draggedIdx === idx
+                const isDragOver = dragOverIdx === idx
                 const accuracyColor = (m.accuracy || 0) >= 95 ? C.success : (m.accuracy || 0) >= 85 ? C.primary : C.warning
                 return (
                   <tr
                     key={m.id}
+                    draggable
+                    onDragStart={e => handleDragStart(e, idx)}
+                    onDragOver={e => handleDragOver(e, idx)}
+                    onDragLeave={handleDragLeave}
+                    onDrop={e => handleDrop(e, idx)}
+                    onDragEnd={handleDragEnd}
                     onClick={() => onSelectModel(m)}
                     onMouseEnter={e => { e.currentTarget.style.background = isSelected ? C.primaryBg : C.primaryBg }}
                     onMouseLeave={e => { e.currentTarget.style.background = isSelected ? C.primaryBg : (idx % 2 === 0 ? C.white : "#FAFCFE") }}
                     style={{
                       cursor: "pointer",
-                      background: isSelected ? C.primaryBg : (idx % 2 === 0 ? C.white : "#FAFCFE"),
-                      transition: "background .1s"
+                      background: isDragOver ? C.primaryBg : isSelected ? C.primaryBg : (idx % 2 === 0 ? C.white : "#FAFCFE"),
+                      transition: "background .1s",
+                      opacity: isDragging ? 0.5 : 1,
+                      borderTop: isDragOver && draggedIdx !== null && draggedIdx < idx ? `2px solid ${C.primary}` : undefined,
+                      borderBottom: isDragOver && draggedIdx !== null && draggedIdx > idx ? `2px solid ${C.primary}` : undefined,
                     }}
                   >
                     <td style={td("36px", true)} onClick={e => { e.stopPropagation(); toggleSelect(m.id, m.name) }}>

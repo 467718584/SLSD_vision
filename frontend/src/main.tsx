@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import App from './App'
 import ErrorBoundary from './components/ErrorBoundary'
 import { ReactQueryProvider } from './components/ReactQueryProvider'
+import { NotificationProvider } from './hooks/useNotification'
 import './styles.css'
 import './responsive.css'
 
@@ -78,7 +79,9 @@ if (rootElement) {
     <React.StrictMode>
       <ErrorBoundary onError={handleError} showDetails={true}>
         <ReactQueryProvider>
-          <App />
+          <NotificationProvider>
+            <App />
+          </NotificationProvider>
         </ReactQueryProvider>
       </ErrorBoundary>
     </React.StrictMode>
