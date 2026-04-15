@@ -10,7 +10,12 @@
 - [x] 1.5 添加类型定义文件 types.ts ✅
 - [x] 1.6 配置 Vite/TypeScript 构建 ✅
 - [x] ConfirmDialog.tsx 迁移完成 ✅
-- [ ] 1.4 其他组件 .jsx → .tsx (逐步进行)
+- [x] ErrorBoundary.tsx 迁移完成 ✅
+- [x] Auth.tsx 迁移完成 ✅
+- [x] SettingsDialog.tsx 迁移完成 ✅
+- [x] DatasetEditModal.tsx 迁移完成 ✅
+- [x] ModelEditModal.tsx 迁移完成 ✅
+- [ ] 1.4 其他组件 .jsx → .tsx (6/17 完成，继续进行)
 - [ ] 1.2 utils.js → utils.ts (无此文件，跳过)
 
 #### 2. 性能优化 ✅
