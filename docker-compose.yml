@@ -8,20 +8,47 @@ services:
     image: sldsvision/platform:latest
     container_name: sldsvision-platform
     ports:
-      - "8501:8501"
+      - "${APP_PORT:-8501}:8501"
     volumes:
-      - ./data:/app/data
+      - ${DATA_DIR:-./data}:/app/data
+      - ${LOG_DIR:-./logs}:/app/logs
     environment:
-      - FLASK_ENV=production
+      - FLASK_ENV=${FLASK_ENV:-production}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - DB_PATH=/app/data/vision_platform.db
+      - DATASETS_DIR=/app/data/datasets
+      - MODELS_DIR=/app/data/models
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8501/"]
+      test: ["CMD", "curl", "-f", "http://localhost:8501/api/stats"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 30s
+    networks:
+      - vision-network
+    mem_limit: ${MEM_LIMIT:-2g}
+    cpus: ${CPUS:-1.0}
 
-# 可选：如果需要使用Nginx反向代理
+# 数据备份服务 (按需启用)
+# 使用方式: docker-compose run --rm backup
+  backup:
+    image: sldsvision/platform:latest
+    container_name: sldsvision-backup
+    volumes:
+      - ${DATA_DIR:-./data}:/app/data
+      - ${BACKUP_DIR:-./backups}:/app/backups
+    entrypoint: ["python", "/app/scripts/backup.py"]
+    profiles:
+      - maintenance
+    networks:
+      - vision-network
+
+networks:
+  vision-network:
+    driver: bridge
+
+# 可选：Nginx 反向代理
 # nginx:
 #   image: nginx:alpine
 #   ports:
@@ -30,3 +57,5 @@ services:
 #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
 #   depends_on:
 #     - vision-platform
+#   profiles:
+#     - proxy

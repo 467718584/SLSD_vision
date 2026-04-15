@@ -20,11 +20,12 @@
 - [ ] 2.4 组件 memo 优化 (逐步进行)
 
 #### 3. Docker部署优化 ✅
-- [ ] 3.1 docker-compose.yml 多容器编排
-- [ ] 3.2 健康检查 (healthcheck)
-- [ ] 3.3 数据备份脚本 (backup.sh)
-- [ ] 3.4 日志管理配置
-- [ ] 3.5 环境变量配置 (.env)
+- [x] 3.1 docker-compose.yml 多容器编排 ✅
+- [x] 3.2 健康检查 (healthcheck) ✅
+- [x] 3.3 数据备份脚本 (backup.sh) ✅
+- [x] 3.4 恢复脚本 (restore.sh) ✅
+- [x] 3.5 环境变量配置 (.env.example) ✅
+- [ ] 3.6 日志管理配置 (进行中)
 
 ### P3 - 低优先级
 
