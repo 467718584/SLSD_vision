@@ -123,7 +123,7 @@
 - [x] M2: 布局重构完成 ✅
 - [x] M3: 核心页面完成 ✅
 - [x] M4: 交互优化完成 ✅
-- [ ] M5: 发布 v2.0 Roboflow版
+- [x] M5: 发布 v2.0 Roboflow版 ✅
 
 ## 更新记录
 
@@ -137,6 +137,9 @@
 | 2026-04-16 13:05 | 阶段三封装组件 | ✅ 完成 |
 | 2026-04-16 13:58 | 阶段四交互优化 | ✅ 完成 |
 | 2026-04-16 14:28 | 逐步替换封装组件 | ✅ 完成 |
+| 2026-04-16 17:43 | Emoji替换SVG图标 | ✅ 完成 |
+| 2026-04-16 17:43 | Roboflow样式迁移 | ✅ 完成 |
+| 2026-04-16 18:42 | ModelCompare/SiteManagement/UsageStats/ErrorBoundary emoji替换 | ✅ 完成 |
 
 ## ⚠️ 问题记录
 
@@ -171,5 +174,20 @@
 | **ModelListWrapper** | ModelListWrapper.tsx | 模型列表封装（可选） |
 
 ## 构建产物
-- 主bundle: index-DH7l0mqI.js (188.5 KB)
-- 懒加载: DatasetDetail-CyVqKGZa.js, ModelDetail-3CTeTG8o.js
+- 主bundle: index-DPwYd8Tx.js (185.9 KB)
+- 懒加载: DatasetDetail-B5SvK5bS.js, ModelDetail-q-9eLQCk.js
+
+## Git迁移记录
+```
+4176e5a feat(ModelCompare): replace emoji with Lucide icons
+2315f4a feat(SiteManagement): replace emoji with Lucide icons
+f556738 feat(UsageStats): replace emoji with Lucide icons
+2f344f5 feat(ErrorBoundary): replace emoji with Lucide icon
+3c3c880 style: migrate sidebar-footer audit button to Roboflow classes
+5da5821 style: replace emoji in ModelCompare, SiteManagement, UsageStats
+1fe505e style: replace emoji with SVG icons in DatasetVersions and AuditLogs
+```
+
+## ✅ Emoji全部替换完成
+- 所有组件已无emoji图标
+- 全部使用Lucide SVG图标替代

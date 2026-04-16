@@ -178,7 +178,9 @@ function Overview({ datasets, models, stats }: OverviewProps) {
 
   return (
     <div>
-      <h2 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>Overview</h2>
+      <div className="page-header">
+        <h2 className="page-title">Overview</h2>
+      </div>
       <div className="stats-grid">
         <StatCard label="Datasets" value={datasets.length} icon={<DatabaseIcon size={20} />} color="blue" />
         <StatCard label="Models" value={models.length} icon={<CpuIcon size={20} />} color="green" />
