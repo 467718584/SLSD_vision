@@ -483,33 +483,22 @@ function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload }: Dat
   return (
     <div>
       {/* 头部 */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+      <div className="page-header mb-4">
         <div>
-          <h2 style={{ fontSize: "18px", fontWeight: 700, color: 'var(--text-primary)' }}>数据集管理</h2>
-          <p style={{ fontSize: "13px", color: 'var(--text-muted)', marginTop: "2px" }}>
+          <h2 className="page-title">数据集管理</h2>
+          <p className="text-sm text-muted mt-1">
             共 {datasets.length} 个数据集 · {totalSamples.toLocaleString()} 个样本
           </p>
         </div>
         <button
           onClick={onShowUpload}
-          style={{
-            background: C.primary,
-            color: "white",
-            border: "none",
-            borderRadius: "7px",
-            padding: "8px 18px",
-            cursor: "pointer",
-            fontSize: "13px",
-            fontWeight: 500
-          }}
+          className="btn btn-primary"
         >
           + 新建数据集
         </button>
       </div>
 
-        <div className="card" style={{
-          marginBottom: "12px"
-        }}>
+        <div className="card mb-3">
           {/* 搜索栏 */}
           <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
             <input
@@ -537,8 +526,8 @@ function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload }: Dat
           </div>
 
           {/* 筛选按钮组 */}
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-            <span style={{ fontSize: "12px", color: C.gray3, marginRight: "4px" }}>算法:</span>
+          <div className="flex items-center gap-2" style={{ flexWrap: "wrap" }}>
+            <span className="text-sm text-muted mr-1">算法:</span>
             {algoTypes.map(type => (
               <button
                 key={type}
@@ -548,22 +537,12 @@ function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload }: Dat
                   setFilterType(type)
                   persistFilters(newFilters)
                 }}
-                style={{
-                  padding: "4px 10px",
-                  borderRadius: "4px",
-                  fontSize: "12px",
-                  cursor: "pointer",
-                  border: `1px solid ${searchFilters.algoType === type ? C.primary : C.border}`,
-                  background: searchFilters.algoType === type ? C.primaryBg : C.white,
-                  color: searchFilters.algoType === type ? C.primary : C.gray2,
-                  fontWeight: searchFilters.algoType === type ? 600 : 400,
-                  transition: "all .15s"
-                }}
+                className={`btn btn-sm ${searchFilters.algoType === type ? 'btn-primary' : 'btn-secondary'}`}
               >
                 {type}
               </button>
             ))}
-            <span style={{ fontSize: "12px", color: C.gray3, marginLeft: "8px", marginRight: "4px" }}>技术:</span>
+            <span className="text-sm text-muted ml-2 mr-1">技术:</span>
             {['目标检测算法', '实例分割算法'].map(tech => (
               <button
                 key={tech}
@@ -572,22 +551,12 @@ function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload }: Dat
                   setSearchFilters(newFilters)
                   persistFilters(newFilters)
                 }}
-                style={{
-                  padding: "4px 10px",
-                  borderRadius: "4px",
-                  fontSize: "12px",
-                  cursor: "pointer",
-                  border: `1px solid ${searchFilters.techMethod === tech ? C.primary : C.border}`,
-                  background: searchFilters.techMethod === tech ? C.primaryBg : C.white,
-                  color: searchFilters.techMethod === tech ? C.primary : C.gray2,
-                  fontWeight: searchFilters.techMethod === tech ? 600 : 400,
-                  transition: "all .15s"
-                }}
+                className={`btn btn-sm ${searchFilters.techMethod === tech ? 'btn-primary' : 'btn-secondary'}`}
               >
                 {tech}
               </button>
             ))}
-            <span style={{ fontSize: "12px", color: C.gray3, marginLeft: "8px", marginRight: "4px" }}>来源:</span>
+            <span className="text-sm text-muted ml-2 mr-1">来源:</span>
             {sources.slice(0, 5).map(src => (
               <button
                 key={src}
@@ -596,22 +565,12 @@ function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload }: Dat
                   setSearchFilters(newFilters)
                   persistFilters(newFilters)
                 }}
-                style={{
-                  padding: "4px 10px",
-                  borderRadius: "4px",
-                  fontSize: "12px",
-                  cursor: "pointer",
-                  border: `1px solid ${searchFilters.source === src ? C.primary : C.border}`,
-                  background: searchFilters.source === src ? C.primaryBg : C.white,
-                  color: searchFilters.source === src ? C.primary : C.gray2,
-                  fontWeight: searchFilters.source === src ? 600 : 400,
-                  transition: "all .15s"
-                }}
+                className={`btn btn-sm ${searchFilters.source === src ? 'btn-primary' : 'btn-secondary'}`}
               >
                 {src}
               </button>
             ))}
-            <span style={{ fontSize: "12px", color: C.gray3, marginLeft: "8px", marginRight: "4px" }}>分配:</span>
+            <span className="text-sm text-muted ml-2 mr-1">分配:</span>
             {splits.slice(0, 5).map(sp => (
               <button
                 key={sp}
@@ -620,17 +579,7 @@ function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload }: Dat
                   setSearchFilters(newFilters)
                   persistFilters(newFilters)
                 }}
-                style={{
-                  padding: "4px 10px",
-                  borderRadius: "4px",
-                  fontSize: "12px",
-                  cursor: "pointer",
-                  border: `1px solid ${searchFilters.split === sp ? C.primary : C.border}`,
-                  background: searchFilters.split === sp ? C.primaryBg : C.white,
-                  color: searchFilters.split === sp ? C.primary : C.gray2,
-                  fontWeight: searchFilters.split === sp ? 600 : 400,
-                  transition: "all .15s"
-                }}
+                className={`btn btn-sm ${searchFilters.split === sp ? 'btn-primary' : 'btn-secondary'}`}
               >
                 {sp}
               </button>
@@ -639,20 +588,8 @@ function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload }: Dat
               {/* 高级筛选按钮 */}
               <button
                 onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                style={{
-                  padding: "4px 12px",
-                  borderRadius: "4px",
-                  fontSize: "12px",
-                  cursor: "pointer",
-                  border: `1px solid ${showAdvancedFilters ? C.primary : C.border}`,
-                  background: showAdvancedFilters ? C.primaryBg : C.white,
-                  color: showAdvancedFilters ? C.primary : C.gray2,
-                  fontWeight: showAdvancedFilters ? 600 : 400,
-                  transition: "all .15s",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "4px"
-                }}
+                className={`btn btn-sm ${showAdvancedFilters ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ display: "flex", alignItems: "center", gap: "4px" }}
               >
                 高级 {activeFilterCount > 0 && `(${activeFilterCount})`}
               </button>
@@ -664,16 +601,7 @@ function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload }: Dat
                     setSearchFilters(newFilters)
                     persistFilters(newFilters)
                   }}
-                  style={{
-                    padding: "4px 10px",
-                    borderRadius: "4px",
-                    fontSize: "12px",
-                    cursor: "pointer",
-                    border: `1px solid ${C.border}`,
-                    background: C.white,
-                    color: C.gray2,
-                    transition: "all .15s"
-                  }}
+                  className="btn btn-sm btn-secondary"
                 >
                   重置
                 </button>
@@ -778,74 +706,41 @@ function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload }: Dat
           )}
         </div>
 
-      <span style={{ marginLeft: "0", marginBottom: "12px", display: "block", fontSize: "12px", color: C.gray4 }}>
+      <div className="text-sm text-muted mb-3">
         {selectedIds.size > 0 && (
           <span style={{ marginRight: '12px', color: C.primary }}>
             已选 {selectedIds.size} 项
           </span>
         )}
         显示 {filteredDatasets.length} 条
-      </span>
+      </div>
 
       {/* 批量操作栏 */}
       {selectedIds.size > 0 && (
-        <div style={{
-          background: C.primaryBg,
-          border: `1px solid ${C.primaryBd}`,
-          borderRadius: "8px",
-          padding: "10px 16px",
-          marginBottom: "12px",
-          display: "flex",
-          alignItems: "center",
-          gap: "12px"
-        }}>
-          <span style={{ fontSize: "13px", color: C.primary, fontWeight: 500 }}>
-            已选择 {selectedIds.size} 个数据集
-          </span>
-          <button
-            onClick={handleBatchDelete}
-            style={{
-              background: "#DC2626",
-              color: "white",
-              border: "none",
-              borderRadius: "6px",
-              padding: "6px 14px",
-              fontSize: "12px",
-              cursor: "pointer",
-              fontWeight: 500
-            }}
-          >
-            批量删除
-          </button>
-          <button
-            onClick={handleBatchExport}
-            style={{
-              background: C.primary,
-              color: "white",
-              border: "none",
-              borderRadius: "6px",
-              padding: "6px 14px",
-              fontSize: "12px",
-              cursor: "pointer",
-              fontWeight: 500
-            }}
-          >
-            批量导出
-          </button>
-          <button
-            onClick={() => setSelectedIds(new Set())}
-            style={{
-              background: "none",
-              border: `1px solid ${C.border}`,
-              borderRadius: "6px",
-              padding: "6px 14px",
-              fontSize: "12px",
-              cursor: "pointer",
-              color: C.gray2
-            }}
-          >
-            取消选择
-          </button>
+        <div className="card mb-3" style={{ background: C.primaryBg, borderColor: C.primaryBd }}>
+          <div className="card-body flex items-center gap-3">
+            <span className="text-sm font-medium text-accent">
+              已选择 {selectedIds.size} 个数据集
+            </span>
+            <button
+              onClick={handleBatchDelete}
+              className="btn btn-danger btn-sm"
+            >
+              批量删除
+            </button>
+            <button
+              onClick={handleBatchExport}
+              className="btn btn-primary btn-sm"
+            >
+              批量导出
+            </button>
+            <button
+              onClick={() => setSelectedIds(new Set())}
+              className="btn btn-secondary btn-sm"
+            >
+              取消选择
+            </button>
+          </div>
         </div>
       )}
 
@@ -1006,36 +901,18 @@ function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload }: Dat
                     <span style={{ fontSize: "11px", color: C.gray2, fontWeight: 500 }}>{ds.maintainer}</span>
                   </td>
                   <td style={td("110px", true)}>
-                    <div style={{ display: "flex", gap: "6px" }}>
+                    <div className="flex gap-1">
                       <button
                         onClick={(e) => downloadDataset(ds.name, e)}
                         title="下载数据集"
-                        style={{
-                          background: C.primary,
-                          color: "white",
-                          border: "none",
-                          borderRadius: "4px",
-                          padding: "4px 8px",
-                          fontSize: "11px",
-                          cursor: "pointer",
-                          fontWeight: 500
-                        }}
+                        className="btn btn-sm btn-primary"
                       >
                         下载
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); setDeleteTarget({ name: ds.name }); }}
                         title="删除数据集"
-                        style={{
-                          background: "#FEE2E2",
-                          color: "#DC2626",
-                          border: "none",
-                          borderRadius: "4px",
-                          padding: "4px 8px",
-                          fontSize: "11px",
-                          cursor: "pointer",
-                          fontWeight: 500
-                        }}
+                        className="btn btn-sm btn-danger"
                       >
                         删除
                       </button>
