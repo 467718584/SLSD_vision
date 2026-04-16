@@ -31,6 +31,30 @@
   --border: #E2E8F0;
   --border-light: #F1F5F9;
   
+  /* C常量兼容色 - 保留原始项目色值 */
+  --primary: #0066CC;
+  --primary-light: #1976D2;
+  --primary-dark: #004999;
+  --primary-bg: #EBF3FC;
+  --primary-bd: #BFDBF7;
+  --success: #10B981;
+  --success-bg: #D1FAE5;
+  --success-bd: #6EE7B7;
+  --warning: #F59E0B;
+  --warning-bg: #FEF3C7;
+  --warning-bd: #FCD34D;
+  --error: #EF4444;
+  --error-bg: #FFE4E6;
+  --error-bd: #FECDD3;
+  --gray-1: #111827;
+  --gray-2: #374151;
+  --gray-3: #6B7280;
+  --gray-4: #9CA3AF;
+  --gray-5: #D1D5DB;
+  --gray-6: #E5E7EB;
+  --gray-7: #F3F4F6;
+  --gray-8: #F9FAFB;
+  
   /* 阴影 - Roboflow风格（微妙） */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
   --shadow-md: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
@@ -985,3 +1009,40 @@ body {
 .text-xs { font-size: 11px; }
 .line-height-1\.5 { line-height: 1.5; }
 
+
+/* RawData & DatasetDetail migration utility classes */
+.h-200 { height: 200px; }
+.min-w-1000 { min-width: 1000px; }
+.max-w-170 { max-width: 170px; }
+.max-h-80vh { max-height: 80vh; }
+.overflow-auto { overflow: auto; }
+.bg-white { background: var(--bg-primary); }
+.bg-primary { background: var(--primary-bg); }
+.bg-gray-7 { background: var(--gray-7); }
+.bg-black-50 { background: rgba(0,0,0,0.5); }
+.text-primary { color: var(--primary); }
+.text-gray-1 { color: var(--gray-1); }
+.text-gray-2 { color: var(--gray-2); }
+.text-gray-3 { color: var(--gray-3); }
+.text-gray-4 { color: var(--gray-4); }
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.font-500 { font-weight: 500; }
+.font-600 { font-weight: 600; }
+.font-700 { font-weight: 700; }
+.rounded-4 { border-radius: 4px; }
+.rounded-6 { border-radius: 6px; }
+.rounded-7 { border-radius: 7px; }
+.rounded-8 { border-radius: 8px; }
+.rounded-10 { border-radius: 10px; }
+.rounded-12 { border-radius: 12px; }
+.rounded-full { border-radius: 50%; }
+.border { border: 1px solid var(--border); }
+.border-b { border-bottom: 1px solid var(--border); }
+.border-b-2 { border-bottom: 2px solid var(--border); }
+.border-primary { border: 1px solid var(--primary-bd); }
+.border-success { border: 1px solid var(--success-bd); }
+.border-warning { border: 1px solid var(--warning-bd); }
+.border-error { border: 1px solid var(--error-bd); }
+.transition-all { transition: all 150ms ease; }
+.pointer-events-none { pointer-events: none; }

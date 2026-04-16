@@ -340,8 +340,8 @@ function RawData({ onRefresh }: RawDataProps) {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px' }}>
-        <span style={{ color: C.gray3 }}>加载中...</span>
+      <div className="flex items-center justify-center h-200">
+        <span className="text-gray-3">加载中...</span>
       </div>
     )
   }
@@ -349,94 +349,50 @@ function RawData({ onRefresh }: RawDataProps) {
   return (
     <div>
       {/* 头部 */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+      <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 style={{ fontSize: "18px", fontWeight: 700, color: C.gray1 }}>原始数据管理</h2>
-          <p style={{ fontSize: "13px", color: C.gray3, marginTop: "2px" }}>
+          <h2 className="text-lg font-bold text-gray-1">原始数据管理</h2>
+          <p className="text-sm text-gray-3 mt-1">
             共 {rawDataList.length} 条记录 · {totalFiles.toLocaleString()} 个文件
           </p>
         </div>
         <button
           onClick={() => setShowUpload(true)}
-          style={{
-            background: C.primary,
-            color: "white",
-            border: "none",
-            borderRadius: "7px",
-            padding: "8px 18px",
-            cursor: "pointer",
-            fontSize: "13px",
-            fontWeight: 500
-          }}
+          className="btn btn-primary"
         >
           + 上传原始数据
         </button>
       </div>
 
       {/* 搜索和筛选 */}
-      <div style={{
-        background: C.white,
-        border: `1px solid ${C.border}`,
-        borderRadius: "10px",
-        padding: "16px",
-        marginBottom: "12px"
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+      <div className="card mb-3">
+        <div className="flex items-center gap-3">
           <input
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             placeholder="搜索数据名称或描述..."
-            style={{
-              flex: 1,
-              padding: "8px 12px",
-              border: `1px solid ${C.border}`,
-              borderRadius: "6px",
-              fontSize: "13px",
-              outline: "none"
-            }}
-            onFocus={e => { e.target.style.borderColor = C.primary }}
-            onBlur={e => { e.target.style.borderColor = C.border }}
+            className="input w-full"
           />
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "12px", flexWrap: "wrap" as const }}>
-          <span style={{ fontSize: "12px", color: C.gray3, marginRight: "4px" }}>算法:</span>
+        <div className="flex items-center gap-2 mt-3 flex-wrap">
+          <span className="text-xs text-gray-3 mr-1">算法:</span>
           {algoTypes.map(type => (
             <button
               key={type}
               onClick={() => setFilterAlgoType(type)}
-              style={{
-                padding: "4px 10px",
-                borderRadius: "4px",
-                fontSize: "12px",
-                cursor: "pointer",
-                border: `1px solid ${filterAlgoType === type ? C.primary : C.border}`,
-                background: filterAlgoType === type ? C.primaryBg : C.white,
-                color: filterAlgoType === type ? C.primary : C.gray2,
-                fontWeight: filterAlgoType === type ? 600 : 400,
-                transition: "all .15s"
-              }}
+              className={`btn btn-sm ${filterAlgoType === type ? 'btn-primary' : 'btn-ghost'}`}
             >
               {type}
             </button>
           ))}
-          <span style={{ fontSize: "12px", color: C.gray3, marginLeft: "8px", marginRight: "4px" }}>标注:</span>
+          <span className="text-xs text-gray-3 ml-2 mr-1">标注:</span>
           {['全部', '已标注', '未标注'].map(status => (
             <button
               key={status}
               onClick={() => setFilterAnnotated(status)}
-              style={{
-                padding: "4px 10px",
-                borderRadius: "4px",
-                fontSize: "12px",
-                cursor: "pointer",
-                border: `1px solid ${filterAnnotated === status ? C.primary : C.border}`,
-                background: filterAnnotated === status ? C.primaryBg : C.white,
-                color: filterAnnotated === status ? C.primary : C.gray2,
-                fontWeight: filterAnnotated === status ? 600 : 400,
-                transition: "all .15s"
-              }}
+              className={`btn btn-sm ${filterAnnotated === status ? 'btn-primary' : 'btn-ghost'}`}
             >
               {status}
             </button>
@@ -444,9 +400,9 @@ function RawData({ onRefresh }: RawDataProps) {
         </div>
       </div>
 
-      <span style={{ marginLeft: "0", marginBottom: "12px", display: "block", fontSize: "12px", color: C.gray4 }}>
+      <span className="block text-xs text-gray-4 mb-3">
         {selectedIds.size > 0 && (
-          <span style={{ marginRight: '12px', color: C.primary }}>
+          <span className="mr-3 text-primary">
             已选 {selectedIds.size} 项
           </span>
         )}
@@ -454,17 +410,17 @@ function RawData({ onRefresh }: RawDataProps) {
       </span>
 
       {/* 数据表格 */}
-      <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: "10px", overflow: "hidden" }}>
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "1000px" }}>
+      <div className="card overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="table w-full min-w-1000">
             <thead>
-              <tr style={{ background: C.gray7, borderBottom: `2px solid ${C.border}` }}>
+              <tr className="bg-gray-7 border-b-2">
                 <th style={th("36px", true)}>
                   <input
                     type="checkbox"
                     checked={selectedIds.size === filteredData.length && filteredData.length > 0}
                     onChange={toggleSelectAll}
-                    style={{ width: "16px", height: "16px", cursor: "pointer" }}
+                    className="w-4 h-4 cursor-pointer"
                   />
                 </th>
                 <th style={th("48px", true)}>编号</th>
@@ -487,53 +443,32 @@ function RawData({ onRefresh }: RawDataProps) {
                   <tr
                     key={item.id}
                     onClick={() => toggleSelect(item.id)}
-                    onMouseEnter={e => { e.currentTarget.style.background = isSelected ? C.primaryBg : C.primaryBg }}
-                    onMouseLeave={e => { e.currentTarget.style.background = isSelected ? C.primaryBg : (idx % 2 === 0 ? C.white : "#FAFCFE") }}
-                    style={{
-                      cursor: "pointer",
-                      background: isSelected ? C.primaryBg : (idx % 2 === 0 ? C.white : "#FAFCFE"),
-                      transition: "background .1s"
-                    }}
+                    className={`cursor-pointer transition-all ${isSelected ? 'bg-primary' : (idx % 2 === 0 ? 'bg-white' : '')}`}
+                    style={{ background: idx % 2 !== 0 && !isSelected ? '#FAFCFE' : undefined }}
                   >
                     <td style={td("36px", true)} onClick={e => { e.stopPropagation(); toggleSelect(item.id) }}>
                       <input
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => toggleSelect(item.id)}
-                        style={{ width: "16px", height: "16px", cursor: "pointer" }}
+                        className="w-4 h-4 cursor-pointer"
                       />
                     </td>
                     <td style={td("48px", true)}>
-                      <span style={{ fontWeight: 600, color: C.gray4 }}>{item.id}</span>
+                      <span className="font-semibold text-gray-4">{item.id}</span>
                     </td>
                     <td style={td("130px", true)}>
                       <MemoizedAlgoTag type={item.algoType} />
                     </td>
                     <td style={td("180px")}>
-                      <div style={{
-                        color: C.primary,
-                        fontWeight: 500,
-                        fontSize: "12px",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap" as const,
-                        maxWidth: "170px"
-                      }}
+                      <div className="text-primary font-medium text-xs truncate max-w-170"
                         title={item.name}
                       >
                         {item.name}
                       </div>
                     </td>
                     <td style={td("180px")}>
-                      <span style={{
-                        fontSize: "11px",
-                        color: C.gray3,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap" as const,
-                        maxWidth: "170px",
-                        display: "block"
-                      }}
+                      <span className="text-xs text-gray-3 truncate block max-w-170"
                         title={item.description}
                       >
                         {item.description || "-"}
@@ -543,79 +478,45 @@ function RawData({ onRefresh }: RawDataProps) {
                       <MemoizedSiteTag site={item.dataset} />
                     </td>
                     <td style={td("72px", true)}>
-                      <span style={{ fontWeight: 700, color: C.gray1, fontSize: "13px" }}>
+                      <span className="font-bold text-gray-1 text-sm">
                         {(item.fileCount || 0).toLocaleString()}
                       </span>
                     </td>
                     <td style={td("80px", true)}>
-                      <span style={{ fontSize: "11px", color: C.gray3 }}>
+                      <span className="text-xs text-gray-3">
                         {formatFileSize(item.fileSize)}
                       </span>
                     </td>
                     <td style={td("80px", true)}>
                       {item.isAnnotated ? (
-                        <span style={{
-                          background: C.successBg,
-                          color: C.success,
-                          border: `1px solid #A8D5C0`,
-                          borderRadius: "4px",
-                          padding: "2px 6px",
-                          fontSize: "11px",
-                          fontWeight: 600
-                        }}>
+                        <span className="badge badge-success">
                           已标注
                         </span>
                       ) : (
-                        <span style={{
-                          background: C.warningBg,
-                          color: C.warning,
-                          border: `1px solid #F9D9B0`,
-                          borderRadius: "4px",
-                          padding: "2px 6px",
-                          fontSize: "11px",
-                          fontWeight: 600
-                        }}>
+                        <span className="badge badge-warning">
                           未标注
                         </span>
                       )}
                     </td>
                     <td style={td("86px", true)}>
-                      <span style={{ fontSize: "11px", color: C.gray3 }}>{item.maintainDate}</span>
+                      <span className="text-xs text-gray-3">{item.maintainDate}</span>
                     </td>
                     <td style={td("72px", true)}>
-                      <span style={{ fontSize: "11px", color: C.gray2, fontWeight: 500 }}>{item.maintainer}</span>
+                      <span className="text-xs text-gray-2 font-medium">{item.maintainer}</span>
                     </td>
                     <td style={td("110px", true)}>
-                      <div style={{ display: "flex", gap: "6px" }}>
+                      <div className="flex gap-1">
                         <button
                           onClick={(e) => downloadRawData(item, e)}
                           title="下载"
-                          style={{
-                            background: C.primary,
-                            color: "white",
-                            border: "none",
-                            borderRadius: "4px",
-                            padding: "4px 8px",
-                            fontSize: "11px",
-                            cursor: "pointer",
-                            fontWeight: 500
-                          }}
+                          className="btn btn-sm btn-primary"
                         >
                           下载
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); setDeleteTarget(item) }}
                           title="删除"
-                          style={{
-                            background: "#FEE2E2",
-                            color: "#DC2626",
-                            border: "none",
-                            borderRadius: "4px",
-                            padding: "4px 8px",
-                            fontSize: "11px",
-                            cursor: "pointer",
-                            fontWeight: 500
-                          }}
+                          className="btn btn-sm btn-danger"
                         >
                           删除
                         </button>
@@ -628,7 +529,7 @@ function RawData({ onRefresh }: RawDataProps) {
           </table>
 
           {filteredData.length === 0 && (
-            <div style={{ padding: "40px", textAlign: "center", color: C.gray3 }}>
+            <div className="p-10 text-center text-gray-3">
               暂无数据
             </div>
           )}
@@ -650,43 +551,21 @@ function RawData({ onRefresh }: RawDataProps) {
       {/* 上传弹窗 */}
       {showUpload && (
         <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(0,0,0,0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000
-          }}
+          className="fixed inset-0 bg-black-50 flex items-center justify-center z-10"
           onClick={() => !uploading && setShowUpload(false)}
         >
           <div
-            style={{
-              background: C.white,
-              borderRadius: "12px",
-              padding: "24px",
-              width: "480px",
-              maxHeight: "80vh",
-              overflow: "auto"
-            }}
+            className="bg-white rounded-12 p-6 w-full max-w-120 overflow-auto"
+            style={{ maxHeight: "80vh" }}
             onClick={e => e.stopPropagation()}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-              <h3 style={{ fontSize: "16px", fontWeight: 600, color: C.gray1 }}>上传原始数据</h3>
+            <div className="flex justify-between items-center mb-5">
+              <h3 className="text-base font-semibold text-gray-1">上传原始数据</h3>
               {!uploading && (
                 <button
                   onClick={() => setShowUpload(false)}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    fontSize: "20px",
-                    cursor: "pointer",
-                    color: C.gray3
-                  }}
+                  className="btn btn-ghost text-gray-3"
+                  style={{ fontSize: "20px", padding: "0" }}
                 >
                   ×
                 </button>
@@ -694,63 +573,38 @@ function RawData({ onRefresh }: RawDataProps) {
             </div>
 
             {uploading ? (
-              <div style={{ textAlign: "center", padding: "40px 0" }}>
-                <div style={{ fontSize: "24px", marginBottom: "16px" }}>⬆️</div>
-                <div style={{ fontSize: "14px", color: C.gray2, marginBottom: "16px" }}>上传中...</div>
-                <div style={{
-                  width: "100%",
-                  height: "8px",
-                  background: C.gray6,
-                  borderRadius: "4px",
-                  overflow: "hidden"
-                }}>
-                  <div style={{
-                    width: `${uploadProgress}%`,
-                    height: "100%",
-                    background: C.primary,
-                    transition: "width .3s"
-                  }} />
+              <div className="text-center py-10">
+                <div className="text-2xl mb-4">⬆️</div>
+                <div className="text-sm text-gray-2 mb-4">上传中...</div>
+                <div className="w-full h-2 bg-gray-6 rounded-4 overflow-hidden">
+                  <div className="h-full bg-primary transition-all duration-300"
+                    style={{ width: `${uploadProgress}%` }} />
                 </div>
-                <div style={{ fontSize: "12px", color: C.gray3, marginTop: "8px" }}>{uploadProgress}%</div>
+                <div className="text-xs text-gray-3 mt-2">{uploadProgress}%</div>
               </div>
             ) : (
               <div>
-                <div style={{ marginBottom: "16px" }}>
-                  <label style={{ display: "block", fontSize: "12px", color: C.gray2, marginBottom: "4px", fontWeight: 500 }}>
-                    数据名称 <span style={{ color: "#DC2626" }}>*</span>
+                <div className="mb-4">
+                  <label className="block text-xs text-gray-2 mb-1 font-medium">
+                    数据名称 <span className="text-error">*</span>
                   </label>
                   <input
                     type="text"
                     value={uploadName}
                     onChange={e => setUploadName(e.target.value)}
                     placeholder="请输入数据名称"
-                    style={{
-                      width: "100%",
-                      padding: "8px 12px",
-                      border: `1px solid ${C.border}`,
-                      borderRadius: "6px",
-                      fontSize: "13px",
-                      outline: "none"
-                    }}
+                    className="input w-full"
                   />
                 </div>
 
-                <div style={{ marginBottom: "16px" }}>
-                  <label style={{ display: "block", fontSize: "12px", color: C.gray2, marginBottom: "4px", fontWeight: 500 }}>
+                <div className="mb-4">
+                  <label className="block text-xs text-gray-2 mb-1 font-medium">
                     算法类型
                   </label>
                   <select
                     value={uploadAlgoType}
                     onChange={e => setUploadAlgoType(e.target.value)}
-                    style={{
-                      width: "100%",
-                      padding: "8px 12px",
-                      border: `1px solid ${C.border}`,
-                      borderRadius: "6px",
-                      fontSize: "13px",
-                      outline: "none",
-                      background: C.white
-                    }}
+                    className="input w-full"
                   >
                     {algoTypes.filter(t => t !== '全部').map(type => (
                       <option key={type} value={type}>{type}</option>
@@ -758,8 +612,8 @@ function RawData({ onRefresh }: RawDataProps) {
                   </select>
                 </div>
 
-                <div style={{ marginBottom: "16px" }}>
-                  <label style={{ display: "block", fontSize: "12px", color: C.gray2, marginBottom: "4px", fontWeight: 500 }}>
+                <div className="mb-4">
+                  <label className="block text-xs text-gray-2 mb-1 font-medium">
                     关联数据集
                   </label>
                   <input
@@ -767,19 +621,12 @@ function RawData({ onRefresh }: RawDataProps) {
                     value={uploadDataset}
                     onChange={e => setUploadDataset(e.target.value)}
                     placeholder="请输入关联的数据集名称"
-                    style={{
-                      width: "100%",
-                      padding: "8px 12px",
-                      border: `1px solid ${C.border}`,
-                      borderRadius: "6px",
-                      fontSize: "13px",
-                      outline: "none"
-                    }}
+                    className="input w-full"
                   />
                 </div>
 
-                <div style={{ marginBottom: "16px" }}>
-                  <label style={{ display: "block", fontSize: "12px", color: C.gray2, marginBottom: "4px", fontWeight: 500 }}>
+                <div className="mb-4">
+                  <label className="block text-xs text-gray-2 mb-1 font-medium">
                     数据来源
                   </label>
                   <input
@@ -787,19 +634,12 @@ function RawData({ onRefresh }: RawDataProps) {
                     value={uploadSource}
                     onChange={e => setUploadSource(e.target.value)}
                     placeholder="如：苏北灌溉总渠"
-                    style={{
-                      width: "100%",
-                      padding: "8px 12px",
-                      border: `1px solid ${C.border}`,
-                      borderRadius: "6px",
-                      fontSize: "13px",
-                      outline: "none"
-                    }}
+                    className="input w-full"
                   />
                 </div>
 
-                <div style={{ marginBottom: "16px" }}>
-                  <label style={{ display: "block", fontSize: "12px", color: C.gray2, marginBottom: "4px", fontWeight: 500 }}>
+                <div className="mb-4">
+                  <label className="block text-xs text-gray-2 mb-1 font-medium">
                     数据概述
                   </label>
                   <textarea
@@ -807,20 +647,12 @@ function RawData({ onRefresh }: RawDataProps) {
                     onChange={e => setUploadDescription(e.target.value)}
                     placeholder="请输入数据描述..."
                     rows={3}
-                    style={{
-                      width: "100%",
-                      padding: "8px 12px",
-                      border: `1px solid ${C.border}`,
-                      borderRadius: "6px",
-                      fontSize: "13px",
-                      outline: "none",
-                      resize: "vertical"
-                    }}
+                    className="input w-full resize-vertical"
                   />
                 </div>
 
-                <div style={{ marginBottom: "16px" }}>
-                  <label style={{ display: "block", fontSize: "12px", color: C.gray2, marginBottom: "4px", fontWeight: 500 }}>
+                <div className="mb-4">
+                  <label className="block text-xs text-gray-2 mb-1 font-medium">
                     维护人员
                   </label>
                   <input
@@ -828,67 +660,36 @@ function RawData({ onRefresh }: RawDataProps) {
                     value={uploadMaintainer}
                     onChange={e => setUploadMaintainer(e.target.value)}
                     placeholder="请输入维护人员姓名"
-                    style={{
-                      width: "100%",
-                      padding: "8px 12px",
-                      border: `1px solid ${C.border}`,
-                      borderRadius: "6px",
-                      fontSize: "13px",
-                      outline: "none"
-                    }}
+                    className="input w-full"
                   />
                 </div>
 
-                <div style={{ marginBottom: "20px" }}>
-                  <label style={{ display: "block", fontSize: "12px", color: C.gray2, marginBottom: "4px", fontWeight: 500 }}>
-                    选择文件 <span style={{ color: "#DC2626" }}>*</span>
+                <div className="mb-5">
+                  <label className="block text-xs text-gray-2 mb-1 font-medium">
+                    选择文件 <span className="text-error">*</span>
                   </label>
                   <input
                     type="file"
                     onChange={e => setUploadFile(e.target.files?.[0] || null)}
-                    style={{
-                      width: "100%",
-                      padding: "8px 12px",
-                      border: `1px solid ${C.border}`,
-                      borderRadius: "6px",
-                      fontSize: "13px",
-                      outline: "none"
-                    }}
+                    className="input w-full"
                   />
                   {uploadFile && (
-                    <div style={{ fontSize: "11px", color: C.gray3, marginTop: "4px" }}>
+                    <div className="text-xs text-gray-3 mt-1">
                       已选择: {uploadFile.name} ({formatFileSize(uploadFile.size)})
                     </div>
                   )}
                 </div>
 
-                <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+                <div className="flex gap-3 justify-end">
                   <button
                     onClick={() => setShowUpload(false)}
-                    style={{
-                      padding: "8px 20px",
-                      border: `1px solid ${C.border}`,
-                      borderRadius: "6px",
-                      fontSize: "13px",
-                      cursor: "pointer",
-                      background: C.white,
-                      color: C.gray2
-                    }}
+                    className="btn btn-secondary"
                   >
                     取消
                   </button>
                   <button
                     onClick={handleUpload}
-                    style={{
-                      padding: "8px 20px",
-                      background: C.primary,
-                      color: "white",
-                      border: "none",
-                      borderRadius: "6px",
-                      fontSize: "13px",
-                      cursor: "pointer",
-                      fontWeight: 500
-                    }}
+                    className="btn btn-primary"
                   >
                     上传
                   </button>
