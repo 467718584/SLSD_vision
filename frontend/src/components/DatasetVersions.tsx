@@ -86,50 +86,51 @@ function CreateVersionModal({ datasetName, latestVersion, onClose, onSuccess }: 
   }
 
   return (
-    <div style={styles.modalOverlay} onClick={onClose}>
-      <div style={styles.modal} onClick={e => e.stopPropagation()}>
-        <div style={styles.modalHeader}>
-          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>创建新版本</h3>
-          <button onClick={onClose} style={styles.closeBtn}>×</button>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3 className="font-semibold">创建新版本</h3>
+          <button onClick={onClose} className="modal-close">×</button>
         </div>
 
-        <form onSubmit={handleSubmit} style={styles.modalContent}>
-          {error && <div style={styles.error}>{error}</div>}
+        <form onSubmit={handleSubmit} className="modal-body">
+          {error && <div className="text-error p-3 mb-4">{error}</div>}
 
-          <div style={styles.field}>
-            <label style={styles.label}>版本号 *</label>
-            <div style={{ display: 'flex', gap: '8px' }}>
+          <div className="mb-4">
+            <label className="text-sm font-medium text-gray-4 mb-2">版本号 *</label>
+            <div className="flex gap-2">
               <input
                 type="text"
                 value={version}
                 onChange={e => setVersion(e.target.value)}
                 placeholder="如 v1.0"
-                style={styles.input}
+                className="w-full p-3 border rounded text-sm"
                 required
               />
               <button
                 type="button"
                 onClick={() => setVersion(generateVersion())}
-                style={{ ...styles.autoBtn, background: C.primary }}
+                className="btn btn-primary"
               >
                 自动
               </button>
             </div>
           </div>
 
-          <div style={styles.field}>
-            <label style={styles.label}>版本描述</label>
+          <div className="mb-4">
+            <label className="text-sm font-medium text-gray-4 mb-2">版本描述</label>
             <textarea
               value={description}
               onChange={e => setDescription(e.target.value)}
               placeholder="描述此版本的变更..."
-              style={{ ...styles.input, minHeight: '80px', resize: 'vertical' as const }}
+              className="w-full p-3 border rounded text-sm"
+              style={{ minHeight: '80px', resize: 'vertical' as const }}
             />
           </div>
 
-          <div style={styles.modalFooter}>
-            <button type="button" onClick={onClose} style={styles.cancelBtn}>取消</button>
-            <button type="submit" disabled={loading} style={styles.submitBtn}>
+          <div className="modal-footer">
+            <button type="button" onClick={onClose} className="btn btn-secondary">取消</button>
+            <button type="submit" disabled={loading} className="btn btn-primary">
               {loading ? '创建中...' : '创建'}
             </button>
           </div>
@@ -204,31 +205,29 @@ function DatasetVersions({ datasetName, onBack }: DatasetVersionsProps) {
   }
 
   return (
-    <div style={{ padding: '20px' }}>
+    <div className="p-4">
       {/* 头部 */}
-      <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
           {onBack && (
-            <button onClick={onBack} className="btn" style={{ marginRight: '12px' }}>
+            <button onClick={onBack} className="btn">
               ← 返回
             </button>
           )}
-          <h2 style={{ fontSize: '18px', fontWeight: 700, color: C.gray1 }}>
+          <h2 className="text-lg font-bold text-gray-2">
             <LayersIcon size={20} /> {datasetName} - 版本管理
           </h2>
         </div>
-        <div style={{ display: 'flex', gap: '12px' }}>
+        <div className="flex gap-3">
           <button
             onClick={() => { setCompareMode(!compareMode); setSelectedVersions([]); setCompareResult(null); }}
-            className="btn"
-            style={{ background: compareMode ? C.primary : C.gray5, color: 'white' }}
+            className={compareMode ? 'btn btn-primary' : 'btn btn-secondary'}
           >
             {compareMode ? '退出对比' : '版本对比'}
           </button>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="btn"
-            style={{ background: C.primary, color: 'white' }}
+            className="btn btn-primary"
           >
             + 创建版本
           </button>
@@ -237,15 +236,15 @@ function DatasetVersions({ datasetName, onBack }: DatasetVersionsProps) {
 
       {/* 错误提示 */}
       {error && (
-        <div style={styles.error}>{error}</div>
+        <div className="text-error p-3 mb-4">{error}</div>
       )}
 
       {/* 对比模式提示 */}
       {compareMode && (
-        <div style={styles.info}>
+        <div className="text-accent p-3 mb-4">
           请选择2个版本进行对比 (已选 {selectedVersions.length}/2)
           {selectedVersions.length === 2 && (
-            <button onClick={handleCompare} className="btn" style={{ marginLeft: '16px', background: C.success, color: 'white' }}>
+            <button onClick={handleCompare} className="btn btn-primary ml-4">
               开始对比
             </button>
           )}
@@ -254,47 +253,47 @@ function DatasetVersions({ datasetName, onBack }: DatasetVersionsProps) {
 
       {/* 对比结果 */}
       {compareResult && (
-        <div className="card" style={{ marginBottom: '20px' }}>
-          <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '16px', color: C.gray1 }}>
+        <div className="card mb-4">
+          <h3 className="font-semibold mb-4 text-gray-2">
             <BarChartIcon size={18} /> 版本对比结果
           </h3>
-          <table style={styles.table}>
+          <table className="table">
             <thead>
               <tr>
-                <th style={styles.th}>指标</th>
-                <th style={styles.th}>{compareResult.version1?.version}</th>
-                <th style={styles.th}>{compareResult.version2?.version}</th>
-                <th style={styles.th}>差异</th>
+                <th className="text-sm font-medium">指标</th>
+                <th className="text-sm font-medium">{compareResult.version1?.version}</th>
+                <th className="text-sm font-medium">{compareResult.version2?.version}</th>
+                <th className="text-sm font-medium">差异</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td style={styles.td}>文件数量</td>
-                <td style={styles.td}>{compareResult.version1?.file_count}</td>
-                <td style={styles.td}>{compareResult.version2?.file_count}</td>
-                <td style={{ ...styles.td, color: (compareResult.changes?.file_count_diff || 0) > 0 ? C.success : C.warning }}>
+                <td>文件数量</td>
+                <td>{compareResult.version1?.file_count}</td>
+                <td>{compareResult.version2?.file_count}</td>
+                <td className={(compareResult.changes?.file_count_diff || 0) > 0 ? 'text-success' : 'text-error'}>
                   {(compareResult.changes?.file_count_diff || 0) > 0 ? '+' : ''}{compareResult.changes?.file_count_diff}
                 </td>
               </tr>
               <tr>
-                <td style={styles.td}>样本总数</td>
-                <td style={styles.td}>{compareResult.version1?.total}</td>
-                <td style={styles.td}>{compareResult.version2?.total}</td>
-                <td style={{ ...styles.td, color: (compareResult.changes?.total_diff || 0) > 0 ? C.success : C.warning }}>
+                <td>样本总数</td>
+                <td>{compareResult.version1?.total}</td>
+                <td>{compareResult.version2?.total}</td>
+                <td className={(compareResult.changes?.total_diff || 0) > 0 ? 'text-success' : 'text-error'}>
                   {(compareResult.changes?.total_diff || 0) > 0 ? '+' : ''}{compareResult.changes?.total_diff}
                 </td>
               </tr>
               <tr>
-                <td style={styles.td}>创建时间</td>
-                <td style={styles.td}>{compareResult.version1?.created_at?.split('T')[0]}</td>
-                <td style={styles.td}>{compareResult.version2?.created_at?.split('T')[0]}</td>
-                <td style={styles.td}>-</td>
+                <td>创建时间</td>
+                <td>{compareResult.version1?.created_at?.split('T')[0]}</td>
+                <td>{compareResult.version2?.created_at?.split('T')[0]}</td>
+                <td>-</td>
               </tr>
               <tr>
-                <td style={styles.td}>创建人</td>
-                <td style={styles.td}>{compareResult.version1?.created_by || '-'}</td>
-                <td style={styles.td}>{compareResult.version2?.created_by || '-'}</td>
-                <td style={styles.td}>-</td>
+                <td>创建人</td>
+                <td>{compareResult.version1?.created_by || '-'}</td>
+                <td>{compareResult.version2?.created_by || '-'}</td>
+                <td>-</td>
               </tr>
             </tbody>
           </table>
@@ -303,24 +302,26 @@ function DatasetVersions({ datasetName, onBack }: DatasetVersionsProps) {
 
       {/* 版本列表 */}
       {loading ? (
-        <div style={{ textAlign: 'center' as const, padding: '60px', color: C.gray3 }}>加载中...</div>
+        <div className="text-center p-6 text-muted">加载中...</div>
       ) : versions.length === 0 ? (
-        <div style={{ textAlign: 'center' as const, padding: '60px', color: C.gray3 }}>
+        <div className="text-center p-6 text-muted">
           暂无版本记录
         </div>
       ) : (
         <div className="card">
-          <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '16px', color: C.gray1 }}>
+          <h3 className="font-semibold mb-4 text-gray-2">
             版本列表 ({versions.length})
           </h3>
-          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '12px' }}>
+          <div className="flex flex-col gap-3">
             {versions.map((version, idx) => (
               <div
                 key={version.id}
                 onClick={() => toggleVersionSelect(version.id)}
+                className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                  selectedVersions.includes(version.id) ? 'border-2' : ''
+                }`}
                 style={{
-                  ...styles.versionCard,
-                  border: selectedVersions.includes(version.id) ? `2px solid ${C.primary}` : `1px solid ${C.border}`,
+                  borderColor: selectedVersions.includes(version.id) ? C.primary : C.border,
                   background: selectedVersions.includes(version.id) ? `${C.primary}08` : 'white'
                 }}
               >
@@ -329,23 +330,23 @@ function DatasetVersions({ datasetName, onBack }: DatasetVersionsProps) {
                     type="checkbox"
                     checked={selectedVersions.includes(version.id)}
                     onChange={() => {}}
-                    style={{ width: '18px', height: '18px', marginRight: '12px' }}
+                    className="w-5 h-5 mr-3"
                   />
                 )}
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                    <span style={{ ...styles.versionBadge, background: idx === 0 ? C.success : C.gray5 }}>
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className={`badge ${idx === 0 ? 'badge-success' : 'badge-primary'}`}>
                       {version.version}
                     </span>
-                    {idx === 0 && <span style={styles.latestBadge}>最新</span>}
-                    <span style={{ fontSize: '12px', color: C.gray3 }}>
+                    {idx === 0 && <span className="badge badge-warning">最新</span>}
+                    <span className="text-xs text-muted">
                       {version.created_at?.split('T')[0]}
                     </span>
                   </div>
-                  <div style={{ fontSize: '13px', color: C.gray2 }}>
+                  <div className="text-sm text-gray-4">
                     {version.description || '无描述'}
                   </div>
-                  <div style={{ display: 'flex', gap: '24px', marginTop: '8px', fontSize: '12px', color: C.gray3 }}>
+                  <div className="flex gap-6 mt-2 text-xs text-muted">
                     <span>文件数: {version.file_count || 0}</span>
                     <span>样本数: {version.total || 0}</span>
                     <span>创建人: {version.created_by || '-'}</span>
@@ -369,150 +370,6 @@ function DatasetVersions({ datasetName, onBack }: DatasetVersionsProps) {
       )}
     </div>
   )
-}
-
-const styles = {
-  error: {
-    padding: '12px 16px',
-    background: '#FEE2E2',
-    color: '#DC2626',
-    borderRadius: '6px',
-    fontSize: '13px',
-    marginBottom: '16px'
-  },
-  info: {
-    padding: '12px 16px',
-    background: '#E3F2FD',
-    color: '#1565C0',
-    borderRadius: '6px',
-    fontSize: '13px',
-    marginBottom: '16px'
-  },
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse' as const,
-    fontSize: '13px'
-  },
-  th: {
-    padding: '10px 12px',
-    textAlign: 'left' as const,
-    background: C.gray7,
-    borderBottom: `1px solid ${C.border}`,
-    fontWeight: 600,
-    color: C.gray2
-  },
-  td: {
-    padding: '10px 12px',
-    borderBottom: `1px solid ${C.border}`,
-    color: C.gray1
-  },
-  versionCard: {
-    padding: '16px',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'flex-start',
-    transition: 'all 0.2s'
-  },
-  versionBadge: {
-    padding: '4px 12px',
-    borderRadius: '20px',
-    fontSize: '12px',
-    fontWeight: 600,
-    color: 'white'
-  },
-  latestBadge: {
-    padding: '2px 8px',
-    borderRadius: '4px',
-    fontSize: '10px',
-    background: C.orange,
-    color: 'white'
-  },
-  modalOverlay: {
-    position: 'fixed' as const,
-    top: 0, left: 0, right: 0, bottom: 0,
-    background: 'rgba(0, 0, 0, 0.5)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 10000
-  },
-  modal: {
-    background: 'white',
-    borderRadius: '12px',
-    width: '480px',
-    maxHeight: '90vh',
-    overflow: 'auto' as const,
-    boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
-  },
-  modalHeader: {
-    padding: '20px 24px',
-    borderBottom: `1px solid ${C.border}`,
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center'
-  },
-  closeBtn: {
-    background: 'none',
-    border: 'none',
-    cursor: 'pointer',
-    fontSize: '20px',
-    color: C.gray3
-  },
-  modalContent: {
-    padding: '20px 24px'
-  },
-  field: {
-    marginBottom: '16px'
-  },
-  label: {
-    display: 'block',
-    fontSize: '13px',
-    fontWeight: 500,
-    color: C.gray2,
-    marginBottom: '6px'
-  },
-  input: {
-    width: '100%',
-    padding: '10px 12px',
-    border: `1px solid ${C.border}`,
-    borderRadius: '6px',
-    fontSize: '13px',
-    outline: 'none',
-    boxSizing: 'border-box' as const
-  },
-  autoBtn: {
-    padding: '10px 16px',
-    color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontSize: '13px'
-  },
-  modalFooter: {
-    display: 'flex',
-    justifyContent: 'flex-end',
-    gap: '12px',
-    marginTop: '20px'
-  },
-  cancelBtn: {
-    padding: '10px 20px',
-    border: `1px solid ${C.border}`,
-    borderRadius: '6px',
-    background: 'white',
-    color: C.gray2,
-    cursor: 'pointer',
-    fontSize: '13px'
-  },
-  submitBtn: {
-    padding: '10px 20px',
-    border: 'none',
-    borderRadius: '6px',
-    background: C.primary,
-    color: 'white',
-    cursor: 'pointer',
-    fontSize: '13px'
-  }
 }
 
 export default DatasetVersions
