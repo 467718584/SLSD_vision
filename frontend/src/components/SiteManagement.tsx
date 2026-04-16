@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { C, SITE_COLORS } from '../constants'
-import { RefreshIcon } from './Icons'
+import { RefreshIcon, XIcon, FolderIcon, CpuIcon } from './Icons'
 
 interface Site {
   id: number
@@ -124,7 +124,7 @@ export default function SiteManagement({ onRefresh }: SiteManagementProps) {
           color: '#DC2626',
           fontSize: '13px'
         }}>
-          ❌ {error}
+          <XIcon size={14} /> {error}
         </div>
         <button
           onClick={fetchSites}
@@ -264,7 +264,7 @@ export default function SiteManagement({ onRefresh }: SiteManagementProps) {
                         fontSize: '13px',
                         fontWeight: 600
                       }}>
-                        📁 {site.dataset_count}
+                        <FolderIcon size={14} /> {site.dataset_count}
                       </span>
                     </td>
                     <td style={{ ...td(true), fontWeight: 600 }}>
@@ -279,7 +279,7 @@ export default function SiteManagement({ onRefresh }: SiteManagementProps) {
                         fontSize: '13px',
                         fontWeight: 600
                       }}>
-                        🤖 {site.model_count}
+                        <CpuIcon size={14} /> {site.model_count}
                       </span>
                     </td>
                     <td style={td()}>
