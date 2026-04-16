@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { C } from '../constants'
+import { BarChartIcon } from './Icons'
 
 // 模型类型定义
 interface Model {
@@ -148,7 +149,7 @@ function ModelCompare({ models, onBack }: ModelCompareProps) {
           {/* 精度对比表 */}
           <div className="card" style={{ marginBottom: '20px' }}>
             <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '16px', color: C.gray1 }}>
-              📊 性能指标对比
+              <BarChartIcon size={16} /> 性能指标对比
             </h3>
             <div style={{ overflowX: 'auto' as const }}>
               <table style={styles.table}>

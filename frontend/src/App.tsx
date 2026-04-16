@@ -1,5 +1,6 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react'
 import { C } from './constants'
+import { LayersIcon, ActivityIcon } from './components/Icons'
 import DatasetList from './components/DatasetList'
 import RawData from './components/RawData'
 import ModelList from './components/ModelList'
@@ -146,7 +147,7 @@ function SettingsCard({ title, items }: SettingsCardProps) {
 function VersionSelector({ datasets, onSelectDataset }: VersionSelectorProps) {
   return (
     <div style={{ padding: '20px' }}>
-      <h2 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '20px', color: C.gray1 }}>📦 数据集版本管理</h2>
+      <h2 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '20px', color: C.gray1 }}><LayersIcon size={18} /> 数据集版本管理</h2>
       <p style={{ fontSize: '13px', color: C.gray3, marginBottom: '24px' }}>
         选择一个数据集来管理其版本历史
       </p>
@@ -312,7 +313,7 @@ function App() {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '24px', marginBottom: '16px' }}>⏳</div>
+          <div style={{ fontSize: '24px', marginBottom: '16px' }}><ActivityIcon size={28} style={{ animation: 'spin 1s linear infinite' }} /></div>
           <div>加载中...</div>
         </div>
       </div>

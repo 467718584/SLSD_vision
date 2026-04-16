@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { C, SITE_COLORS } from '../constants'
+import { RefreshIcon } from './Icons'
 
 interface Site {
   id: number
@@ -105,7 +106,7 @@ export default function SiteManagement({ onRefresh }: SiteManagementProps) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px' }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '24px', marginBottom: '12px' }}>⏳</div>
+          <div style={{ fontSize: '24px', marginBottom: '12px' }}><RefreshIcon size={28} style={{ animation: 'spin 1s linear infinite' }} /></div>
           <div style={{ color: C.gray3, fontSize: '13px' }}>加载中...</div>
         </div>
       </div>
@@ -174,7 +175,7 @@ export default function SiteManagement({ onRefresh }: SiteManagementProps) {
               fontSize: '13px'
             }}
           >
-            🔄 刷新
+            <RefreshIcon size={14} /> 刷新
           </button>
           {onRefresh && (
             <button

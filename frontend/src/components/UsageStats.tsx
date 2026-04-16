@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { C } from '../constants'
+import { BarChartIcon } from './Icons'
 
 // 类型定义
 interface UsageSummary {
@@ -427,7 +428,7 @@ export default function UsageStats(props: UsageStatsProps) {
         >
           ← 返回
         </button>
-        <h2 style={styles.title}>📊 使用统计报表</h2>
+        <h2 style={styles.title}><BarChartIcon size={18} /> 使用统计报表</h2>
         <div style={{ width: '80px' }}></div>
       </div>
 
