@@ -1,4 +1,5 @@
 import React from 'react'
+import { AlertCircleIcon } from './Icons'
 
 // ErrorBoundary Props
 interface ErrorBoundaryProps {
@@ -67,7 +68,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
       return (
         <div style={styles.container}>
           <div style={styles.card}>
-            <div style={styles.icon}>⚠️</div>
+            <div style={styles.icon}><AlertCircleIcon size={48} /></div>
             <h2 style={styles.title}>出错了</h2>
             <p style={styles.message}>
               抱歉，应用程序遇到了一个错误。
