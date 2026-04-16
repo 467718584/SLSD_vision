@@ -262,7 +262,7 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: '100vh',
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+    background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)'
   },
   card: {
     background: 'white',
