@@ -12,9 +12,9 @@ def get_settings():
     return _get()
 
 
-def update_settings(algo_types, tech_methods, annotation_types, sites):
+def update_settings(algo_types, tech_methods, annotation_types, sites, sources):
     from modules.database import update_settings as _update
-    return _update(algo_types, tech_methods, annotation_types, sites)
+    return _update(algo_types, tech_methods, annotation_types, sites, sources)
 
 
 @settings_bp.route('/settings')
@@ -36,11 +36,12 @@ def update_settings_api():
         tech_methods = data.get('techMethods')
         annotation_types = data.get('annotationTypes')
         sites = data.get('sites')
+        sources = data.get('sources')
 
-        if algo_types is None and tech_methods is None and annotation_types is None and sites is None:
+        if algo_types is None and tech_methods is None and annotation_types is None and sites is None and sources is None:
             return jsonify({"success": False, "error": "没有要更新的内容"}), 400
 
-        update_settings(algo_types, tech_methods, annotation_types, sites)
+        update_settings(algo_types, tech_methods, annotation_types, sites, sources)
         return jsonify({"success": True, "message": "设置已更新"})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500

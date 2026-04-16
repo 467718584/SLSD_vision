@@ -438,6 +438,20 @@ def index():
     return html_content
 
 
+# ==================== React静态文件服务 ====================
+DIST_DIR = os.path.join(os.path.dirname(__file__), 'dist')
+
+@app.route('/slsd-vision/')
+def slsd_vision_index():
+    """React应用入口"""
+    return send_from_directory(DIST_DIR, 'index.html')
+
+@app.route('/slsd-vision/assets/<path:filename>')
+def slsd_vision_assets(filename):
+    """React静态资源文件"""
+    return send_from_directory(os.path.join(DIST_DIR, 'assets'), filename)
+
+
 # ==================== 设置API ====================
 
 @app.route('/api/settings')
@@ -822,6 +836,45 @@ def api_stats():
     return jsonify({
         "datasets": ds_stats,
         "models": m_stats
+    })
+
+
+@app.route('/api/stats/usage')
+@require_auth
+def api_stats_usage():
+    """
+    获取使用统计报表
+    ---
+    tags:
+      - stats
+    parameters:
+      - in: query
+        name: period
+        type: string
+        enum: [daily, weekly, monthly]
+        default: weekly
+        description: 统计周期
+      - in: query
+        name: days
+        type: integer
+        default: 30
+        description: 统计天数
+    responses:
+      200:
+        description: 使用统计报表
+    """
+    period = request.args.get('period', 'weekly')
+    days = request.args.get('days', 30, type=int)
+    days = min(days, 365)  # 最多一年
+
+    from modules.database import get_usage_stats
+    stats = get_usage_stats(period=period, days=days)
+
+    return jsonify({
+        'success': True,
+        'period': period,
+        'days': days,
+        'stats': stats
     })
 
 

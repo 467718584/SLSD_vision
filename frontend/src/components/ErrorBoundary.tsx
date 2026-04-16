@@ -1,5 +1,4 @@
 import React from 'react'
-import { C } from '../constants'
 
 // ErrorBoundary Props
 interface ErrorBoundaryProps {
@@ -55,8 +54,11 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
     if (this.props.onReset) {
       this.props.onReset()
     } else {
-      // 默认行为：回到首页
-      window.location.href = '/'
+      // 默认行为：history.back() 保留在当前页面，不跳转首页
+      if (window.history.length > 1) {
+        window.history.back()
+      }
+      // 如果没有历史记录，什么都不做，保留当前页面
     }
   }
 

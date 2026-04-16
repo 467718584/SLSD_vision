@@ -115,6 +115,8 @@ docker-compose up -d
 - [ ] 限制数据库访问权限
 - [ ] 配置防火墙规则
 - [ ] 启用 HTTPS（通过反向代理）
+- [ ] 配置 CSRF 密钥（CSRF_SECRET_KEY）
+- [ ] 启用审计日志收集
 
 ### 性能检查
 - [ ] 根据并发需求调整 `CPUS`
@@ -126,6 +128,8 @@ docker-compose up -d
 - [ ] 设置告警规则
 - [ ] 定期检查磁盘空间
 - [ ] 监控服务健康状态
+- [ ] 监控审计日志增长（可通过 /api/audit/stats 查看）
+- [ ] 监控存储空间（可通过 /api/storage 查看）
 
 ## 常见问题
 
@@ -139,7 +143,23 @@ netstat -tlnp | grep 8501
 
 # 检查配置文件
 cat .env
+
+# 检查健康状态
+curl http://localhost:8501/api/health
 ```
+
+### Q: 审计日志有什么用？
+v1.7 新增功能。审计日志记录所有关键操作：
+- 数据集/模型的增删改操作
+- 用户登录/注册行为
+- 查看日志：curl http://localhost:8501/api/audit/logs
+- 查看统计：curl http://localhost:8501/api/audit/stats
+
+### Q: 如何管理应用现场和原始数据？
+v1.7 新增功能。
+- 应用现场管理：GET/POST/DELETE /api/sites
+- 原始数据管理：GET/POST/DELETE /api/raw-data
+- 可在设置页面配置应用现场和数据来源列表
 
 ### Q: 日志文件过大？
 日志已配置自动轮转，如需手动清理:

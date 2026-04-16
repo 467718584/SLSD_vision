@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { C } from '../constants'
+import { LayersIcon, BarChartIcon } from './Icons'
 
 // 版本类型定义
 interface Version {
@@ -213,7 +214,7 @@ function DatasetVersions({ datasetName, onBack }: DatasetVersionsProps) {
             </button>
           )}
           <h2 style={{ fontSize: '18px', fontWeight: 700, color: C.gray1 }}>
-            📦 {datasetName} - 版本管理
+            <LayersIcon size={20} /> {datasetName} - 版本管理
           </h2>
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
@@ -255,7 +256,7 @@ function DatasetVersions({ datasetName, onBack }: DatasetVersionsProps) {
       {compareResult && (
         <div className="card" style={{ marginBottom: '20px' }}>
           <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '16px', color: C.gray1 }}>
-            📊 版本对比结果
+            <BarChartIcon size={18} /> 版本对比结果
           </h3>
           <table style={styles.table}>
             <thead>

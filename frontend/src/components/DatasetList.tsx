@@ -251,6 +251,33 @@ function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload }: Dat
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null)
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null)
 
+  // 过滤数据集 - 必须在sortedDatasets之前定义
+  const filteredDatasets = useMemo(() => {
+    return datasets.filter(ds => {
+      const matchSearch = ds.name.toLowerCase().includes(searchFilters.searchQuery.toLowerCase())
+      const matchType = searchFilters.algoType === '全部' || ds.algoType === searchFilters.algoType
+      const matchTech = searchFilters.techMethod === '全部' || searchFilters.techMethod === '目标检测算法' || ds.techMethod === searchFilters.techMethod
+      const matchSource = searchFilters.source === '全部' || ds.source === searchFilters.source
+      const matchSplit = searchFilters.split === '全部' || ds.split === searchFilters.split
+      
+      // 日期范围
+      let matchDate = true
+      if (searchFilters.dateRange.start || searchFilters.dateRange.end) {
+        const dsDate = ds.maintainDate || ''
+        if (searchFilters.dateRange.start && dsDate < searchFilters.dateRange.start) matchDate = false
+        if (searchFilters.dateRange.end && dsDate > searchFilters.dateRange.end) matchDate = false
+      }
+      
+      // 样本数量范围
+      let matchSample = true
+      const total = ds.total || 0
+      if (searchFilters.sampleRange.min && total < parseInt(searchFilters.sampleRange.min)) matchSample = false
+      if (searchFilters.sampleRange.max && total > parseInt(searchFilters.sampleRange.max)) matchSample = false
+      
+      return matchSearch && matchType && matchTech && matchSource && matchSplit && matchDate && matchSample
+    })
+  }, [datasets, searchFilters])
+
   // 初始化从localStorage加载排序顺序
   useEffect(() => {
     try {
@@ -282,6 +309,11 @@ function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload }: Dat
     }
     return filteredDatasets
   }, [filteredDatasets])
+
+  // 计算总样本数
+  const totalSamples = useMemo(() => {
+    return datasets.reduce((sum, ds) => sum + (ds.total || 0), 0)
+  }, [datasets])
 
   // 拖拽处理
   function handleDragStart(e: React.DragEvent, idx: number) {
@@ -338,38 +370,6 @@ function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload }: Dat
     setDraggedIdx(null)
     setDragOverIdx(null)
   }
-
-  // 过滤数据集
-  const filteredDatasets = useMemo(() => {
-    return datasets.filter(ds => {
-      const matchSearch = ds.name.toLowerCase().includes(searchFilters.searchQuery.toLowerCase())
-      const matchType = searchFilters.algoType === '全部' || ds.algoType === searchFilters.algoType
-      const matchTech = searchFilters.techMethod === '全部' || searchFilters.techMethod === '目标检测算法' || ds.techMethod === searchFilters.techMethod
-      const matchSource = searchFilters.source === '全部' || ds.source === searchFilters.source
-      const matchSplit = searchFilters.split === '全部' || ds.split === searchFilters.split
-      
-      // 日期范围
-      let matchDate = true
-      if (searchFilters.dateRange.start || searchFilters.dateRange.end) {
-        const dsDate = ds.maintainDate || ''
-        if (searchFilters.dateRange.start && dsDate < searchFilters.dateRange.start) matchDate = false
-        if (searchFilters.dateRange.end && dsDate > searchFilters.dateRange.end) matchDate = false
-      }
-      
-      // 样本数量范围
-      let matchSample = true
-      const total = ds.total || 0
-      if (searchFilters.sampleRange.min && total < parseInt(searchFilters.sampleRange.min)) matchSample = false
-      if (searchFilters.sampleRange.max && total > parseInt(searchFilters.sampleRange.max)) matchSample = false
-      
-      return matchSearch && matchType && matchTech && matchSource && matchSplit && matchDate && matchSample
-    })
-  }, [datasets, searchFilters])
-
-  // 计算总样本数
-  const totalSamples = useMemo(() => {
-    return datasets.reduce((sum, ds) => sum + (ds.total || 0), 0)
-  }, [datasets])
 
   // 删除数据集
   function deleteDataset(name: string, e: React.MouseEvent) {

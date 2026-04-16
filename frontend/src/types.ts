@@ -72,6 +72,8 @@ export interface Settings {
   algo_types: string[];
   tech_methods: string[];
   annotation_types: string[];
+  sites: string[];
+  sources: string[];
 }
 
 // 审计日志类型定义

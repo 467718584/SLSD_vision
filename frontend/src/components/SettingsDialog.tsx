@@ -15,10 +15,10 @@ function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
   const [techMethods, setTechMethods] = useState<string[]>(['目标检测算法', '实例分割算法'])
   const [annotationTypes, setAnnotationTypes] = useState<string[]>(['YOLO格式', 'VOC格式', 'COCO格式'])
   const [sites, setSites] = useState<string[]>([
-    '苏北灌溉总渠', '南水北调宝应站', '慈溪北排', '慈溪周巷', '瓯江引水'
+    '苏北灌溉总渠', '南水北调宝应站', '慈溪北排', '慈溪周巷', '瓯江引水', '互联网'
   ])
   const [sources, setSources] = useState<string[]>([
-    '苏北灌溉总渠', '南水北调宝应站', '慈溪北排', '慈溪周巷', '瓯江引水', '互联网'
+    '互联网', '本地采集', '合作伙伴', '公开数据集'
   ])
   const [newAlgoType, setNewAlgoType] = useState('')
   const [newTechMethod, setNewTechMethod] = useState('')

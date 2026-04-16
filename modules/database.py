@@ -232,14 +232,14 @@ def migrate_database(conn, cursor):
     if 'sites' not in settings_columns:
         try:
             cursor.execute('ALTER TABLE settings ADD COLUMN sites TEXT')
-            cursor.execute("UPDATE settings SET sites = '[\"苏北灌溉总渠\",\"南水北调宝应站\",\"慈溪北排\",\"慈溪周巷\",\"瓯江引水\"]' WHERE id = 1")
+            cursor.execute("UPDATE settings SET sites = '[\"苏北灌溉总渠\",\"南水北调宝应站\",\"慈溪北排\",\"慈溪周巷\",\"瓯江引水\",\"互联网\"]' WHERE id = 1")
         except Exception as e:
             print(f"[WARN] Migration sites column: {e}")
 
     if 'sources' not in settings_columns:
         try:
             cursor.execute('ALTER TABLE settings ADD COLUMN sources TEXT')
-            cursor.execute("UPDATE settings SET sources = '[\"苏北灌溉总渠\",\"南水北调宝应站\",\"慈溪北排\",\"慈溪周巷\",\"瓯江引水\",\"互联网\"]' WHERE id = 1")
+            cursor.execute("UPDATE settings SET sources = '[\"互联网\",\"本地采集\",\"合作伙伴\",\"公开数据集\"]' WHERE id = 1")
         except Exception as e:
             print(f"[WARN] Migration sources column: {e}")
 
@@ -298,15 +298,15 @@ def get_settings():
             'algo_types': json.loads(row[0]) if row[0] else ["路面积水检测","漂浮物检测","墙面裂缝检测","游泳检测","其他"],
             'tech_methods': json.loads(row[1]) if row[1] else ["目标检测算法","实例分割算法"],
             'annotation_types': json.loads(row[2]) if row[2] else ["YOLO格式","VOC格式","COCO格式"],
-            'sites': json.loads(row[3]) if row[3] else ["苏北灌溉总渠","南水北调宝应站","慈溪北排","慈溪周巷","瓯江引水"],
-            'sources': json.loads(row[4]) if row[4] else ["苏北灌溉总渠","南水北调宝应站","慈溪北排","慈溪周巷","瓯江引水","互联网"]
+            'sites': json.loads(row[3]) if row[3] else ["苏北灌溉总渠","南水北调宝应站","慈溪北排","慈溪周巷","瓯江引水","互联网"],
+            'sources': json.loads(row[4]) if row[4] else ["互联网","本地采集","合作伙伴","公开数据集"]
         }
     return {
         'algo_types': ["路面积水检测","漂浮物检测","墙面裂缝检测","游泳检测","其他"],
         'tech_methods': ["目标检测算法","实例分割算法"],
         'annotation_types': ["YOLO格式","VOC格式","COCO格式"],
-        'sites': ["苏北灌溉总渠","南水北调宝应站","慈溪北排","慈溪周巷","瓯江引水"],
-        'sources': ["苏北灌溉总渠","南水北调宝应站","慈溪北排","慈溪周巷","瓯江引水","互联网"]
+        'sites': ["苏北灌溉总渠","南水北调宝应站","慈溪北排","慈溪周巷","瓯江引水","互联网"],
+        'sources': ["互联网","本地采集","合作伙伴","公开数据集"]
     }
 
 

@@ -1,5 +1,4 @@
 import React from 'react'
-import { C } from '../constants'
 
 // ConfirmDialog Props 类型定义
 export interface ConfirmDialogProps {

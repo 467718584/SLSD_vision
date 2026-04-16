@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { C } from '../constants'
+import { RefreshIcon } from './Icons'
 
 // 审计日志类型定义
 interface AuditLog {
@@ -156,7 +157,7 @@ function AuditLogs({ onClose }: AuditLogsProps) {
     if (loading) {
       return (
         <div style={styles.loading}>
-          <div style={styles.spinner}>⏳</div>
+          <div style={styles.spinner}><RefreshIcon size={28} style={{ animation: 'spin 1s linear infinite' }} /></div>
           <p>加载中...</p>
         </div>
       )
@@ -269,7 +270,7 @@ function AuditLogs({ onClose }: AuditLogsProps) {
               <option value="model">模型</option>
               <option value="user">用户</option>
             </select>
-            <button onClick={loadData} style={styles.refreshBtn}>🔄 刷新</button>
+            <button onClick={loadData} style={styles.refreshBtn}><RefreshIcon size={14} /> 刷新</button>
           </div>
         )}
 

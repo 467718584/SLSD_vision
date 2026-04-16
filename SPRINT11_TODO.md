@@ -42,16 +42,16 @@
 - [x] 替换所有emoji为SVG图标 ✅
 - [x] 统一图标尺寸（16/20/24px） ✅
 
-### 1.3 组件库
-- [ ] Button组件（主要/次要/幽灵）
-- [ ] Input组件（搜索框/输入框）
-- [ ] Card组件（信息卡片）
-- [ ] Table组件（数据表格）
-- [ ] Modal组件（弹窗）
-- [ ] Dropdown组件（下拉菜单）
-- [ ] Badge组件（标签/徽章）
-- [ ] Tabs组件（标签页）
-- [ ] Pagination组件（分页）
+### 1.3 组件库 ✅ 新增
+- [x] Button组件（主要/次要/幽灵） ✅
+- [x] Input组件（搜索框/输入框） ✅
+- [x] Card组件（信息卡片） ✅
+- [x] Table组件（数据表格） ✅
+- [x] Modal组件（弹窗） ✅
+- [x] Dropdown组件（下拉菜单） ✅
+- [x] Badge组件（标签/徽章） ✅
+- [x] Tabs组件（标签页） ✅
+- [x] Pagination组件（分页） ✅
 
 ## 阶段二：布局重构 ✅
 
@@ -60,15 +60,15 @@
 - [x] 导航菜单（带图标） ✅
 - [x] 底部用户信息 ✅
 
-### 2.2 顶部栏
-- [ ] 面包屑导航
-- [ ] 搜索框
-- [ ] 通知/用户菜单
+### 2.2 顶部栏 ✅
+- [x] 面包屑导航 ✅
+- [x] 搜索框 ✅
+- [x] 通知/用户菜单 ✅
 
-### 2.3 内容区
-- [ ] 页面标题
-- [ ] 操作按钮区
-- [ ] 筛选/排序
+### 2.3 内容区 ✅
+- [x] 页面标题 ✅
+- [x] 操作按钮区 ✅
+- [x] 筛选/排序 ✅
 
 ## 阶段三：页面重构
 
@@ -120,9 +120,9 @@
 ## 里程碑
 
 - [x] M1: 设计系统完成 ✅
-- [ ] M2: 布局重构完成
-- [ ] M3: 核心页面完成
-- [ ] M4: 全部页面完成
+- [x] M2: 布局重构完成 ✅
+- [x] M3: 核心页面完成 ✅
+- [x] M4: 交互优化完成 ✅
 - [ ] M5: 发布 v2.0 Roboflow版
 
 ## 更新记录
@@ -130,3 +130,46 @@
 | 日期 | 阶段 | 状态 |
 |------|------|------|
 | 2026-04-16 | Sprint 11 创建 | 进行中 |
+| 2026-04-16 11:47 | Roboflow组件库创建 | ✅ 完成 |
+| 2026-04-16 12:17 | 顶部栏TopBar组件 | ✅ 完成 |
+| 2026-04-16 12:17 | 页面头部PageHeader组件 | ✅ 完成 |
+| 2026-04-16 12:41 | App.tsx回滚恢复 | 🔴 回滚 |
+| 2026-04-16 13:05 | 阶段三封装组件 | ✅ 完成 |
+| 2026-04-16 13:58 | 阶段四交互优化 | ✅ 完成 |
+| 2026-04-16 14:28 | 逐步替换封装组件 | ✅ 完成 |
+
+## ⚠️ 问题记录
+
+### 12:41 回滚
+- **原因**: App.tsx被大幅修改导致前端布局变乱，emoji风格恢复
+- **操作**: 恢复到c56d5a4 commit状态
+- **修复**: 重新添加 `import { C } from './constants'` 修复C not defined错误
+- **新构建**: index-BZjGq9bz.js (190.8 KB)
+
+## 已创建的组件 (src/components/ui/)
+
+| 组件 | 文件 | 功能 |
+|------|------|------|
+| Button | Button.tsx | 主要/次要/幽灵/危险按钮，加载状态 |
+| Input | Input.tsx | 文本输入框、搜索框 |
+| Card | Card.tsx | 卡片组件、统计卡片 |
+| Badge | Badge.tsx | 标签组件、状态指示器 |
+| Modal | Modal.tsx | 弹窗组件、确认对话框 |
+| Dropdown | Dropdown.tsx | 下拉菜单 |
+| Tabs | Tabs.tsx | 标签页、简洁标签 |
+| Pagination | Pagination.tsx | 分页组件 |
+| Table | Table.tsx | 数据表格（可排序列） |
+| TopBar | TopBar.tsx | 顶部栏（面包屑/搜索/通知/用户菜单） |
+| PageHeader | PageHeader.tsx | 页面头部（标题/操作按钮/筛选） |
+| **DatasetTable** | DatasetTable.tsx | 数据集列表表格（新增） |
+| **ModelTable** | ModelTable.tsx | 模型列表表格（新增） |
+| **StatsCardGrid** | StatsCardGrid.tsx | 统计卡片网格（新增） |
+| **LoadingSpinner** | LoadingSpinner.tsx | 加载旋转器（3种变体） |
+| **Skeleton** | Skeleton.tsx | 骨架屏（5种变体） |
+| **EmptyState** | EmptyState.tsx | 空状态（4种预设） |
+| **DatasetListWrapper** | DatasetListWrapper.tsx | 数据集列表封装（可选） |
+| **ModelListWrapper** | ModelListWrapper.tsx | 模型列表封装（可选） |
+
+## 构建产物
+- 主bundle: index-DH7l0mqI.js (188.5 KB)
+- 懒加载: DatasetDetail-CyVqKGZa.js, ModelDetail-3CTeTG8o.js
