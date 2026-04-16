@@ -20,17 +20,13 @@ interface SiteManagementProps {
 const MemoizedTag = React.memo(({ label, colors }: { label: string; colors?: { bg?: string; border?: string; text?: string } }) => {
   const c = colors || { bg: C.gray6, border: C.border, text: C.gray2 }
   return (
-    <span style={{
-      display: "inline-block",
-      padding: "2px 8px",
-      borderRadius: "4px",
-      fontSize: "11px",
-      fontWeight: 500,
-      background: c.bg,
-      border: `1px solid ${c.border}`,
-      color: c.text,
-      whiteSpace: "nowrap"
-    }}>
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded"
+      style={{
+        background: c.bg,
+        border: `1px solid ${c.border}`,
+        color: c.text,
+        whiteSpace: "nowrap"
+      }}>
       {label}
     </span>
   )
@@ -62,16 +58,9 @@ const td = (c = false) => ({
 // 空状态组件
 function EmptyState({ message }: { message: string }) {
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '60px 20px',
-      color: C.gray3
-    }}>
-      <div style={{ fontSize: '48px', marginBottom: '16px' }}>🏗️</div>
-      <div style={{ fontSize: '14px', color: C.gray3 }}>{message}</div>
+    <div className="flex flex-col items-center justify-center p-6 text-sm" style={{ color: C.gray3 }}>
+      <div className="text-4xl mb-3">🏗️</div>
+      <div style={{ color: C.gray3 }}>{message}</div>
     </div>
   )
 }
@@ -104,10 +93,10 @@ export default function SiteManagement({ onRefresh }: SiteManagementProps) {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '24px', marginBottom: '12px' }}><RefreshIcon size={28} style={{ animation: 'spin 1s linear infinite' }} /></div>
-          <div style={{ color: C.gray3, fontSize: '13px' }}>加载中...</div>
+      <div className="flex items-center justify-center p-6">
+        <div className="text-center">
+          <div className="text-2xl mb-2"><RefreshIcon size={28} style={{ animation: 'spin 1s linear infinite' }} /></div>
+          <div style={{ color: C.gray3 }} className="text-sm">加载中...</div>
         </div>
       </div>
     )
@@ -115,29 +104,13 @@ export default function SiteManagement({ onRefresh }: SiteManagementProps) {
 
   if (error) {
     return (
-      <div style={{ padding: '20px' }}>
-        <div style={{
-          padding: '16px',
-          background: '#FEE2E2',
-          border: '1px solid #FECACA',
-          borderRadius: '8px',
-          color: '#DC2626',
-          fontSize: '13px'
-        }}>
+      <div className="p-3">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600 flex items-center gap-2">
           <XIcon size={14} /> {error}
         </div>
         <button
           onClick={fetchSites}
-          style={{
-            marginTop: '12px',
-            padding: '8px 16px',
-            background: C.primary,
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontSize: '13px'
-          }}
+          className="btn btn-primary btn-sm mt-3"
         >
           重试
         </button>
@@ -146,49 +119,28 @@ export default function SiteManagement({ onRefresh }: SiteManagementProps) {
   }
 
   return (
-    <div style={{ padding: '20px' }}>
+    <div className="p-5">
       {/* 页面标题 */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '20px'
-      }}>
+      <div className="flex justify-between items-center mb-5">
         <div>
-          <h2 style={{ fontSize: '18px', fontWeight: 700, color: C.gray1, margin: 0 }}>
+          <h2 className="text-lg font-bold m-0" style={{ color: C.gray1 }}>
             🏗️ 应用现场管理
           </h2>
-          <p style={{ fontSize: '12px', color: C.gray3, marginTop: '4px' }}>
+          <p className="text-xs mt-1" style={{ color: C.gray3 }}>
             查看所有应用现场的关联统计信息（数据来源于数据集管理和模型管理）
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div className="flex gap-2">
           <button
             onClick={fetchSites}
-            style={{
-              padding: '8px 16px',
-              background: C.gray6,
-              color: C.gray2,
-              border: `1px solid ${C.border}`,
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '13px'
-            }}
+            className="btn btn-secondary btn-sm"
           >
             <RefreshIcon size={14} /> 刷新
           </button>
           {onRefresh && (
             <button
               onClick={onRefresh}
-              style={{
-                padding: '8px 16px',
-                background: C.primary,
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '13px'
-              }}
+              className="btn btn-primary btn-sm"
             >
               ↩️ 返回
             </button>
@@ -197,27 +149,22 @@ export default function SiteManagement({ onRefresh }: SiteManagementProps) {
       </div>
 
       {/* 统计卡片 */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
-        gap: '16px',
-        marginBottom: '24px'
-      }}>
-        <div className="card" style={{ padding: '16px', textAlign: 'center' }}>
-          <div style={{ fontSize: '28px', fontWeight: 700, color: C.primary }}>{sites.length}</div>
-          <div style={{ fontSize: '12px', color: C.gray3, marginTop: '4px' }}>应用现场总数</div>
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="card text-center p-4">
+          <div className="text-3xl font-bold" style={{ color: C.primary }}>{sites.length}</div>
+          <div className="text-xs mt-1" style={{ color: C.gray3 }}>应用现场总数</div>
         </div>
-        <div className="card" style={{ padding: '16px', textAlign: 'center' }}>
-          <div style={{ fontSize: '28px', fontWeight: 700, color: '#E8631A' }}>
+        <div className="card text-center p-4">
+          <div className="text-3xl font-bold" style={{ color: '#E8631A' }}>
             {sites.reduce((s, site) => s + site.dataset_count, 0)}
           </div>
-          <div style={{ fontSize: '12px', color: C.gray3, marginTop: '4px' }}>关联数据集总数</div>
+          <div className="text-xs mt-1" style={{ color: C.gray3 }}>关联数据集总数</div>
         </div>
-        <div className="card" style={{ padding: '16px', textAlign: 'center' }}>
-          <div style={{ fontSize: '28px', fontWeight: 700, color: '#8E44AD' }}>
+        <div className="card text-center p-4">
+          <div className="text-3xl font-bold" style={{ color: '#8E44AD' }}>
             {sites.reduce((s, site) => s + site.model_count, 0)}
           </div>
-          <div style={{ fontSize: '12px', color: C.gray3, marginTop: '4px' }}>关联模型总数</div>
+          <div className="text-xs mt-1" style={{ color: C.gray3 }}>关联模型总数</div>
         </div>
       </div>
 
@@ -225,9 +172,9 @@ export default function SiteManagement({ onRefresh }: SiteManagementProps) {
       {sites.length === 0 ? (
         <EmptyState message="暂无可管理的应用现场，请在设置中添加" />
       ) : (
-        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div className="card overflow-hidden" style={{ padding: 0 }}>
+          <div className="overflow-x-auto">
+            <table className="table w-full">
               <thead>
                 <tr style={{ background: C.gray7 }}>
                   <th style={th('80px', true)}>编号</th>
@@ -242,43 +189,29 @@ export default function SiteManagement({ onRefresh }: SiteManagementProps) {
                 {sites.map((site) => (
                   <tr
                     key={site.id}
-                    style={{ background: 'white' }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = C.gray7)}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = 'white')}
+                    className="hover:bg-gray-50 transition-colors"
                   >
-                    <td style={{ ...td(true), color: C.gray3, fontSize: '12px' }}>
+                    <td style={{ ...td(true), color: C.gray3 }} className="text-xs">
                       {String(site.id).padStart(3, '0')}
                     </td>
                     <td style={td()}>
                       <MemoizedSiteTag site={site.name} />
                     </td>
                     <td style={{ ...td(true), fontWeight: 600 }}>
-                      <span style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        padding: '4px 12px',
-                        background: site.dataset_count > 0 ? C.primaryBg : C.gray6,
-                        color: site.dataset_count > 0 ? C.primary : C.gray3,
-                        borderRadius: '12px',
-                        fontSize: '13px',
-                        fontWeight: 600
-                      }}>
+                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold"
+                        style={{
+                          background: site.dataset_count > 0 ? C.primaryBg : C.gray6,
+                          color: site.dataset_count > 0 ? C.primary : C.gray3,
+                        }}>
                         <FolderIcon size={14} /> {site.dataset_count}
                       </span>
                     </td>
                     <td style={{ ...td(true), fontWeight: 600 }}>
-                      <span style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        padding: '4px 12px',
-                        background: site.model_count > 0 ? '#FDF0E7' : C.gray6,
-                        color: site.model_count > 0 ? '#E8631A' : C.gray3,
-                        borderRadius: '12px',
-                        fontSize: '13px',
-                        fontWeight: 600
-                      }}>
+                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold"
+                        style={{
+                          background: site.model_count > 0 ? '#FDF0E7' : C.gray6,
+                          color: site.model_count > 0 ? '#E8631A' : C.gray3,
+                        }}>
                         <CpuIcon size={14} /> {site.model_count}
                       </span>
                     </td>
@@ -301,14 +234,7 @@ export default function SiteManagement({ onRefresh }: SiteManagementProps) {
       )}
 
       {/* 底部说明 */}
-      <div style={{
-        marginTop: '16px',
-        padding: '12px 16px',
-        background: C.gray7,
-        borderRadius: '8px',
-        fontSize: '12px',
-        color: C.gray3
-      }}>
+      <div className="mt-4 p-3 rounded-lg text-xs" style={{ background: C.gray7, color: C.gray3 }}>
         💡 说明：关联数据集和关联模型的数量会根据数据集管理和模型管理中选择的"数据来源"/"应用现场"自动统计。
         新增或删除应用现场请前往 <strong style={{ color: C.gray2 }}>设置</strong> 页面操作。
       </div>

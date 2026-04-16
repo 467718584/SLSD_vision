@@ -33,137 +33,11 @@ interface UsageStatsProps {
   onBack?: () => void
 }
 
-// 样式
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    padding: '20px',
-    height: '100%',
-    overflow: 'auto',
-    background: C.bg,
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '20px',
-  },
-  title: {
-    fontSize: '18px',
-    fontWeight: 700,
-    color: C.gray1,
-    margin: 0,
-  },
-  filterRow: {
-    display: 'flex',
-    gap: '12px',
-    marginBottom: '20px',
-    flexWrap: 'wrap' as const,
-  },
-  filterBtn: {
-    padding: '6px 16px',
-    borderRadius: '6px',
-    border: `1px solid ${C.border}`,
-    background: C.white,
-    cursor: 'pointer',
-    fontSize: '13px',
-    color: C.gray2,
-    transition: 'all 0.2s',
-  },
-  filterBtnActive: {
-    background: C.primary,
-    color: C.white,
-    border: `1px solid ${C.primary}`,
-  },
-  statsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(4, 1fr)',
-    gap: '16px',
-    marginBottom: '24px',
-  },
-  statCard: {
-    background: C.white,
-    border: `1px solid ${C.border}`,
-    borderRadius: '12px',
-    padding: '20px',
-    textAlign: 'center' as const,
-  },
-  statIcon: {
-    fontSize: '28px',
-    marginBottom: '8px',
-  },
-  statValue: {
-    fontSize: '28px',
-    fontWeight: 700,
-    color: C.primary,
-    marginBottom: '4px',
-  },
-  statLabel: {
-    fontSize: '12px',
-    color: C.gray3,
-  },
-  chartSection: {
-    background: C.white,
-    border: `1px solid ${C.border}`,
-    borderRadius: '12px',
-    padding: '20px',
-    marginBottom: '20px',
-  },
-  chartTitle: {
-    fontSize: '14px',
-    fontWeight: 600,
-    color: C.gray1,
-    marginBottom: '16px',
-  },
-  chartContainer: {
-    position: 'relative' as const,
-    height: '240px',
-  },
-  chart: {
-    width: '100%',
-    height: '100%',
-  },
-  tableSection: {
-    background: C.white,
-    border: `1px solid ${C.border}`,
-    borderRadius: '12px',
-    padding: '20px',
-  },
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse' as const,
-    fontSize: '13px',
-  },
-  th: {
-    textAlign: 'left' as const,
-    padding: '10px 12px',
-    borderBottom: `1px solid ${C.border}`,
-    color: C.gray3,
-    fontWeight: 500,
-  },
-  td: {
-    padding: '10px 12px',
-    borderBottom: `1px solid ${C.border}`,
-    color: C.gray2,
-  },
-  empty: {
-    textAlign: 'center',
-    padding: '40px',
-    color: C.gray4,
-    fontSize: '13px',
-  },
-  loading: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: '200px',
-    color: C.gray3,
-  },
-}
-
 // 简单柱状图组件（不依赖外部图表库）
 function SimpleBarChart({ data, color, height = 200 }: { data: { label: string; value: number }[], color: string, height?: number }) {
+  const emptyStyle = { textAlign: 'center' as const, padding: '40px', color: C.gray4, fontSize: '13px' }
   if (!data || data.length === 0) {
-    return <div style={{ ...styles.empty, height }}>暂无数据</div>
+    return <div style={{ ...emptyStyle, height }}>暂无数据</div>
   }
 
   const maxValue = Math.max(...data.map(d => d.value), 1)
@@ -261,8 +135,9 @@ function SimpleBarChart({ data, color, height = 200 }: { data: { label: string; 
 
 // 简单折线图组件
 function SimpleLineChart({ data, color, height = 200 }: { data: { label: string; value: number }[], color: string, height?: number }) {
+  const emptyStyle = { textAlign: 'center' as const, padding: '40px', color: C.gray4, fontSize: '13px' }
   if (!data || data.length === 0) {
-    return <div style={{ ...styles.empty, height }}>暂无数据</div>
+    return <div style={{ ...emptyStyle, height }}>暂无数据</div>
   }
 
   const maxValue = Math.max(...data.map(d => d.value), 1)
@@ -379,19 +254,15 @@ export default function UsageStats(props: UsageStatsProps) {
 
   function formatLabel(dateStr: string) {
     if (!dateStr) return '-'
-    // period = day: "2024-01-15"
-    // period = week: "2024-W03"
-    // period = month: "2024-01"
     if (period === 'day') {
-      return dateStr.slice(5) // "01-15"
+      return dateStr.slice(5)
     } else if (period === 'week') {
-      return dateStr // "2024-W03"
+      return dateStr
     } else {
-      return dateStr // "2024-01"
+      return dateStr
     }
   }
 
-  // 将原始数据转换为图表格式
   function toChartData(raw: DailyStat[]) {
     return raw.map(r => ({
       label: formatLabel(r.date_period),
@@ -403,59 +274,44 @@ export default function UsageStats(props: UsageStatsProps) {
 
   if (loading && !data) {
     return (
-      <div style={styles.container}>
-        <div style={styles.loading}>加载中...</div>
+      <div className="p-5 h-full overflow-auto" style={{ background: C.bg }}>
+        <div className="flex items-center justify-center h-48" style={{ color: C.gray3 }}>加载中...</div>
       </div>
     )
   }
 
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
+    <div className="p-5 h-full overflow-auto" style={{ background: C.bg }}>
+      {/* 头部 */}
+      <div className="flex justify-between items-center mb-5">
         <button
           onClick={onBack}
-          style={{
-            background: 'none',
-            border: `1px solid ${C.border}`,
-            borderRadius: '6px',
-            padding: '6px 12px',
-            cursor: 'pointer',
-            fontSize: '13px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-          }}
+          className="btn btn-ghost btn-sm flex items-center gap-1"
         >
           ← 返回
         </button>
-        <h2 style={styles.title}><BarChartIcon size={18} /> 使用统计报表</h2>
+        <h2 className="text-lg font-bold m-0" style={{ color: C.gray1 }}><BarChartIcon size={18} /> 使用统计报表</h2>
         <div style={{ width: '80px' }}></div>
       </div>
 
       {/* 筛选器 */}
-      <div style={styles.filterRow}>
-        <span style={{ fontSize: '13px', color: C.gray2, alignSelf: 'center', marginRight: '4px' }}>周期:</span>
+      <div className="flex gap-3 mb-5 flex-wrap items-center">
+        <span className="text-sm" style={{ color: C.gray2 }}>周期:</span>
         {(['day', 'week', 'month'] as const).map(p => (
           <button
             key={p}
             onClick={() => setPeriod(p)}
-            style={{
-              ...styles.filterBtn,
-              ...(period === p ? styles.filterBtnActive : {}),
-            }}
+            className={`btn btn-sm ${period === p ? 'btn-primary' : 'btn-secondary'}`}
           >
             {p === 'day' ? '按日' : p === 'week' ? '按周' : '按月'}
           </button>
         ))}
-        <span style={{ fontSize: '13px', color: C.gray2, alignSelf: 'center', marginLeft: '12px', marginRight: '4px' }}>范围:</span>
+        <span className="text-sm ml-3" style={{ color: C.gray2 }}>范围:</span>
         {getDaysLabel().map(d => (
           <button
             key={d.value}
             onClick={() => setDays(d.value)}
-            style={{
-              ...styles.filterBtn,
-              ...(days === d.value ? styles.filterBtnActive : {}),
-            }}
+            className={`btn btn-sm ${days === d.value ? 'btn-primary' : 'btn-secondary'}`}
           >
             {d.label}
           </button>
@@ -463,41 +319,41 @@ export default function UsageStats(props: UsageStatsProps) {
       </div>
 
       {/* 统计卡片 */}
-      <div style={styles.statsGrid}>
-        <div style={styles.statCard}>
-          <div style={styles.statIcon}><FolderIcon size={28} /></div>
-          <div style={{ ...styles.statValue, color: C.primary }}>
+      <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="card text-center p-5">
+          <div className="text-3xl mb-2"><FolderIcon size={28} /></div>
+          <div className="text-3xl font-bold mb-1" style={{ color: C.primary }}>
             {summary?.total_datasets ?? 0}
           </div>
-          <div style={styles.statLabel}>数据集上传</div>
+          <div className="text-xs" style={{ color: C.gray3 }}>数据集上传</div>
         </div>
-        <div style={styles.statCard}>
-          <div style={styles.statIcon}><CpuIcon size={28} /></div>
-          <div style={{ ...styles.statValue, color: '#E8631A' }}>
+        <div className="card text-center p-5">
+          <div className="text-3xl mb-2"><CpuIcon size={28} /></div>
+          <div className="text-3xl font-bold mb-1" style={{ color: '#E8631A' }}>
             {summary?.total_models ?? 0}
           </div>
-          <div style={styles.statLabel}>模型上传</div>
+          <div className="text-xs" style={{ color: C.gray3 }}>模型上传</div>
         </div>
-        <div style={styles.statCard}>
-          <div style={styles.statIcon}>🗂️</div>
-          <div style={{ ...styles.statValue, color: C.success }}>
+        <div className="card text-center p-5">
+          <div className="text-3xl mb-2">🗂️</div>
+          <div className="text-3xl font-bold mb-1" style={{ color: C.success }}>
             {summary?.total_raw_data ?? 0}
           </div>
-          <div style={styles.statLabel}>原始数据上传</div>
+          <div className="text-xs" style={{ color: C.gray3 }}>原始数据上传</div>
         </div>
-        <div style={styles.statCard}>
-          <div style={styles.statIcon}>👥</div>
-          <div style={{ ...styles.statValue, color: '#8E44AD' }}>
+        <div className="card text-center p-5">
+          <div className="text-3xl mb-2">👥</div>
+          <div className="text-3xl font-bold mb-1" style={{ color: '#8E44AD' }}>
             {summary?.active_users ?? 0}
           </div>
-          <div style={styles.statLabel}>活跃用户</div>
+          <div className="text-xs" style={{ color: C.gray3 }}>活跃用户</div>
         </div>
       </div>
 
       {/* 上传统计图表 */}
-      <div style={styles.chartSection}>
-        <h3 style={styles.chartTitle}>上传趋势</h3>
-        <div style={styles.chartContainer}>
+      <div className="card mb-5 p-5">
+        <h3 className="text-sm font-semibold mb-4" style={{ color: C.gray1 }}>上传趋势</h3>
+        <div style={{ position: 'relative', height: '240px' }}>
           <SimpleBarChart
             data={toChartData(data?.daily?.datasets || [])}
             color={C.primary}
@@ -507,9 +363,9 @@ export default function UsageStats(props: UsageStatsProps) {
       </div>
 
       {/* 活跃用户图表 */}
-      <div style={styles.chartSection}>
-        <h3 style={styles.chartTitle}>用户活跃趋势</h3>
-        <div style={styles.chartContainer}>
+      <div className="card mb-5 p-5">
+        <h3 className="text-sm font-semibold mb-4" style={{ color: C.gray1 }}>用户活跃趋势</h3>
+        <div style={{ position: 'relative', height: '240px' }}>
           <SimpleLineChart
             data={toChartData(data?.daily?.users || [])}
             color="#8E44AD"
@@ -519,41 +375,43 @@ export default function UsageStats(props: UsageStatsProps) {
       </div>
 
       {/* 详细数据表格 */}
-      <div style={styles.tableSection}>
-        <h3 style={styles.chartTitle}>详细数据</h3>
-        <table style={styles.table}>
-          <thead>
-            <tr>
-              <th style={styles.th}>日期/周期</th>
-              <th style={styles.th}>数据集</th>
-              <th style={styles.th}>模型</th>
-              <th style={styles.th}>原始数据</th>
-              <th style={styles.th}>活跃用户</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data && data.daily.datasets.length > 0 ? (
-              data.daily.datasets.map((ds, i) => {
-                const models = data.daily.models.find(m => m.date_period === ds.date_period)
-                const raw = data.daily.raw_data.find(r => r.date_period === ds.date_period)
-                const users = data.daily.users.find(u => u.date_period === ds.date_period)
-                return (
-                  <tr key={ds.date_period || i}>
-                    <td style={styles.td}>{formatLabel(ds.date_period)}</td>
-                    <td style={styles.td}>{ds.count}</td>
-                    <td style={styles.td}>{models?.count ?? '-'}</td>
-                    <td style={styles.td}>{raw?.count ?? '-'}</td>
-                    <td style={styles.td}>{users?.count ?? '-'}</td>
-                  </tr>
-                )
-              })
-            ) : (
+      <div className="card p-5">
+        <h3 className="text-sm font-semibold mb-4" style={{ color: C.gray1 }}>详细数据</h3>
+        <div className="table-container">
+          <table className="table">
+            <thead>
               <tr>
-                <td colSpan={5} style={styles.empty}>暂无数据</td>
+                <th className="table th text-left">日期/周期</th>
+                <th className="table th text-left">数据集</th>
+                <th className="table th text-left">模型</th>
+                <th className="table th text-left">原始数据</th>
+                <th className="table th text-left">活跃用户</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {data && data.daily.datasets.length > 0 ? (
+                data.daily.datasets.map((ds, i) => {
+                  const models = data.daily.models.find(m => m.date_period === ds.date_period)
+                  const raw = data.daily.raw_data.find(r => r.date_period === ds.date_period)
+                  const users = data.daily.users.find(u => u.date_period === ds.date_period)
+                  return (
+                    <tr key={ds.date_period || i}>
+                      <td className="table td">{formatLabel(ds.date_period)}</td>
+                      <td className="table td">{ds.count}</td>
+                      <td className="table td">{models?.count ?? '-'}</td>
+                      <td className="table td">{raw?.count ?? '-'}</td>
+                      <td className="table td">{users?.count ?? '-'}</td>
+                    </tr>
+                  )
+                })
+              ) : (
+                <tr>
+                  <td colSpan={5} className="text-center p-10" style={{ color: C.gray4 }}>暂无数据</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   )
