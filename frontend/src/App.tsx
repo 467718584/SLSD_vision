@@ -415,19 +415,10 @@ function App() {
           {user?.role === 'admin' && (
             <button
               onClick={() => setShowAuditLogs(true)}
-              style={{
-                width: '100%',
-                marginBottom: '12px',
-                padding: '8px',
-                background: '#F3F4F6',
-                border: '1px solid #E5E7EB',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '12px',
-                color: '#374151'
-              }}
+              className="btn btn-secondary"
+              style={{ width: '100%', marginBottom: '12px' }}
             >
-              📋 审计日志
+              <FileTextIcon size={14} /> 审计日志
             </button>
           )}
           <UserInfo user={user} onLogout={handleLogout} />
