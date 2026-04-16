@@ -88,8 +88,8 @@
 - [ ] 模型详情
 
 ### 3.4 通用页面
-- [ ] 设置页面 - SettingsDialog迁移中 (50个)
-- [ ] 审计日志 - AuditLogs迁移中 (59个)
+- [x] 设置页面 - SettingsDialog迁移完成
+- [x] 审计日志 - AuditLogs迁移完成
 - [x] 使用统计 - 迁移完成
 
 ## 阶段四：交互优化
