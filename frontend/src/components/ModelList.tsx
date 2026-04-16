@@ -112,7 +112,7 @@ const td = (w: string, c = false) => ({
 const AccuracyBar = React.memo(({ value, width = 60 }: { value?: number; width?: number }) => {
   const color = (value || 0) >= 95 ? C.success : (value || 0) >= 85 ? C.primary : C.warning
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+    <div className="flex items-center gap-2">
       <div style={{ width, height: "6px", background: C.gray6, borderRadius: "3px", overflow: "hidden" }}>
         <div style={{ width: `${value || 0}%`, height: "100%", background: color, borderRadius: "3px" }} />
       </div>
@@ -448,13 +448,11 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
               }}
               placeholder="搜索模型名称..."
               className="input"
-              onFocus={e => { e.target.style.borderColor = C.primary }}
-              onBlur={e => { e.target.style.borderColor = C.border }}
             />
           </div>
 
           {/* 筛选按钮组 */}
-          <div className="flex items-center gap-2" style={{ flexWrap: "wrap" }}>
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm text-muted mr-1">算法:</span>
             {modelAlgos.slice(0, 6).map(algo => (
               <button
@@ -466,7 +464,6 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
                   persistFilters(newFilters)
                 }}
                 className={`btn btn-sm ${searchFilters.algoName === algo ? 'btn-primary' : 'btn-ghost'}`}
-                style={{ fontWeight: searchFilters.algoName === algo ? 600 : 400 }}
               >
                 {algo}
               </button>
@@ -481,7 +478,6 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
                   persistFilters(newFilters)
                 }}
                 className={`btn btn-sm ${searchFilters.techMethod === tech ? 'btn-primary' : 'btn-ghost'}`}
-                style={{ fontWeight: searchFilters.techMethod === tech ? 600 : 400 }}
               >
                 {tech}
               </button>
@@ -496,7 +492,6 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
                   persistFilters(newFilters)
                 }}
                 className={`btn btn-sm ${searchFilters.site === site ? 'btn-primary' : 'btn-ghost'}`}
-                style={{ fontWeight: searchFilters.site === site ? 600 : 400 }}
               >
                 {site}
               </button>
@@ -511,7 +506,6 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
                   persistFilters(newFilters)
                 }}
                 className={`btn btn-sm ${searchFilters.category === cat ? 'btn-primary' : 'btn-ghost'}`}
-                style={{ fontWeight: searchFilters.category === cat ? 600 : 400 }}
               >
                 {cat}
               </button>

@@ -896,3 +896,17 @@ body {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* ModelList migrated utility classes */
+.w-16 { width: 16px; }
+.h-4 { height: 16px; }
+.w-18 { width: 18px; }
+.h-3\.5 { height: 14px; }
+.w-70 { width: 70px; }
+.w-140 { width: 140px; }
+.overflow-hidden { overflow: hidden; }
+.rounded-sm { border-radius: 2px; }
+.rounded-3 { border-radius: 3px; }
+.text-xs { font-size: 11px; }
+.line-height-1\.5 { line-height: 1.5; }
+
