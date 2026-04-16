@@ -122,265 +122,148 @@ function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
   }
 
   return (
-    <div style={styles.overlay} onClick={onClose}>
-      <div style={styles.modal} onClick={e => e.stopPropagation()}>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
         {/* 标题栏 */}
-        <div style={styles.header}>
-          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: C.gray1 }}>系统设置</h3>
-          <button onClick={onClose} style={styles.closeBtn}>×</button>
+        <div className="modal-header">
+          <h3 className="font-semibold text-sm" style={{ margin: 0, color: C.gray1 }}>系统设置</h3>
+          <button onClick={onClose} className="btn btn-ghost btn-sm" style={{ fontSize: '20px', lineHeight: 1 }}>×</button>
         </div>
 
         {loading ? (
-          <div style={{ padding: '40px', textAlign: 'center', color: C.gray3 }}>加载中...</div>
+          <div className="text-center p-6 text-muted">加载中...</div>
         ) : (
-          <div style={styles.content}>
+          <div className="modal-body">
             {/* 算法类型 */}
-            <div style={styles.section}>
-              <h4 style={styles.sectionTitle}>算法类型（应用场景）</h4>
-              <div style={styles.tagList}>
+            <div className="mb-4">
+              <h4 className="font-semibold text-sm mb-3" style={{ color: C.gray1 }}>算法类型（应用场景）</h4>
+              <div className="flex flex-wrap gap-2 mb-3">
                 {algoTypes.map(type => (
-                  <span key={type} style={{ ...styles.tag, background: C.primaryBg, borderColor: C.primaryBd, color: C.primary }}>
+                  <span key={type} className="tag tag-primary">
                     {type}
-                    <button onClick={() => handleRemove(algoTypes, setAlgoTypes, type)} style={styles.tagRemove}>×</button>
+                    <button onClick={() => handleRemove(algoTypes, setAlgoTypes, type)} className="btn btn-ghost btn-sm" style={{ padding: '0 4px', fontSize: '14px', lineHeight: 1 }}>×</button>
                   </span>
                 ))}
               </div>
-              <div style={styles.addRow}>
+              <div className="flex gap-2">
                 <input
                   type="text"
                   value={newAlgoType}
                   onChange={e => setNewAlgoType(e.target.value)}
                   placeholder="新增算法类型"
-                  style={styles.input}
+                  className="input"
                   onKeyPress={e => e.key === 'Enter' && handleAddAlgoType()}
                 />
-                <button onClick={handleAddAlgoType} style={{ ...styles.addBtn, background: C.primary }}>添加</button>
+                <button onClick={handleAddAlgoType} className="btn btn-primary btn-sm">添加</button>
               </div>
             </div>
 
             {/* 技术方法 */}
-            <div style={styles.section}>
-              <h4 style={styles.sectionTitle}>技术方法</h4>
-              <div style={styles.tagList}>
+            <div className="mb-4">
+              <h4 className="font-semibold text-sm mb-3" style={{ color: C.gray1 }}>技术方法</h4>
+              <div className="flex flex-wrap gap-2 mb-3">
                 {techMethods.map(type => (
-                  <span key={type} style={{ ...styles.tag, background: '#E8F5E9', borderColor: '#A5D6A7', color: '#2E7D32' }}>
+                  <span key={type} className="tag tag-success">
                     {type}
-                    <button onClick={() => handleRemove(techMethods, setTechMethods, type)} style={{ ...styles.tagRemove, color: '#2E7D32' }}>×</button>
+                    <button onClick={() => handleRemove(techMethods, setTechMethods, type)} className="btn btn-ghost btn-sm" style={{ padding: '0 4px', fontSize: '14px', lineHeight: 1, color: '#047857' }}>×</button>
                   </span>
                 ))}
               </div>
-              <div style={styles.addRow}>
+              <div className="flex gap-2">
                 <input
                   type="text"
                   value={newTechMethod}
                   onChange={e => setNewTechMethod(e.target.value)}
                   placeholder="新增技术方法"
-                  style={styles.input}
+                  className="input"
                   onKeyPress={e => e.key === 'Enter' && handleAddTechMethod()}
                 />
-                <button onClick={handleAddTechMethod} style={{ ...styles.addBtn, background: '#2E7D32' }}>添加</button>
+                <button onClick={handleAddTechMethod} className="btn btn-success btn-sm">添加</button>
               </div>
             </div>
 
             {/* 标注方法 */}
-            <div style={styles.section}>
-              <h4 style={styles.sectionTitle}>标注方法</h4>
-              <div style={styles.tagList}>
+            <div className="mb-4">
+              <h4 className="font-semibold text-sm mb-3" style={{ color: C.gray1 }}>标注方法</h4>
+              <div className="flex flex-wrap gap-2 mb-3">
                 {annotationTypes.map(type => (
-                  <span key={type} style={{ ...styles.tag, background: C.orangeBg, borderColor: '#F5C8A8', color: C.orange }}>
+                  <span key={type} className="tag tag-warning">
                     {type}
-                    <button onClick={() => handleRemove(annotationTypes, setAnnotationTypes, type)} style={{ ...styles.tagRemove, color: C.orange }}>×</button>
+                    <button onClick={() => handleRemove(annotationTypes, setAnnotationTypes, type)} className="btn btn-ghost btn-sm" style={{ padding: '0 4px', fontSize: '14px', lineHeight: 1, color: C.orange }}>×</button>
                   </span>
                 ))}
               </div>
-              <div style={styles.addRow}>
+              <div className="flex gap-2">
                 <input
                   type="text"
                   value={newAnnotationType}
                   onChange={e => setNewAnnotationType(e.target.value)}
                   placeholder="新增标注方法"
-                  style={styles.input}
+                  className="input"
                   onKeyPress={e => e.key === 'Enter' && handleAddAnnotationType()}
                 />
-                <button onClick={handleAddAnnotationType} style={{ ...styles.addBtn, background: C.orange }}>添加</button>
+                <button onClick={handleAddAnnotationType} className="btn btn-sm" style={{ background: C.orange, color: 'white' }}>添加</button>
               </div>
             </div>
 
             {/* 应用现场 */}
-            <div style={styles.section}>
-              <h4 style={styles.sectionTitle}>应用现场</h4>
-              <div style={styles.tagList}>
+            <div className="mb-4">
+              <h4 className="font-semibold text-sm mb-3" style={{ color: C.gray1 }}>应用现场</h4>
+              <div className="flex flex-wrap gap-2 mb-3">
                 {sites.map(type => (
-                  <span key={type} style={{ ...styles.tag, background: '#E3F2FD', borderColor: '#90CAF9', color: '#1565C0' }}>
+                  <span key={type} className="tag" style={{ background: '#E3F2FD', borderColor: '#90CAF9', color: '#1565C0' }}>
                     {type}
-                    <button onClick={() => handleRemove(sites, setSites, type)} style={{ ...styles.tagRemove, color: '#1565C0' }}>×</button>
+                    <button onClick={() => handleRemove(sites, setSites, type)} className="btn btn-ghost btn-sm" style={{ padding: '0 4px', fontSize: '14px', lineHeight: 1, color: '#1565C0' }}>×</button>
                   </span>
                 ))}
               </div>
-              <div style={styles.addRow}>
+              <div className="flex gap-2">
                 <input
                   type="text"
                   value={newSite}
                   onChange={e => setNewSite(e.target.value)}
                   placeholder="新增应用现场"
-                  style={styles.input}
+                  className="input"
                   onKeyPress={e => e.key === 'Enter' && handleAddSite()}
                 />
-                <button onClick={handleAddSite} style={{ ...styles.addBtn, background: '#1565C0' }}>添加</button>
+                <button onClick={handleAddSite} className="btn btn-sm" style={{ background: '#1565C0', color: 'white' }}>添加</button>
               </div>
             </div>
 
             {/* 数据来源 */}
-            <div style={styles.section}>
-              <h4 style={styles.sectionTitle}>数据来源</h4>
-              <div style={styles.tagList}>
+            <div className="mb-4">
+              <h4 className="font-semibold text-sm mb-3" style={{ color: C.gray1 }}>数据来源</h4>
+              <div className="flex flex-wrap gap-2 mb-3">
                 {sources.map(type => (
-                  <span key={type} style={{ ...styles.tag, background: '#FFF3E0', borderColor: '#FFCC80', color: '#E65100' }}>
+                  <span key={type} className="tag" style={{ background: '#FFF3E0', borderColor: '#FFCC80', color: '#E65100' }}>
                     {type}
-                    <button onClick={() => handleRemove(sources, setSources, type)} style={{ ...styles.tagRemove, color: '#E65100' }}>×</button>
+                    <button onClick={() => handleRemove(sources, setSources, type)} className="btn btn-ghost btn-sm" style={{ padding: '0 4px', fontSize: '14px', lineHeight: 1, color: '#E65100' }}>×</button>
                   </span>
                 ))}
               </div>
-              <div style={styles.addRow}>
+              <div className="flex gap-2">
                 <input
                   type="text"
                   value={newSource}
                   onChange={e => setNewSource(e.target.value)}
                   placeholder="新增数据来源"
-                  style={styles.input}
+                  className="input"
                   onKeyPress={e => e.key === 'Enter' && handleAddSource()}
                 />
-                <button onClick={handleAddSource} style={{ ...styles.addBtn, background: '#E65100' }}>添加</button>
+                <button onClick={handleAddSource} className="btn btn-sm" style={{ background: '#E65100', color: 'white' }}>添加</button>
               </div>
             </div>
           </div>
         )}
 
         {/* 底部按钮 */}
-        <div style={styles.footer}>
-          <button onClick={onClose} style={styles.cancelBtn}>取消</button>
-          <button onClick={handleSave} style={styles.saveBtn}>保存并关闭</button>
+        <div className="modal-footer">
+          <button onClick={onClose} className="btn btn-secondary">取消</button>
+          <button onClick={handleSave} className="btn btn-primary">保存并关闭</button>
         </div>
       </div>
     </div>
   )
-}
-
-const styles = {
-  overlay: {
-    position: 'fixed' as const,
-    top: 0, left: 0, right: 0, bottom: 0,
-    background: 'rgba(0, 0, 0, 0.5)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 10000
-  },
-  modal: {
-    background: 'white',
-    borderRadius: '12px',
-    width: '600px',
-    maxHeight: '80vh',
-    overflow: 'auto' as const,
-    boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
-  },
-  header: {
-    padding: '20px 24px',
-    borderBottom: `1px solid ${C.border}`,
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center'
-  },
-  closeBtn: {
-    background: 'none',
-    border: 'none',
-    cursor: 'pointer',
-    fontSize: '20px',
-    color: C.gray3,
-    padding: '0',
-    lineHeight: 1
-  },
-  content: {
-    padding: '20px 24px'
-  },
-  section: {
-    marginBottom: '24px'
-  },
-  sectionTitle: {
-    fontSize: '14px',
-    fontWeight: 600,
-    color: C.gray1,
-    marginBottom: '12px'
-  },
-  tagList: {
-    display: 'flex',
-    flexWrap: 'wrap' as const,
-    gap: '8px',
-    marginBottom: '12px'
-  },
-  tag: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '4px',
-    border: '1px solid',
-    borderRadius: '20px',
-    padding: '4px 10px',
-    fontSize: '12px'
-  },
-  tagRemove: {
-    background: 'none',
-    border: 'none',
-    cursor: 'pointer',
-    fontSize: '14px',
-    padding: '0',
-    lineHeight: 1
-  },
-  addRow: {
-    display: 'flex',
-    gap: '8px'
-  },
-  input: {
-    flex: 1,
-    padding: '8px 12px',
-    border: `1px solid ${C.border}`,
-    borderRadius: '6px',
-    fontSize: '13px',
-    outline: 'none'
-  },
-  addBtn: {
-    padding: '8px 16px',
-    color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontSize: '13px'
-  },
-  footer: {
-    padding: '16px 24px',
-    borderTop: `1px solid ${C.border}`,
-    display: 'flex',
-    justifyContent: 'flex-end',
-    gap: '12px'
-  },
-  cancelBtn: {
-    padding: '10px 24px',
-    border: `1px solid ${C.border}`,
-    borderRadius: '6px',
-    background: 'white',
-    cursor: 'pointer',
-    fontSize: '13px',
-    color: C.gray2
-  },
-  saveBtn: {
-    padding: '10px 24px',
-    border: 'none',
-    borderRadius: '6px',
-    background: C.primary,
-    color: 'white',
-    cursor: 'pointer',
-    fontSize: '13px',
-    fontWeight: 500
-  }
 }
 
 export default SettingsDialog

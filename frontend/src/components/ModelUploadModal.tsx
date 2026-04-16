@@ -137,141 +137,137 @@ function ModelUploadModal({ isOpen, onClose, onSuccess, datasets }: ModelUploadM
   }
 
   return (
-    <div style={styles.overlay} onClick={onClose}>
-      <div style={styles.modal} onClick={e => e.stopPropagation()}>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()} style={{ width: '500px', maxHeight: '90vh', overflow: 'auto' }}>
         {/* 标题栏 */}
-        <div style={styles.header}>
-          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: C.gray1 }}>新建模型</h3>
-          <button onClick={onClose} style={styles.closeBtn}>×</button>
+        <div className="modal-header">
+          <h3 className="font-semibold text-sm" style={{ margin: 0, color: C.gray1 }}>新建模型</h3>
+          <button onClick={onClose} className="btn btn-ghost btn-sm" style={{ fontSize: '20px', lineHeight: 1, padding: 0 }}>×</button>
         </div>
 
         {/* 表单内容 */}
-        <div style={styles.content}>
+        <div className="modal-body">
           {/* 模型名称 */}
-          <div style={styles.section}>
-            <label style={styles.label}>模型名称 *</label>
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-2" style={{ color: C.gray2 }}>模型名称 *</label>
             <input
               type="text"
               value={name}
               onChange={e => setName(e.target.value)}
               placeholder="请输入模型名称"
-              style={styles.input}
+              className="input"
             />
           </div>
 
           {/* 算法类型 + 技术方法 */}
-          <div style={styles.row}>
-            <div style={styles.half}>
-              <label style={styles.label}>算法类型</label>
-              <select value={algoName} onChange={e => setAlgoName(e.target.value)} style={styles.select}>
+          <div className="flex gap-4 mb-4">
+            <div className="flex-1">
+              <label className="block text-sm font-medium mb-2" style={{ color: C.gray2 }}>算法类型</label>
+              <select value={algoName} onChange={e => setAlgoName(e.target.value)} className="input">
                 {algoTypes.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
-            <div style={styles.half}>
-              <label style={styles.label}>技术方法</label>
-              <select value={techMethod} onChange={e => setTechMethod(e.target.value)} style={styles.select}>
+            <div className="flex-1">
+              <label className="block text-sm font-medium mb-2" style={{ color: C.gray2 }}>技术方法</label>
+              <select value={techMethod} onChange={e => setTechMethod(e.target.value)} className="input">
                 {techMethods.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
           </div>
 
           {/* 模型类别 */}
-          <div style={styles.section}>
-            <label style={styles.label}>模型类别</label>
-            <select value={category} onChange={e => setCategory(e.target.value)} style={styles.select}>
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-2" style={{ color: C.gray2 }}>模型类别</label>
+            <select value={category} onChange={e => setCategory(e.target.value)} className="input">
               {modelCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
             </select>
           </div>
 
           {/* 关联数据集 */}
-          <div style={styles.section}>
-            <label style={styles.label}>关联数据集 *</label>
-            <select value={dataset} onChange={e => setDataset(e.target.value)} style={styles.select}>
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-2" style={{ color: C.gray2 }}>关联数据集 *</label>
+            <select value={dataset} onChange={e => setDataset(e.target.value)} className="input">
               <option value="">请选择数据集</option>
               {datasets?.map(ds => <option key={ds.name} value={ds.name}>{ds.name}</option>)}
             </select>
           </div>
 
           {/* 应用现场 */}
-          <div style={styles.section}>
-            <label style={styles.label}>应用现场</label>
-            <select value={site} onChange={e => setSite(e.target.value)} style={styles.select}>
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-2" style={{ color: C.gray2 }}>应用现场</label>
+            <select value={site} onChange={e => setSite(e.target.value)} className="input">
               <option value="">请选择应用现场</option>
               {sites.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
 
           {/* 维护人员 */}
-          <div style={styles.section}>
-            <label style={styles.label}>维护人员</label>
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-2" style={{ color: C.gray2 }}>维护人员</label>
             <input
               type="text"
               value={maintainer}
               onChange={e => setMaintainer(e.target.value)}
               placeholder="请输入维护人员"
-              style={styles.input}
+              className="input"
             />
           </div>
 
           {/* 模型描述 */}
-          <div style={styles.section}>
-            <label style={styles.label}>模型描述</label>
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-2" style={{ color: C.gray2 }}>模型描述</label>
             <textarea
               value={description}
               onChange={e => setDescription(e.target.value)}
               placeholder="请输入模型描述"
-              style={{ ...styles.input, minHeight: '80px', resize: 'vertical' as const }}
+              className="input"
+              style={{ minHeight: '80px', resize: 'vertical' }}
             />
           </div>
 
           {/* 模型文件夹 */}
-          <div style={styles.section}>
-            <label style={styles.label}>模型文件夹 * (请上传包含weights、results.csv等文件的文件夹)</label>
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-2" style={{ color: C.gray2 }}>模型文件夹 * (请上传包含weights、results.csv等文件的文件夹)</label>
             <input
               type="file"
               webkitdirectory="true"
               multiple
               onChange={e => { if (e.target.files) setFolder(e.target.files) }}
-              style={styles.fileInput}
+              className="input"
             />
           </div>
 
           {/* 文件夹信息 */}
           {getFolderInfo() && (
-            <div style={{ fontSize: '12px', color: C.primary, marginBottom: '16px' }}>
-              {getFolderInfo()}
-            </div>
+            <div className="mb-4 text-sm" style={{ color: C.primary }}>{getFolderInfo()}</div>
           )}
 
           {/* 精度提示 */}
-          <div style={{ ...styles.section, background: C.gray7, padding: '8px 12px', borderRadius: '6px' }}>
-            <span style={{ fontSize: '12px', color: C.gray3 }}>模型精度将从results.csv自动获取</span>
+          <div className="mb-4 p-3 rounded" style={{ background: C.gray7 }}>
+            <span className="text-xs" style={{ color: C.gray3 }}>模型精度将从results.csv自动获取</span>
           </div>
 
           {/* 错误信息 */}
           {error && (
-            <div style={styles.error}>{error}</div>
+            <div className="mb-4 p-3 rounded" style={{ background: C.errorBg, color: C.error, fontSize: '13px' }}>{error}</div>
           )}
 
           {/* 进度条 */}
           {uploading && (
-            <div style={styles.progressContainer}>
-              <div style={{ ...styles.progressBar, width: `${progress}%` }} />
+            <div style={{ height: '4px', background: '#E5E7EB', borderRadius: '2px', overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${progress}%`, background: C.primary, transition: 'width 0.3s' }} />
             </div>
           )}
         </div>
 
         {/* 底部按钮 */}
-        <div style={styles.footer}>
-          <button onClick={onClose} style={styles.cancelBtn}>取消</button>
+        <div className="modal-footer">
+          <button onClick={onClose} className="btn btn-secondary btn-sm">取消</button>
           <button
             onClick={handleSubmit}
             disabled={uploading}
-            style={{
-              ...styles.submitBtn,
-              opacity: uploading ? 0.7 : 1,
-              cursor: uploading ? 'not-allowed' : 'pointer'
-            }}
+            className="btn btn-primary btn-sm"
+            style={{ opacity: uploading ? 0.7 : 1, cursor: uploading ? 'not-allowed' : 'pointer' }}
           >
             {uploading ? '上传中...' : '上传'}
           </button>
@@ -279,130 +275,6 @@ function ModelUploadModal({ isOpen, onClose, onSuccess, datasets }: ModelUploadM
       </div>
     </div>
   )
-}
-
-const styles = {
-  overlay: {
-    position: 'fixed' as const,
-    top: 0, left: 0, right: 0, bottom: 0,
-    background: 'rgba(0, 0, 0, 0.5)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 9999
-  },
-  modal: {
-    background: 'white',
-    borderRadius: '12px',
-    width: '500px',
-    maxHeight: '90vh',
-    overflow: 'auto' as const,
-    boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
-  },
-  header: {
-    padding: '20px 24px',
-    borderBottom: `1px solid ${C.border}`,
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center'
-  },
-  closeBtn: {
-    background: 'none',
-    border: 'none',
-    cursor: 'pointer',
-    fontSize: '20px',
-    color: C.gray3
-  },
-  content: {
-    padding: '20px 24px'
-  },
-  section: {
-    marginBottom: '16px'
-  },
-  row: {
-    display: 'flex',
-    gap: '16px',
-    marginBottom: '16px'
-  },
-  half: {
-    flex: 1
-  },
-  label: {
-    display: 'block',
-    fontSize: '13px',
-    fontWeight: 500,
-    color: C.gray2,
-    marginBottom: '6px'
-  },
-  input: {
-    width: '100%',
-    padding: '10px 12px',
-    border: `1px solid ${C.border}`,
-    borderRadius: '6px',
-    fontSize: '13px',
-    outline: 'none',
-    boxSizing: 'border-box' as const
-  },
-  select: {
-    width: '100%',
-    padding: '10px 12px',
-    border: `1px solid ${C.border}`,
-    borderRadius: '6px',
-    fontSize: '13px',
-    outline: 'none',
-    background: 'white'
-  },
-  fileInput: {
-    width: '100%',
-    padding: '8px',
-    border: `1px solid ${C.border}`,
-    borderRadius: '6px',
-    fontSize: '13px'
-  },
-  error: {
-    padding: '10px 12px',
-    background: '#FEE2E2',
-    color: '#DC2626',
-    borderRadius: '6px',
-    fontSize: '13px',
-    marginBottom: '16px'
-  },
-  progressContainer: {
-    height: '4px',
-    background: '#E5E7EB',
-    borderRadius: '2px',
-    overflow: 'hidden'
-  },
-  progressBar: {
-    height: '100%',
-    background: C.primary,
-    transition: 'width 0.3s'
-  },
-  footer: {
-    padding: '16px 24px',
-    borderTop: `1px solid ${C.border}`,
-    display: 'flex',
-    justifyContent: 'flex-end',
-    gap: '12px'
-  },
-  cancelBtn: {
-    padding: '10px 20px',
-    border: `1px solid ${C.border}`,
-    borderRadius: '6px',
-    background: 'white',
-    color: C.gray2,
-    cursor: 'pointer',
-    fontSize: '13px'
-  },
-  submitBtn: {
-    padding: '10px 20px',
-    border: 'none',
-    borderRadius: '6px',
-    background: C.primary,
-    color: 'white',
-    cursor: 'pointer',
-    fontSize: '13px'
-  }
 }
 
 export default ModelUploadModal

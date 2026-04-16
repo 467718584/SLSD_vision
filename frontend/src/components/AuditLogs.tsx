@@ -100,52 +100,51 @@ function AuditLogs({ onClose }: AuditLogsProps) {
     if (!stats) return null
 
     return (
-      <div style={styles.statsContainer}>
+      <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
         {/* 用户操作统计 */}
-        <div style={styles.statsCard}>
-          <h3 style={styles.statsTitle}>用户操作排行 (7天)</h3>
-          <div style={styles.statsList}>
+        <div className="p-4 rounded-lg" style={{ background: '#F9FAFB' }}>
+          <h3 className="font-semibold text-sm mb-3" style={{ color: '#374151' }}>用户操作排行 (7天)</h3>
+          <div className="flex flex-col gap-2">
             {stats.user_stats?.map((item, i) => (
-              <div key={i} style={styles.statsItem}>
-                <span style={styles.statsUser}>{item.username || 'Unknown'}</span>
-                <span style={styles.statsCount}>{item.count}次</span>
+              <div key={i} className="flex justify-between items-center py-2" style={{ borderBottom: '1px solid #E5E7EB' }}>
+                <span className="text-sm" style={{ color: '#374151' }}>{item.username || 'Unknown'}</span>
+                <span className="text-sm font-medium" style={{ color: '#374151' }}>{item.count}次</span>
               </div>
-            )) || <p style={styles.emptyText}>暂无数据</p>}
+            )) || <p className="text-sm" style={{ color: '#9CA3AF' }}>暂无数据</p>}
           </div>
         </div>
 
         {/* 资源操作统计 */}
-        <div style={styles.statsCard}>
-          <h3 style={styles.statsTitle}>资源操作统计 (7天)</h3>
-          <div style={styles.statsList}>
+        <div className="p-4 rounded-lg" style={{ background: '#F9FAFB' }}>
+          <h3 className="font-semibold text-sm mb-3" style={{ color: '#374151' }}>资源操作统计 (7天)</h3>
+          <div className="flex flex-col gap-2">
             {stats.resource_stats?.map((item, i) => (
-              <div key={i} style={styles.statsItem}>
-                <span style={styles.statsUser}>
+              <div key={i} className="flex justify-between items-center py-2" style={{ borderBottom: '1px solid #E5E7EB' }}>
+                <span className="text-sm" style={{ color: '#374151' }}>
                   {item.resource_type || 'N/A'} / {item.action}
                 </span>
-                <span style={styles.statsCount}>{item.count}次</span>
+                <span className="text-sm font-medium" style={{ color: '#374151' }}>{item.count}次</span>
               </div>
-            )) || <p style={styles.emptyText}>暂无数据</p>}
+            )) || <p className="text-sm" style={{ color: '#9CA3AF' }}>暂无数据</p>}
           </div>
         </div>
 
         {/* 每日操作趋势 */}
-        <div style={styles.statsCard}>
-          <h3 style={styles.statsTitle}>每日操作趋势</h3>
-          <div style={styles.statsList}>
+        <div className="p-4 rounded-lg" style={{ background: '#F9FAFB' }}>
+          <h3 className="font-semibold text-sm mb-3" style={{ color: '#374151' }}>每日操作趋势</h3>
+          <div className="flex flex-col gap-2">
             {stats.daily_stats?.slice(0, 10).map((item, i) => (
-              <div key={i} style={styles.statsItem}>
-                <span style={styles.statsDate}>{item.date}</span>
-                <span style={{
-                  ...styles.statsBadge,
+              <div key={i} className="flex justify-between items-center py-2" style={{ borderBottom: '1px solid #E5E7EB' }}>
+                <span className="text-xs" style={{ color: '#6B7280' }}>{item.date}</span>
+                <span className="text-xs px-2 py-1 rounded" style={{
                   background: getActionColor(item.action).bg,
                   color: getActionColor(item.action).text
                 }}>
                   {item.action}
                 </span>
-                <span style={styles.statsCount}>{item.count}次</span>
+                <span className="text-sm font-medium" style={{ color: '#374151' }}>{item.count}次</span>
               </div>
-            )) || <p style={styles.emptyText}>暂无数据</p>}
+            )) || <p className="text-sm" style={{ color: '#9CA3AF' }}>暂无数据</p>}
           </div>
         </div>
       </div>
@@ -156,8 +155,8 @@ function AuditLogs({ onClose }: AuditLogsProps) {
   function renderLogs() {
     if (loading) {
       return (
-        <div style={styles.loading}>
-          <div style={styles.spinner}><RefreshIcon size={28} style={{ animation: 'spin 1s linear infinite' }} /></div>
+        <div className="text-center p-10" style={{ color: '#6B7280' }}>
+          <div className="mb-3" style={{ fontSize: '32px' }}><RefreshIcon size={28} style={{ animation: 'spin 1s linear infinite' }} /></div>
           <p>加载中...</p>
         </div>
       )
@@ -165,54 +164,52 @@ function AuditLogs({ onClose }: AuditLogsProps) {
 
     if (logs.length === 0) {
       return (
-        <div style={styles.empty}>
-          <p style={styles.emptyText}>暂无审计日志</p>
+        <div className="text-center p-10">
+          <p className="text-sm" style={{ color: '#9CA3AF' }}>暂无审计日志</p>
         </div>
       )
     }
 
     return (
-      <div style={styles.tableWrapper}>
-        <table style={styles.table}>
+      <div className="table-container">
+        <table className="table">
           <thead>
             <tr>
-              <th style={styles.th}>时间</th>
-              <th style={styles.th}>用户</th>
-              <th style={styles.th}>操作</th>
-              <th style={styles.th}>资源类型</th>
-              <th style={styles.th}>资源名称</th>
-              <th style={styles.th}>状态</th>
-              <th style={styles.th}>IP地址</th>
+              <th className="table th">时间</th>
+              <th className="table th">用户</th>
+              <th className="table th">操作</th>
+              <th className="table th">资源类型</th>
+              <th className="table th">资源名称</th>
+              <th className="table th">状态</th>
+              <th className="table th">IP地址</th>
             </tr>
           </thead>
           <tbody>
             {logs.map((log, i) => {
               const statusStyle = getStatusColor(log.status)
               return (
-                <tr key={i} style={styles.tr}>
-                  <td style={styles.td}>{formatTime(log.created_at)}</td>
-                  <td style={styles.td}>{log.username || '-'}</td>
-                  <td style={styles.td}>
-                    <span style={{
-                      ...styles.actionBadge,
+                <tr key={i} className="table tr">
+                  <td className="table td">{formatTime(log.created_at)}</td>
+                  <td className="table td">{log.username || '-'}</td>
+                  <td className="table td">
+                    <span className="text-xs px-2 py-1 rounded font-medium" style={{
                       background: getActionColor(log.action).bg,
                       color: getActionColor(log.action).text
                     }}>
                       {log.action}
                     </span>
                   </td>
-                  <td style={styles.td}>{log.resource_type || '-'}</td>
-                  <td style={styles.td}>{log.resource_name || '-'}</td>
-                  <td style={styles.td}>
-                    <span style={{
-                      ...styles.statusBadge,
+                  <td className="table td">{log.resource_type || '-'}</td>
+                  <td className="table td">{log.resource_name || '-'}</td>
+                  <td className="table td">
+                    <span className="text-xs px-2 py-1 rounded font-medium" style={{
                       background: statusStyle.bg,
                       color: statusStyle.text
                     }}>
                       {log.status === 'success' ? '成功' : '失败'}
                     </span>
                   </td>
-                  <td style={styles.td}>{log.ip_address || '-'}</td>
+                  <td className="table td">{log.ip_address || '-'}</td>
                 </tr>
               )
             })}
@@ -223,25 +220,43 @@ function AuditLogs({ onClose }: AuditLogsProps) {
   }
 
   return (
-    <div style={styles.overlay} onClick={onClose}>
-      <div style={styles.modal} onClick={e => e.stopPropagation()}>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()} style={{ width: '95%', maxWidth: '1200px', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
         {/* 标题栏 */}
-        <div style={styles.header}>
-          <h2 style={styles.title}>操作审计日志</h2>
-          <button onClick={onClose} style={styles.closeBtn}>×</button>
+        <div className="modal-header">
+          <h2 className="font-semibold" style={{ margin: 0, fontSize: '18px', color: '#1F2937' }}>操作审计日志</h2>
+          <button onClick={onClose} className="btn btn-ghost btn-sm" style={{ fontSize: '24px', lineHeight: 1, padding: 0 }}>×</button>
         </div>
 
         {/* 标签页 */}
-        <div style={styles.tabs}>
+        <div className="flex" style={{ borderBottom: '1px solid #E5E7EB', padding: '0 20px' }}>
           <button
-            style={{ ...styles.tab, ...(activeTab === 'logs' ? styles.tabActive : {}) }}
+            className={`btn btn-sm ${activeTab === 'logs' ? '' : 'btn-ghost'}`}
             onClick={() => setActiveTab('logs')}
+            style={{
+              padding: '12px 20px',
+              background: 'none',
+              border: 'none',
+              borderBottom: activeTab === 'logs' ? '2px solid ' + C.primary : '2px solid transparent',
+              cursor: 'pointer',
+              fontSize: '14px',
+              color: activeTab === 'logs' ? C.primary : '#6B7280'
+            }}
           >
             日志列表
           </button>
           <button
-            style={{ ...styles.tab, ...(activeTab === 'stats' ? styles.tabActive : {}) }}
+            className={`btn btn-sm ${activeTab === 'stats' ? '' : 'btn-ghost'}`}
             onClick={() => setActiveTab('stats')}
+            style={{
+              padding: '12px 20px',
+              background: 'none',
+              border: 'none',
+              borderBottom: activeTab === 'stats' ? '2px solid ' + C.primary : '2px solid transparent',
+              cursor: 'pointer',
+              fontSize: '14px',
+              color: activeTab === 'stats' ? C.primary : '#6B7280'
+            }}
           >
             统计分析
           </button>
@@ -249,9 +264,10 @@ function AuditLogs({ onClose }: AuditLogsProps) {
 
         {/* 筛选器 */}
         {activeTab === 'logs' && (
-          <div style={styles.filters}>
+          <div className="flex gap-3 items-center p-3" style={{ borderBottom: '1px solid #E5E7EB' }}>
             <select
-              style={styles.select}
+              className="input"
+              style={{ padding: '6px 12px', width: 'auto' }}
               value={filters.action}
               onChange={e => setFilters(f => ({ ...f, action: e.target.value }))}
             >
@@ -261,7 +277,8 @@ function AuditLogs({ onClose }: AuditLogsProps) {
               <option value="delete">删除</option>
             </select>
             <select
-              style={styles.select}
+              className="input"
+              style={{ padding: '6px 12px', width: 'auto' }}
               value={filters.resource_type}
               onChange={e => setFilters(f => ({ ...f, resource_type: e.target.value }))}
             >
@@ -270,214 +287,19 @@ function AuditLogs({ onClose }: AuditLogsProps) {
               <option value="model">模型</option>
               <option value="user">用户</option>
             </select>
-            <button onClick={loadData} style={styles.refreshBtn}><RefreshIcon size={14} /> 刷新</button>
+            <button onClick={loadData} className="btn btn-primary btn-sm flex items-center gap-1" style={{ marginLeft: 'auto' }}>
+              <RefreshIcon size={14} /> 刷新
+            </button>
           </div>
         )}
 
         {/* 内容 */}
-        <div style={styles.content}>
+        <div className="flex-1 overflow-auto p-4">
           {activeTab === 'logs' ? renderLogs() : renderStats()}
         </div>
       </div>
     </div>
   )
-}
-
-const styles = {
-  overlay: {
-    position: 'fixed' as const,
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: 'rgba(0, 0, 0, 0.5)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 10000,
-    padding: '20px'
-  },
-  modal: {
-    background: 'white',
-    borderRadius: '12px',
-    width: '95%',
-    maxWidth: '1200px',
-    maxHeight: '90vh',
-    display: 'flex',
-    flexDirection: 'column' as const,
-    boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
-  },
-  header: {
-    padding: '16px 20px',
-    borderBottom: '1px solid #E5E7EB',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center'
-  },
-  title: {
-    margin: 0,
-    fontSize: '18px',
-    fontWeight: 600,
-    color: '#1F2937'
-  },
-  closeBtn: {
-    background: 'none',
-    border: 'none',
-    fontSize: '24px',
-    cursor: 'pointer',
-    color: '#9CA3AF',
-    padding: '0',
-    lineHeight: 1
-  },
-  tabs: {
-    display: 'flex',
-    borderBottom: '1px solid #E5E7EB',
-    padding: '0 20px'
-  },
-  tab: {
-    padding: '12px 20px',
-    background: 'none',
-    border: 'none',
-    borderBottom: '2px solid transparent',
-    cursor: 'pointer',
-    fontSize: '14px',
-    color: '#6B7280'
-  },
-  tabActive: {
-    color: C.primary,
-    borderBottomColor: C.primary
-  } as Record<string, string>,
-  filters: {
-    padding: '12px 20px',
-    borderBottom: '1px solid #E5E7EB',
-    display: 'flex',
-    gap: '12px',
-    alignItems: 'center'
-  },
-  select: {
-    padding: '6px 12px',
-    border: '1px solid #D1D5DB',
-    borderRadius: '6px',
-    fontSize: '13px',
-    background: 'white'
-  },
-  refreshBtn: {
-    padding: '6px 12px',
-    background: C.primary,
-    color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontSize: '13px',
-    marginLeft: 'auto'
-  },
-  content: {
-    flex: 1,
-    overflow: 'auto' as const,
-    padding: '16px 20px'
-  },
-  tableWrapper: {
-    overflow: 'auto' as const
-  },
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse' as const,
-    fontSize: '13px'
-  },
-  th: {
-    padding: '10px 12px',
-    textAlign: 'left' as const,
-    background: '#F9FAFB',
-    borderBottom: '1px solid #E5E7EB',
-    fontWeight: 600,
-    color: '#374151',
-    whiteSpace: 'nowrap' as const
-  },
-  tr: {
-    borderBottom: '1px solid #F3F4F6'
-  },
-  td: {
-    padding: '10px 12px',
-    color: '#374151',
-    verticalAlign: 'middle' as const
-  },
-  actionBadge: {
-    display: 'inline-block',
-    padding: '2px 8px',
-    borderRadius: '4px',
-    fontSize: '11px',
-    fontWeight: 500
-  },
-  statusBadge: {
-    display: 'inline-block',
-    padding: '2px 8px',
-    borderRadius: '4px',
-    fontSize: '11px',
-    fontWeight: 500
-  },
-  loading: {
-    textAlign: 'center' as const,
-    padding: '40px',
-    color: '#6B7280'
-  },
-  spinner: {
-    fontSize: '32px',
-    marginBottom: '12px'
-  },
-  empty: {
-    textAlign: 'center' as const,
-    padding: '40px'
-  },
-  emptyText: {
-    color: '#9CA3AF',
-    fontSize: '14px'
-  },
-  statsContainer: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-    gap: '16px'
-  },
-  statsCard: {
-    background: '#F9FAFB',
-    borderRadius: '8px',
-    padding: '16px'
-  },
-  statsTitle: {
-    margin: '0 0 12px 0',
-    fontSize: '14px',
-    fontWeight: 600,
-    color: '#374151'
-  },
-  statsList: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '8px'
-  },
-  statsItem: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '8px 0',
-    borderBottom: '1px solid #E5E7EB'
-  },
-  statsUser: {
-    fontSize: '13px',
-    color: '#374151'
-  },
-  statsDate: {
-    fontSize: '12px',
-    color: '#6B7280'
-  },
-  statsCount: {
-    fontSize: '13px',
-    fontWeight: 500,
-    color: '#374151'
-  },
-  statsBadge: {
-    padding: '2px 6px',
-    borderRadius: '4px',
-    fontSize: '11px'
-  }
 }
 
 export default AuditLogs

@@ -186,19 +186,19 @@ function UploadModal({ isOpen, onClose, onSuccess }: UploadModalProps) {
   }
 
   return (
-    <div style={styles.overlay} onClick={onClose}>
-      <div style={styles.modal} onClick={e => e.stopPropagation()}>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()} style={{ width: '480px', maxHeight: '85vh', overflowY: 'auto', padding: '24px' }}>
         {/* 标题栏 */}
-        <div style={styles.header}>
-          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: C.gray1 }}>新建数据集</h3>
-          <button onClick={onClose} style={styles.closeBtn}>×</button>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-sm" style={{ margin: 0, color: C.gray1 }}>新建数据集</h3>
+          <button onClick={onClose} className="btn btn-ghost btn-sm" style={{ fontSize: '24px', lineHeight: 1, padding: 0 }}>×</button>
         </div>
 
         {/* 上传方式选择 */}
-        <div style={styles.section}>
-          <label style={styles.label}>上传方式</label>
-          <div style={styles.radioGroup}>
-            <label style={styles.radio}>
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-2" style={{ color: C.gray2 }}>上传方式</label>
+          <div className="flex gap-4">
+            <label className="flex items-center gap-1 text-sm" style={{ color: C.gray2, cursor: 'pointer' }}>
               <input
                 type="radio"
                 name="uploadMode"
@@ -206,9 +206,9 @@ function UploadModal({ isOpen, onClose, onSuccess }: UploadModalProps) {
                 checked={uploadMode === 'zip'}
                 onChange={() => setUploadMode('zip')}
               />
-              <span style={{ marginLeft: '6px' }}>ZIP压缩包</span>
+              <span>ZIP压缩包</span>
             </label>
-            <label style={styles.radio}>
+            <label className="flex items-center gap-1 text-sm" style={{ color: C.gray2, cursor: 'pointer' }}>
               <input
                 type="radio"
                 name="uploadMode"
@@ -216,154 +216,140 @@ function UploadModal({ isOpen, onClose, onSuccess }: UploadModalProps) {
                 checked={uploadMode === 'folder'}
                 onChange={() => setUploadMode('folder')}
               />
-              <span style={{ marginLeft: '6px' }}>文件夹</span>
+              <span>文件夹</span>
             </label>
           </div>
         </div>
 
         {/* 文件选择 */}
-        <div style={styles.section}>
-          <label style={styles.label}>
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-2" style={{ color: C.gray2 }}>
             {uploadMode === 'folder' ? '选择文件夹 *' : '选择ZIP文件 *'}
           </label>
-          {uploadMode === 'folder' ? (
-            <input
-              type="file"
-              webkitdirectory="true"
-              onChange={handleFileChange}
-              style={styles.fileInput}
-            />
-          ) : (
-            <input
-              type="file"
-              accept=".zip,.tar,.gz"
-              onChange={handleFileChange}
-              style={styles.fileInput}
-            />
-          )}
-          <div style={{ fontSize: '12px', color: C.gray3, marginTop: '4px' }}>
-            {getFileInfo()}
-          </div>
+          <input
+            type="file"
+            webkitdirectory={uploadMode === 'folder' ? "true" : undefined}
+            accept={uploadMode === 'zip' ? ".zip,.tar,.gz" : undefined}
+            onChange={handleFileChange}
+            className="input"
+          />
+          <div className="text-xs mt-1" style={{ color: C.gray3 }}>{getFileInfo()}</div>
         </div>
 
         {/* 数据集名称 */}
-        <div style={styles.section}>
-          <label style={styles.label}>数据集名称 *</label>
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-2" style={{ color: C.gray2 }}>数据集名称 *</label>
           <input
             type="text"
             value={name}
             onChange={e => setName(e.target.value)}
             placeholder="输入数据集名称"
-            style={styles.input}
+            className="input"
           />
         </div>
 
         {/* 算法类型 */}
-        <div style={styles.section}>
-          <label style={styles.label}>算法类型</label>
-          <select value={algoType} onChange={e => setAlgoType(e.target.value)} style={styles.select}>
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-2" style={{ color: C.gray2 }}>算法类型</label>
+          <select value={algoType} onChange={e => setAlgoType(e.target.value)} className="input">
             {algoTypes.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
         </div>
 
         {/* 技术方法 */}
-        <div style={styles.section}>
-          <label style={styles.label}>技术方法</label>
-          <select value={techMethod} onChange={e => setTechMethod(e.target.value)} style={styles.select}>
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-2" style={{ color: C.gray2 }}>技术方法</label>
+          <select value={techMethod} onChange={e => setTechMethod(e.target.value)} className="input">
             {techMethods.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
         </div>
 
         {/* 数据来源 */}
-        <div style={styles.section}>
-          <label style={styles.label}>数据来源</label>
-          <select value={source} onChange={e => setSource(e.target.value)} style={styles.select}>
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-2" style={{ color: C.gray2 }}>数据来源</label>
+          <select value={source} onChange={e => setSource(e.target.value)} className="input">
             <option value="">请选择</option>
             {sources.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
 
         {/* 标注格式 */}
-        <div style={styles.section}>
-          <label style={styles.label}>标注格式</label>
-          <select value={annotationType} onChange={e => setAnnotationType(e.target.value as 'yolo' | 'voc' | 'coco')} style={styles.select}>
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-2" style={{ color: C.gray2 }}>标注格式</label>
+          <select value={annotationType} onChange={e => setAnnotationType(e.target.value as 'yolo' | 'voc' | 'coco')} className="input">
             {annotationTypes.map(t => <option key={t} value={t}>{t.toUpperCase()}格式</option>)}
           </select>
         </div>
 
         {/* 描述 */}
-        <div style={styles.section}>
-          <label style={styles.label}>数据集描述</label>
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-2" style={{ color: C.gray2 }}>数据集描述</label>
           <textarea
             value={description}
             onChange={e => setDescription(e.target.value)}
             placeholder="输入数据集描述"
-            style={{ ...styles.input, minHeight: '60px', resize: 'vertical' as const }}
+            className="input"
+            style={{ minHeight: '60px', resize: 'vertical' }}
           />
         </div>
 
         {/* 维护人员 */}
-        <div style={styles.section}>
-          <label style={styles.label}>维护人员</label>
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-2" style={{ color: C.gray2 }}>维护人员</label>
           <input
             type="text"
             value={maintainer}
             onChange={e => setMaintainer(e.target.value)}
             placeholder="输入维护人员"
-            style={styles.input}
+            className="input"
           />
         </div>
 
         {/* 跳过校验 */}
-        <div style={styles.section}>
-          <label style={styles.checkbox}>
+        <div className="mb-4">
+          <label className="flex items-center gap-1 cursor-pointer">
             <input
               type="checkbox"
               checked={skipValidation}
               onChange={e => setSkipValidation(e.target.checked)}
             />
-            <span style={{ marginLeft: '6px', fontSize: '13px', color: C.gray2 }}>
-              跳过YOLO格式校验
-            </span>
+            <span className="text-sm" style={{ color: C.gray2 }}>跳过YOLO格式校验</span>
           </label>
         </div>
 
         {/* 进度条 */}
         {uploading && (
-          <div style={styles.progressContainer}>
-            <div style={{ ...styles.progressBar, width: `${progress}%` }} />
+          <div className="mb-3" style={{ height: '4px', background: C.gray6, borderRadius: '2px', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${progress}%`, background: C.primary, transition: 'width 0.3s' }} />
           </div>
         )}
 
         {/* 错误信息 */}
         {error && (
-          <div style={styles.error}>{error}</div>
+          <div className="mb-3 p-3 rounded" style={{ background: C.errorBg, color: C.error, fontSize: '13px' }}>{error}</div>
         )}
 
         {/* 确认覆盖弹窗 */}
         {showNameWarning && (
-          <div style={styles.warningOverlay}>
-            <div style={styles.warningModal}>
-              <p style={{ marginBottom: '16px', color: C.gray1 }}>{nameWarningMsg}</p>
-              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                <button onClick={() => setShowNameWarning(false)} style={styles.cancelBtn}>取消</button>
-                <button onClick={handleConfirmOverwrite} style={styles.confirmBtn}>确认覆盖</button>
+          <div className="modal-overlay" style={{ borderRadius: '12px' }}>
+            <div className="modal p-4" style={{ maxWidth: '400px' }}>
+              <p className="mb-4 text-sm" style={{ color: C.gray1 }}>{nameWarningMsg}</p>
+              <div className="flex gap-2 justify-end">
+                <button onClick={() => setShowNameWarning(false)} className="btn btn-secondary btn-sm">取消</button>
+                <button onClick={handleConfirmOverwrite} className="btn btn-primary btn-sm">确认覆盖</button>
               </div>
             </div>
           </div>
         )}
 
         {/* 按钮 */}
-        <div style={styles.footer}>
-          <button onClick={onClose} style={styles.cancelBtn}>取消</button>
+        <div className="flex gap-2 justify-end mt-4">
+          <button onClick={onClose} className="btn btn-secondary btn-sm">取消</button>
           <button
             onClick={handleSubmit}
             disabled={uploading}
-            style={{
-              ...styles.submitBtn,
-              opacity: uploading ? 0.6 : 1,
-              cursor: uploading ? 'not-allowed' : 'pointer'
-            }}
+            className="btn btn-primary btn-sm"
+            style={{ opacity: uploading ? 0.6 : 1, cursor: uploading ? 'not-allowed' : 'pointer' }}
           >
             {uploading ? '上传中...' : '上传'}
           </button>
@@ -371,157 +357,6 @@ function UploadModal({ isOpen, onClose, onSuccess }: UploadModalProps) {
       </div>
     </div>
   )
-}
-
-const styles = {
-  overlay: {
-    position: 'fixed' as const,
-    top: 0, left: 0, right: 0, bottom: 0,
-    background: 'rgba(0, 0, 0, 0.5)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1000
-  },
-  modal: {
-    background: 'white',
-    borderRadius: '12px',
-    padding: '24px',
-    width: '480px',
-    maxHeight: '85vh',
-    overflowY: 'auto' as const
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '20px'
-  },
-  closeBtn: {
-    background: 'none',
-    border: 'none',
-    fontSize: '24px',
-    cursor: 'pointer',
-    color: C.gray3,
-    padding: '0',
-    lineHeight: 1
-  },
-  section: {
-    marginBottom: '16px'
-  },
-  label: {
-    display: 'block',
-    fontSize: '13px',
-    fontWeight: 500,
-    color: C.gray2,
-    marginBottom: '6px'
-  },
-  input: {
-    width: '100%',
-    border: `1px solid ${C.border}`,
-    borderRadius: '6px',
-    padding: '8px 12px',
-    fontSize: '13px',
-    outline: 'none',
-    boxSizing: 'border-box' as const
-  },
-  select: {
-    width: '100%',
-    border: `1px solid ${C.border}`,
-    borderRadius: '6px',
-    padding: '8px 12px',
-    fontSize: '13px',
-    outline: 'none',
-    background: 'white'
-  },
-  fileInput: {
-    width: '100%',
-    fontSize: '13px',
-    color: C.gray2
-  },
-  radioGroup: {
-    display: 'flex',
-    gap: '16px'
-  },
-  radio: {
-    display: 'flex',
-    alignItems: 'center',
-    fontSize: '13px',
-    color: C.gray2,
-    cursor: 'pointer'
-  },
-  checkbox: {
-    display: 'flex',
-    alignItems: 'center',
-    cursor: 'pointer'
-  },
-  progressContainer: {
-    height: '4px',
-    background: C.gray6,
-    borderRadius: '2px',
-    marginBottom: '12px',
-    overflow: 'hidden'
-  },
-  progressBar: {
-    height: '100%',
-    background: C.primary,
-    transition: 'width 0.3s'
-  },
-  error: {
-    padding: '8px 12px',
-    background: '#FEE2E2',
-    color: '#DC2626',
-    borderRadius: '6px',
-    fontSize: '13px',
-    marginBottom: '12px'
-  },
-  warningOverlay: {
-    position: 'absolute' as const,
-    top: 0, left: 0, right: 0, bottom: 0,
-    background: 'rgba(0,0,0,0.5)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: '12px'
-  },
-  warningModal: {
-    background: 'white',
-    borderRadius: '8px',
-    padding: '20px'
-  },
-  footer: {
-    display: 'flex',
-    justifyContent: 'flex-end',
-    gap: '8px',
-    marginTop: '16px'
-  },
-  cancelBtn: {
-    padding: '8px 16px',
-    borderRadius: '6px',
-    border: `1px solid ${C.border}`,
-    background: 'white',
-    fontSize: '13px',
-    cursor: 'pointer',
-    color: C.gray2
-  },
-  confirmBtn: {
-    padding: '8px 16px',
-    borderRadius: '6px',
-    border: 'none',
-    background: C.warning,
-    color: 'white',
-    fontSize: '13px',
-    cursor: 'pointer'
-  },
-  submitBtn: {
-    padding: '8px 20px',
-    borderRadius: '6px',
-    border: 'none',
-    background: C.primary,
-    color: 'white',
-    fontSize: '13px',
-    fontWeight: 500
-  }
 }
 
 export default UploadModal
