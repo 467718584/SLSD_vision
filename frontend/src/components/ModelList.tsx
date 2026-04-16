@@ -419,39 +419,24 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
   return (
     <div>
       {/* 头部 */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+      <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 style={{ fontSize: "18px", fontWeight: 700, color: C.gray1 }}>算法模型管理</h2>
-          <p style={{ fontSize: "13px", color: C.gray3, marginTop: "2px" }}>
+          <h2 className="page-title">算法模型管理</h2>
+          <p className="text-sm text-muted mt-1">
             共 {models.length} 个模型
           </p>
         </div>
         <button
           onClick={onShowUpload}
-          style={{
-            background: C.primary,
-            color: "white",
-            border: "none",
-            borderRadius: "7px",
-            padding: "8px 18px",
-            cursor: "pointer",
-            fontSize: "13px",
-            fontWeight: 500
-          }}
+          className="btn btn-primary"
         >
           + 新建模型
         </button>
       </div>
 
-        <div style={{
-          background: C.white,
-          border: `1px solid ${C.border}`,
-          borderRadius: "10px",
-          padding: "16px",
-          marginBottom: "12px"
-        }}>
+        <div className="card p-4 mb-3">
           {/* 搜索栏 */}
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
+          <div className="flex items-center gap-3 mb-3">
             <input
               type="text"
               value={searchFilters.searchQuery}
@@ -462,15 +447,7 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
                 persistFilters(newFilters)
               }}
               placeholder="搜索模型名称..."
-              style={{
-                flex: 1,
-                padding: "8px 12px",
-                border: `1px solid ${C.border}`,
-                borderRadius: "6px",
-                fontSize: "13px",
-                outline: "none",
-                transition: "border-color .2s"
-              }}
+              className="input"
               onFocus={e => { e.target.style.borderColor = C.primary }}
               onBlur={e => { e.target.style.borderColor = C.border }}
             />
@@ -488,22 +465,13 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
                   setFilterType(algo)
                   persistFilters(newFilters)
                 }}
-                style={{
-                  padding: "4px 10px",
-                  borderRadius: "4px",
-                  fontSize: "12px",
-                  cursor: "pointer",
-                  border: `1px solid ${searchFilters.algoName === algo ? C.primary : C.border}`,
-                  background: searchFilters.algoName === algo ? C.primaryBg : C.white,
-                  color: searchFilters.algoName === algo ? C.primary : C.gray2,
-                  fontWeight: searchFilters.algoName === algo ? 600 : 400,
-                  transition: "all .15s"
-                }}
+                className={`btn btn-sm ${searchFilters.algoName === algo ? 'btn-primary' : 'btn-ghost'}`}
+                style={{ fontWeight: searchFilters.algoName === algo ? 600 : 400 }}
               >
                 {algo}
               </button>
             ))}
-            <span style={{ fontSize: "12px", color: C.gray3, marginLeft: "8px", marginRight: "4px" }}>技术:</span>
+            <span className="text-sm text-muted mr-1">技术:</span>
             {['目标检测算法', '实例分割算法'].map(tech => (
               <button
                 key={tech}
@@ -512,22 +480,13 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
                   setSearchFilters(newFilters)
                   persistFilters(newFilters)
                 }}
-                style={{
-                  padding: "4px 10px",
-                  borderRadius: "4px",
-                  fontSize: "12px",
-                  cursor: "pointer",
-                  border: `1px solid ${searchFilters.techMethod === tech ? C.primary : C.border}`,
-                  background: searchFilters.techMethod === tech ? C.primaryBg : C.white,
-                  color: searchFilters.techMethod === tech ? C.primary : C.gray2,
-                  fontWeight: searchFilters.techMethod === tech ? 600 : 400,
-                  transition: "all .15s"
-                }}
+                className={`btn btn-sm ${searchFilters.techMethod === tech ? 'btn-primary' : 'btn-ghost'}`}
+                style={{ fontWeight: searchFilters.techMethod === tech ? 600 : 400 }}
               >
                 {tech}
               </button>
             ))}
-            <span style={{ fontSize: "12px", color: C.gray3, marginLeft: "8px", marginRight: "4px" }}>现场:</span>
+            <span className="text-sm text-muted mr-1">现场:</span>
             {sites.slice(0, 5).map(site => (
               <button
                 key={site}
@@ -536,22 +495,13 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
                   setSearchFilters(newFilters)
                   persistFilters(newFilters)
                 }}
-                style={{
-                  padding: "4px 10px",
-                  borderRadius: "4px",
-                  fontSize: "12px",
-                  cursor: "pointer",
-                  border: `1px solid ${searchFilters.site === site ? C.primary : C.border}`,
-                  background: searchFilters.site === site ? C.primaryBg : C.white,
-                  color: searchFilters.site === site ? C.primary : C.gray2,
-                  fontWeight: searchFilters.site === site ? 600 : 400,
-                  transition: "all .15s"
-                }}
+                className={`btn btn-sm ${searchFilters.site === site ? 'btn-primary' : 'btn-ghost'}`}
+                style={{ fontWeight: searchFilters.site === site ? 600 : 400 }}
               >
                 {site}
               </button>
             ))}
-            <span style={{ fontSize: "12px", color: C.gray3, marginLeft: "8px", marginRight: "4px" }}>类别:</span>
+            <span className="text-sm text-muted mr-1">类别:</span>
             {categories.slice(0, 5).map(cat => (
               <button
                 key={cat}
@@ -560,37 +510,20 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
                   setSearchFilters(newFilters)
                   persistFilters(newFilters)
                 }}
-                style={{
-                  padding: "4px 10px",
-                  borderRadius: "4px",
-                  fontSize: "12px",
-                  cursor: "pointer",
-                  border: `1px solid ${searchFilters.category === cat ? C.primary : C.border}`,
-                  background: searchFilters.category === cat ? C.primaryBg : C.white,
-                  color: searchFilters.category === cat ? C.primary : C.gray2,
-                  fontWeight: searchFilters.category === cat ? 600 : 400,
-                  transition: "all .15s"
-                }}
+                className={`btn btn-sm ${searchFilters.category === cat ? 'btn-primary' : 'btn-ghost'}`}
+                style={{ fontWeight: searchFilters.category === cat ? 600 : 400 }}
               >
                 {cat}
               </button>
             ))}
-            <div style={{ marginLeft: "auto", display: "flex", gap: "8px", alignItems: "center" }}>
+            <div className="ml-auto flex gap-2 items-center">
               {/* 高级筛选按钮 */}
               <button
                 onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                className={`btn btn-sm ${showAdvancedFilters ? 'btn-primary' : 'btn-ghost'}`}
                 style={{
-                  padding: "4px 12px",
-                  borderRadius: "4px",
-                  fontSize: "12px",
-                  cursor: "pointer",
                   border: `1px solid ${showAdvancedFilters ? C.primary : C.border}`,
-                  background: showAdvancedFilters ? C.primaryBg : C.white,
-                  color: showAdvancedFilters ? C.primary : C.gray2,
                   fontWeight: showAdvancedFilters ? 600 : 400,
-                  transition: "all .15s",
-                  display: "flex",
-                  alignItems: "center",
                   gap: "4px"
                 }}
               >
@@ -604,16 +537,8 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
                     setSearchFilters(newFilters)
                     persistFilters(newFilters)
                   }}
-                  style={{
-                    padding: "4px 10px",
-                    borderRadius: "4px",
-                    fontSize: "12px",
-                    cursor: "pointer",
-                    border: `1px solid ${C.border}`,
-                    background: C.white,
-                    color: C.gray2,
-                    transition: "all .15s"
-                  }}
+                  className="btn btn-sm btn-ghost"
+                  style={{ border: `1px solid ${C.border}` }}
                 >
                   重置
                 </button>
@@ -623,18 +548,11 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
 
           {/* 高级筛选面板 */}
           {showAdvancedFilters && (
-            <div style={{
-              marginTop: "12px",
-              paddingTop: "12px",
-              borderTop: `1px solid ${C.border}`,
-              display: "flex",
-              gap: "24px",
-              flexWrap: "wrap"
-            }}>
+            <div className="flex gap-6 flex-wrap" style={{ marginTop: "12px", paddingTop: "12px", borderTop: `1px solid ${C.border}` }}>
               {/* 日期范围 */}
-              <div>
-                <div style={{ fontSize: "11px", color: C.gray3, marginBottom: "4px", fontWeight: 500 }}>维护日期范围</div>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <div className="form-group">
+                <div className="form-label">维护日期范围</div>
+                <div className="flex items-center gap-2">
                   <input
                     type="date"
                     value={searchFilters.dateRange.start}
@@ -643,15 +561,10 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
                       setSearchFilters(newFilters)
                       persistFilters(newFilters)
                     }}
-                    style={{
-                      padding: "4px 8px",
-                      border: `1px solid ${C.border}`,
-                      borderRadius: "4px",
-                      fontSize: "12px",
-                      outline: "none"
-                    }}
+                    className="input"
+                    style={{ width: "140px" }}
                   />
-                  <span style={{ color: C.gray3 }}>至</span>
+                  <span className="text-muted">至</span>
                   <input
                     type="date"
                     value={searchFilters.dateRange.end}
@@ -660,21 +573,16 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
                       setSearchFilters(newFilters)
                       persistFilters(newFilters)
                     }}
-                    style={{
-                      padding: "4px 8px",
-                      border: `1px solid ${C.border}`,
-                      borderRadius: "4px",
-                      fontSize: "12px",
-                      outline: "none"
-                    }}
+                    className="input"
+                    style={{ width: "140px" }}
                   />
                 </div>
               </div>
 
               {/* 精度范围 */}
-              <div>
-                <div style={{ fontSize: "11px", color: C.gray3, marginBottom: "4px", fontWeight: 500 }}>模型精度范围 (%)</div>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <div className="form-group">
+                <div className="form-label">模型精度范围 (%)</div>
+                <div className="flex items-center gap-2">
                   <input
                     type="number"
                     value={searchFilters.accuracyRange.min}
@@ -686,16 +594,10 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
                     placeholder="最低"
                     min="0"
                     max="100"
-                    style={{
-                      width: "70px",
-                      padding: "4px 8px",
-                      border: `1px solid ${C.border}`,
-                      borderRadius: "4px",
-                      fontSize: "12px",
-                      outline: "none"
-                    }}
+                    className="input"
+                    style={{ width: "70px" }}
                   />
-                  <span style={{ color: C.gray3 }}>至</span>
+                  <span className="text-muted">至</span>
                   <input
                     type="number"
                     value={searchFilters.accuracyRange.max}
@@ -707,14 +609,8 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
                     placeholder="最高"
                     min="0"
                     max="100"
-                    style={{
-                      width: "70px",
-                      padding: "4px 8px",
-                      border: `1px solid ${C.border}`,
-                      borderRadius: "4px",
-                      fontSize: "12px",
-                      outline: "none"
-                    }}
+                    className="input"
+                    style={{ width: "70px" }}
                   />
                 </div>
               </div>
@@ -724,7 +620,7 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
 
       <div className="text-sm text-muted mb-3">
         {selectedIds.size > 0 && (
-          <span style={{ marginRight: '12px', color: C.primary }}>
+          <span className="text-accent" style={{ marginRight: '12px' }}>
             已选 {selectedIds.size} 项
           </span>
         )}
@@ -733,79 +629,32 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
 
       {/* 批量操作栏 */}
       {selectedIds.size > 0 && (
-        <div style={{
-          background: C.primaryBg,
-          border: `1px solid ${C.primaryBd}`,
-          borderRadius: "8px",
-          padding: "10px 16px",
-          marginBottom: "12px",
-          display: "flex",
-          alignItems: "center",
-          gap: "12px"
-        }}>
-          <span style={{ fontSize: "13px", color: C.primary, fontWeight: 500 }}>
-            已选择 {selectedIds.size} 个模型
-          </span>
-          <button
-            onClick={handleBatchExport}
-            style={{
-              background: C.primary,
-              color: "white",
-              border: "none",
-              borderRadius: "6px",
-              padding: "6px 14px",
-              fontSize: "12px",
-              cursor: "pointer",
-              fontWeight: 500
-            }}
-          >
-            批量导出
-          </button>
-          <button
-            onClick={handleBatchDelete}
-            style={{
-              background: "#DC2626",
-              color: "white",
-              border: "none",
-              borderRadius: "6px",
-              padding: "6px 14px",
-              fontSize: "12px",
-              cursor: "pointer",
-              fontWeight: 500
-            }}
-          >
-            批量删除
-          </button>
-          <button
-            onClick={() => setSelectedIds(new Set())}
-            style={{
-              background: "none",
-              border: `1px solid ${C.border}`,
-              borderRadius: "6px",
-              padding: "6px 14px",
-              fontSize: "12px",
-              cursor: "pointer",
-              color: C.gray2
-            }}
-          >
-            取消选择
-          </button>
+        <div className="card p-3 mb-3" style={{ background: C.primaryBg, border: `1px solid ${C.primaryBd}` }}>
+          <div className="flex items-center gap-3">
+            <span className="text-accent font-medium">
+              已选择 {selectedIds.size} 个模型
+            </span>
+            <button onClick={handleBatchExport} className="btn btn-primary btn-sm">
+              批量导出
+            </button>
+            <button onClick={handleBatchDelete} className="btn btn-danger btn-sm">
+              批量删除
+            </button>
+            <button onClick={() => setSelectedIds(new Set())} className="btn btn-ghost btn-sm">
+              取消选择
+            </button>
+          </div>
         </div>
       )}
 
       {/* 模型表格 */}
       <div className="table-container">
         <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "1100px" }}>
+          <table className="table" style={{ minWidth: "1100px" }}>
             <thead>
               <tr style={{ background: C.gray7, borderBottom: `2px solid ${C.border}` }}>
                 <th style={th("36px", true)}>
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.size === filteredModels.length && filteredModels.length > 0}
-                    onChange={toggleSelectAll}
-                    style={{ width: "16px", height: "16px", cursor: "pointer" }}
-                  />
+                  <input type="checkbox" checked={selectedIds.size === filteredModels.length && filteredModels.length > 0} onChange={toggleSelectAll} className="cursor-pointer" style={{ width: "16px", height: "16px" }} />
                 </th>
                 <th style={th("48px", true)}>编号</th>
                 <th style={th("100px", true)}>算法类型</th>
@@ -850,15 +699,10 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
                     }}
                   >
                     <td style={td("36px", true)} onClick={e => { e.stopPropagation(); toggleSelect(m.id, m.name) }}>
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => toggleSelect(m.id, m.name)}
-                        style={{ width: "16px", height: "16px", cursor: "pointer" }}
-                      />
+                      <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(m.id, m.name)} className="cursor-pointer" style={{ width: "16px", height: "16px" }} />
                     </td>
                     <td style={td("48px", true)}>
-                      <span style={{ fontWeight: 600, color: C.gray4 }}>{m.id}</span>
+                      <span className="font-semibold" style={{ color: C.gray4 }}>{m.id}</span>
                     </td>
                     <td style={td("100px", true)}>
                       <MemoizedAlgoTag type={m.algoName} />
@@ -867,17 +711,7 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
                       <MemoizedTechMethodTag type={m.techMethod || "目标检测算法"} />
                     </td>
                     <td style={td("220px")}>
-                      <div style={{
-                        color: C.primary,
-                        fontWeight: 500,
-                        fontSize: "12px",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap" as const,
-                        maxWidth: "200px"
-                      }}
-                        title={m.name}
-                      >
+                      <div className="truncate" style={{ color: C.primary, fontWeight: 500, fontSize: "12px", maxWidth: "200px" }} title={m.name}>
                         {m.name}
                       </div>
                     </td>
@@ -885,29 +719,12 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
                       <MemoizedModelCatTag cat={m.category} />
                     </td>
                     <td style={td("140px")}>
-                      <div style={{
-                        fontSize: "11px",
-                        color: C.gray2,
-                        lineHeight: 1.5,
-                        display: "-webkit-box",
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: "vertical" as const,
-                        overflow: "hidden"
-                      }}>
+                      <div className="truncate-2" style={{ fontSize: "11px", color: C.gray2, lineHeight: 1.5 }}>
                         {m.description || "-"}
                       </div>
                     </td>
                     <td style={td("80px", true)}>
-                      <div style={{
-                        display: "flex",
-                        gap: "2px",
-                        flexWrap: "wrap" as const,
-                        justifyContent: "center",
-                        maxWidth: "70px"
-                      }}
-                        onClick={e => { e.stopPropagation(); onSelectModel(m) }}
-                        title="点击查看精度曲线"
-                      >
+                      <div className="flex gap-1 flex-wrap justify-center" style={{ maxWidth: "70px" }} onClick={e => { e.stopPropagation(); onSelectModel(m) }} title="点击查看精度曲线">
                         <img
                           src={`/data/models/${encodeURIComponent(m.name)}/curves/map50_curve.png?thumb=1`}
                           alt="mAP50"
@@ -945,70 +762,26 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
                       <MemoizedSiteTag site={m.site} />
                     </td>
                     <td style={td("100px")}>
-                      <span
-                        style={{
-                          color: C.primary,
-                          fontSize: "11px",
-                          cursor: "pointer",
-                          textDecoration: "underline",
-                          textDecorationColor: `${C.primary}50`,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap" as const,
-                          display: "block",
-                          maxWidth: "90px"
-                        }}
-                        onClick={e => { e.stopPropagation(); gotoDataset(m.dataset) }}
-                        title={m.dataset}
-                      >
+                      <span className="truncate text-accent text-sm" style={{ cursor: "pointer", textDecoration: "underline", textDecorationColor: `${C.primary}50`, display: "block", maxWidth: "90px" }}
+                        onClick={e => { e.stopPropagation(); gotoDataset(m.dataset) }} title={m.dataset}>
                         {m.dataset || "-"}
                       </span>
                     </td>
                     <td style={td("80px", true)}>
-                      <span style={{ fontSize: "11px", color: C.gray3 }}>{m.maintainDate}</span>
+                      <span className="text-sm text-muted">{m.maintainDate}</span>
                     </td>
                     <td style={td("70px", true)}>
-                      <span style={{ fontSize: "11px", color: C.gray2, fontWeight: 500 }}>{m.maintainer}</span>
+                      <span className="text-sm font-medium" style={{ color: C.gray2 }}>{m.maintainer}</span>
                     </td>
                     <td style={td("90px", true)}>
-                      <div style={{ display: "flex", gap: "6px" }}>
-                        <button
-                          onClick={(e) => downloadModel(m.name, e)}
-                          title="下载模型"
-                          style={{
-                            background: C.primary,
-                            color: "white",
-                            border: "none",
-                            borderRadius: "4px",
-                            padding: "4px 8px",
-                            fontSize: "11px",
-                            cursor: "pointer",
-                            fontWeight: 500
-                          }}
-                        >
-                          下载
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setDeleteTarget({ name: m.name }); }}
-                          title="删除模型"
-                          style={{
-                            background: "#FEE2E2",
-                            color: "#DC2626",
-                            border: "none",
-                            borderRadius: "4px",
-                            padding: "4px 8px",
-                            fontSize: "11px",
-                            cursor: "pointer",
-                            fontWeight: 500
-                          }}
-                        >
-                          删除
-                        </button>
+                      <div className="flex gap-1">
+                        <button onClick={(e) => downloadModel(m.name, e)} title="下载模型" className="btn btn-primary btn-sm">下载</button>
+                        <button onClick={(e) => { e.stopPropagation(); setDeleteTarget({ name: m.name }); }} title="删除模型" className="btn btn-danger btn-sm">删除</button>
                       </div>
                     </td>
                   </tr>
-                )
-              })}
+                )}
+              )}
             </tbody>
           </table>
         </div>
