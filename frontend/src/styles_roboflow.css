@@ -331,6 +331,21 @@ body {
   margin-bottom: 24px;
 }
 
+/* 统一页面布局 */
+.page-layout {
+  width: 100%;
+}
+
+.page-content {
+  width: 100%;
+}
+
+.page-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .page-title {
   font-size: 20px;
   font-weight: 600;

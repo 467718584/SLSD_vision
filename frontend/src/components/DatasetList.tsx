@@ -484,18 +484,20 @@ function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload }: Dat
     <div>
       {/* 头部 */}
       <div className="page-header mb-4">
-        <div>
-          <h2 className="page-title">数据集管理</h2>
-          <p className="text-sm text-muted mt-1">
-            共 {datasets.length} 个数据集 · {totalSamples.toLocaleString()} 个样本
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="page-title">数据集管理</h2>
+            <p className="text-sm text-muted mt-1">
+              共 {datasets.length} 个数据集 · {totalSamples.toLocaleString()} 个样本
+            </p>
+          </div>
+          <button
+            onClick={onShowUpload}
+            className="btn btn-primary"
+          >
+            + 新建数据集
+          </button>
         </div>
-        <button
-          onClick={onShowUpload}
-          className="btn btn-primary"
-        >
-          + 新建数据集
-        </button>
       </div>
 
         <div className="card mb-3">

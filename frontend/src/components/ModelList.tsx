@@ -419,8 +419,9 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
   return (
     <div>
       {/* 头部 */}
-      <div className="flex items-center justify-between mb-4">
-        <div>
+      <div className="page-header mb-4">
+        <div className="flex items-center justify-between">
+          <div>
           <h2 className="page-title">算法模型管理</h2>
           <p className="text-sm text-muted mt-1">
             共 {models.length} 个模型
@@ -432,6 +433,7 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
         >
           + 新建模型
         </button>
+        </div>
       </div>
 
         <div className="card p-4 mb-3">
