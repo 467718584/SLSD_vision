@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { C } from '../constants'
-import { BarChartIcon } from './Icons'
+import { BarChartIcon, FolderIcon, CpuIcon } from './Icons'
 
 // 类型定义
 interface UsageSummary {
@@ -465,14 +465,14 @@ export default function UsageStats(props: UsageStatsProps) {
       {/* 统计卡片 */}
       <div style={styles.statsGrid}>
         <div style={styles.statCard}>
-          <div style={styles.statIcon}>📁</div>
+          <div style={styles.statIcon}><FolderIcon size={28} /></div>
           <div style={{ ...styles.statValue, color: C.primary }}>
             {summary?.total_datasets ?? 0}
           </div>
           <div style={styles.statLabel}>数据集上传</div>
         </div>
         <div style={styles.statCard}>
-          <div style={styles.statIcon}>🤖</div>
+          <div style={styles.statIcon}><CpuIcon size={28} /></div>
           <div style={{ ...styles.statValue, color: '#E8631A' }}>
             {summary?.total_models ?? 0}
           </div>
