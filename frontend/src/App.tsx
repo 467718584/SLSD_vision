@@ -128,17 +128,15 @@ function NavItem({ children, active, onClick }: NavItemProps) {
 function SettingsCard({ title, items }: SettingsCardProps) {
   return (
     <div className="card">
-      <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '12px', color: C.gray1 }}>{title}</h3>
-      <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '8px' }}>
-        {items.length > 0 ? items.map((item, i) => (
-          <span key={i} style={{
-            padding: '4px 12px',
-            background: C.gray7,
-            borderRadius: '4px',
-            fontSize: '12px',
-            color: C.gray2
-          }}>{item}</span>
-        )) : <span style={{ color: C.gray4, fontSize: '12px' }}>暂无</span>}
+      <div className="card-header">
+        <div className="card-title">{title}</div>
+      </div>
+      <div className="card-body">
+        <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '8px' }}>
+          {items.length > 0 ? items.map((item, i) => (
+            <span key={i} className="badge">{item}</span>
+          )) : <span className="text-sm text-muted">暂无</span>}
+        </div>
       </div>
     </div>
   )
@@ -146,9 +144,11 @@ function SettingsCard({ title, items }: SettingsCardProps) {
 
 function VersionSelector({ datasets, onSelectDataset }: VersionSelectorProps) {
   return (
-    <div style={{ padding: '20px' }}>
-      <h2 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '20px', color: C.gray1 }}><LayersIcon size={18} /> 数据集版本管理</h2>
-      <p style={{ fontSize: '13px', color: C.gray3, marginBottom: '24px' }}>
+    <div className="p-4">
+      <div className="page-header mb-4">
+        <h2 className="page-title"><LayersIcon size={18} /> 数据集版本管理</h2>
+      </div>
+      <p className="text-sm text-muted mb-6">
         选择一个数据集来管理其版本历史
       </p>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
@@ -156,13 +156,15 @@ function VersionSelector({ datasets, onSelectDataset }: VersionSelectorProps) {
           <div
             key={ds.name}
             onClick={() => onSelectDataset(ds.name)}
-            className="card"
-            style={{ cursor: 'pointer', transition: 'all 0.2s' }}
+            className="card cursor-pointer"
+            style={{ transition: 'all 0.2s' }}
           >
-            <div style={{ fontWeight: 600, color: C.gray1, marginBottom: '8px' }}>{ds.name}</div>
-            <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: C.gray3 }}>
-              <span>算法: {ds.algoType}</span>
-              <span>样本: {ds.total?.toLocaleString()}</span>
+            <div className="card-body">
+              <div className="font-semibold mb-2">{ds.name}</div>
+              <div style={{ display: 'flex', gap: '16px' }}>
+                <span className="text-sm text-muted">算法: {ds.algoType}</span>
+                <span className="text-sm text-muted">样本: {ds.total?.toLocaleString()}</span>
+              </div>
             </div>
           </div>
         ))}
@@ -313,10 +315,10 @@ function App() {
   // 加载动画
   if (loading || authLoading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
+      <div className="flex items-center justify-center" style={{ height: '100vh' }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '24px', marginBottom: '16px' }}><ActivityIcon size={28} style={{ animation: 'spin 1s linear infinite' }} /></div>
-          <div>加载中...</div>
+          <div className="mb-4"><ActivityIcon size={28} style={{ animation: 'spin 1s linear infinite' }} /></div>
+          <div className="text-muted">加载中...</div>
         </div>
       </div>
     )
@@ -417,8 +419,7 @@ function App() {
           {user?.role === 'admin' && (
             <button
               onClick={() => setShowAuditLogs(true)}
-              className="btn btn-secondary"
-              style={{ width: '100%', marginBottom: '12px' }}
+              className="btn btn-secondary w-full mb-3"
             >
               <FileTextIcon size={14} /> 审计日志
             </button>
@@ -485,20 +486,12 @@ function App() {
 
         {/* 设置页面 */}
         {currentPage === 'settings' && (
-          <div style={{ padding: '20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h2 style={{ fontSize: '18px', fontWeight: 700, color: C.gray1 }}>系统设置</h2>
+          <div className="p-4">
+            <div className="page-header mb-4">
+              <h2 className="page-title">系统设置</h2>
               <button
                 onClick={() => setShowSettings(true)}
-                style={{
-                  background: C.primary,
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '7px',
-                  padding: '8px 18px',
-                  cursor: 'pointer',
-                  fontSize: '13px'
-                }}
+                className="btn btn-primary"
               >
                 编辑设置
               </button>
