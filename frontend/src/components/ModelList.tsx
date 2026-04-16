@@ -531,8 +531,7 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
                     setSearchFilters(newFilters)
                     persistFilters(newFilters)
                   }}
-                  className="btn btn-sm btn-ghost"
-                  style={{ border: `1px solid ${C.border}` }}
+                  className="btn btn-sm btn-ghost border-default"
                 >
                   重置
                 </button>
@@ -542,7 +541,7 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
 
           {/* 高级筛选面板 */}
           {showAdvancedFilters && (
-            <div className="flex gap-6 flex-wrap" style={{ marginTop: "12px", paddingTop: "12px", borderTop: `1px solid ${C.border}` }}>
+            <div className="flex gap-6 flex-wrap mt-3 pt-3 border-top-default">
               {/* 日期范围 */}
               <div className="form-group">
                 <div className="form-label">维护日期范围</div>
@@ -555,8 +554,7 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
                       setSearchFilters(newFilters)
                       persistFilters(newFilters)
                     }}
-                    className="input"
-                    style={{ width: "140px" }}
+                    className="input w-140"
                   />
                   <span className="text-muted">至</span>
                   <input
@@ -567,8 +565,7 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
                       setSearchFilters(newFilters)
                       persistFilters(newFilters)
                     }}
-                    className="input"
-                    style={{ width: "140px" }}
+                    className="input w-140"
                   />
                 </div>
               </div>
@@ -588,8 +585,7 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
                     placeholder="最低"
                     min="0"
                     max="100"
-                    className="input"
-                    style={{ width: "70px" }}
+                    className="input w-70"
                   />
                   <span className="text-muted">至</span>
                   <input
@@ -603,8 +599,7 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
                     placeholder="最高"
                     min="0"
                     max="100"
-                    className="input"
-                    style={{ width: "70px" }}
+                    className="input w-70"
                   />
                 </div>
               </div>
@@ -614,7 +609,7 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
 
       <div className="text-sm text-muted mb-3">
         {selectedIds.size > 0 && (
-          <span className="text-accent" style={{ marginRight: '12px' }}>
+          <span className="text-accent mr-3">
             已选 {selectedIds.size} 项
           </span>
         )}
@@ -623,7 +618,7 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
 
       {/* 批量操作栏 */}
       {selectedIds.size > 0 && (
-        <div className="card p-3 mb-3" style={{ background: C.primaryBg, border: `1px solid ${C.primaryBd}` }}>
+        <div className="card p-3 mb-3 batch-action-card">
           <div className="flex items-center gap-3">
             <span className="text-accent font-medium">
               已选择 {selectedIds.size} 个模型
@@ -643,12 +638,12 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
 
       {/* 模型表格 */}
       <div className="table-container">
-        <div style={{ overflowX: "auto" }}>
-          <table className="table" style={{ minWidth: "1100px" }}>
+        <div className="overflow-x-auto">
+          <table className="table min-w-1100">
             <thead>
-              <tr style={{ background: C.gray7, borderBottom: `2px solid ${C.border}` }}>
+              <tr className="table-tr-header">
                 <th style={th("36px", true)}>
-                  <input type="checkbox" checked={selectedIds.size === filteredModels.length && filteredModels.length > 0} onChange={toggleSelectAll} className="cursor-pointer" style={{ width: "16px", height: "16px" }} />
+                  <input type="checkbox" checked={selectedIds.size === filteredModels.length && filteredModels.length > 0} onChange={toggleSelectAll} className="cursor-pointer w-16" />
                 </th>
                 <th style={th("48px", true)}>编号</th>
                 <th style={th("100px", true)}>算法类型</th>
@@ -693,10 +688,10 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
                     }}
                   >
                     <td style={td("36px", true)} onClick={e => { e.stopPropagation(); toggleSelect(m.id, m.name) }}>
-                      <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(m.id, m.name)} className="cursor-pointer" style={{ width: "16px", height: "16px" }} />
+                      <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(m.id, m.name)} className="cursor-pointer w-16" />
                     </td>
                     <td style={td("48px", true)}>
-                      <span className="font-semibold" style={{ color: C.gray4 }}>{m.id}</span>
+                      <span className="font-semibold text-gray-4">{m.id}</span>
                     </td>
                     <td style={td("100px", true)}>
                       <MemoizedAlgoTag type={m.algoName} />
@@ -705,7 +700,7 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
                       <MemoizedTechMethodTag type={m.techMethod || "目标检测算法"} />
                     </td>
                     <td style={td("220px")}>
-                      <div className="truncate" style={{ color: C.primary, fontWeight: 500, fontSize: "12px", maxWidth: "200px" }} title={m.name}>
+                      <div className="truncate model-name" title={m.name}>
                         {m.name}
                       </div>
                     </td>
@@ -713,37 +708,37 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
                       <MemoizedModelCatTag cat={m.category} />
                     </td>
                     <td style={td("140px")}>
-                      <div className="truncate-2" style={{ fontSize: "11px", color: C.gray2, lineHeight: 1.5 }}>
+                      <div className="truncate-2 model-desc">
                         {m.description || "-"}
                       </div>
                     </td>
                     <td style={td("80px", true)}>
-                      <div className="flex gap-1 flex-wrap justify-center" style={{ maxWidth: "70px" }} onClick={e => { e.stopPropagation(); onSelectModel(m) }} title="点击查看精度曲线">
+                      <div className="flex gap-1 flex-wrap justify-center max-w-70" onClick={e => { e.stopPropagation(); onSelectModel(m) }} title="点击查看精度曲线">
                         <img
                           src={`/data/models/${encodeURIComponent(m.name)}/curves/map50_curve.png?thumb=1`}
                           alt="mAP50"
-                          style={{ width: "18px", height: "14px", objectFit: "cover" as const, borderRadius: "2px", cursor: "pointer", background: C.gray6 }}
+                          className="accuracy-thumb"
                           onError={e => { (e.target as HTMLImageElement).style.display = "none" }}
                           loading="lazy"
                         />
                         <img
                           src={`/data/models/${encodeURIComponent(m.name)}/curves/map50_95_curve.png?thumb=1`}
                           alt="mAP50-95"
-                          style={{ width: "18px", height: "14px", objectFit: "cover" as const, borderRadius: "2px", cursor: "pointer", background: C.gray6 }}
+                          className="accuracy-thumb"
                           onError={e => { (e.target as HTMLImageElement).style.display = "none" }}
                           loading="lazy"
                         />
                         <img
                           src={`/data/models/${encodeURIComponent(m.name)}/curves/train_box_loss_curve.png?thumb=1`}
                           alt="train_loss"
-                          style={{ width: "18px", height: "14px", objectFit: "cover" as const, borderRadius: "2px", cursor: "pointer", background: C.gray6 }}
+                          className="accuracy-thumb"
                           onError={e => { (e.target as HTMLImageElement).style.display = "none" }}
                           loading="lazy"
                         />
                         <img
                           src={`/data/models/${encodeURIComponent(m.name)}/curves/val_box_loss_curve.png?thumb=1`}
                           alt="val_loss"
-                          style={{ width: "18px", height: "14px", objectFit: "cover" as const, borderRadius: "2px", cursor: "pointer", background: C.gray6 }}
+                          className="accuracy-thumb"
                           onError={e => { (e.target as HTMLImageElement).style.display = "none" }}
                           loading="lazy"
                         />
@@ -756,7 +751,7 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
                       <MemoizedSiteTag site={m.site} />
                     </td>
                     <td style={td("100px")}>
-                      <span className="truncate text-accent text-sm" style={{ cursor: "pointer", textDecoration: "underline", textDecorationColor: `${C.primary}50`, display: "block", maxWidth: "90px" }}
+                      <span className="truncate text-accent text-sm dataset-link"
                         onClick={e => { e.stopPropagation(); gotoDataset(m.dataset) }} title={m.dataset}>
                         {m.dataset || "-"}
                       </span>
@@ -765,7 +760,7 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
                       <span className="text-sm text-muted">{m.maintainDate}</span>
                     </td>
                     <td style={td("70px", true)}>
-                      <span className="text-sm font-medium" style={{ color: C.gray2 }}>{m.maintainer}</span>
+                      <span className="text-sm font-medium text-gray-2">{m.maintainer}</span>
                     </td>
                     <td style={td("90px", true)}>
                       <div className="flex gap-1">

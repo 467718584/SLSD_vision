@@ -560,6 +560,81 @@ body {
   background: var(--bg-secondary);
 }
 
+.table-tr-header {
+  background: var(--bg-tertiary);
+  border-bottom: 2px solid var(--border);
+}
+
+.overflow-x-auto {
+  overflow-x: auto;
+}
+
+/* 宽度辅助类 */
+.w-140 { width: 140px; }
+.w-100 { width: 100px; }
+.w-70 { width: 70px; }
+.w-16 { width: 16px; }
+.w-18 { width: 18px; }
+.h-14 { height: 14px; }
+.h-6 { height: 6px; }
+.min-w-1100 { min-width: 1100px; }
+
+/* 批量操作高亮卡片 */
+.batch-action-card {
+  background: var(--accent-light);
+  border: 1px solid var(--accent);
+}
+
+/* 精度曲线缩略图 */
+.accuracy-thumb {
+  width: 18px;
+  height: 14px;
+  object-fit: cover;
+  border-radius: 2px;
+  cursor: pointer;
+  background: var(--bg-tertiary);
+}
+
+/* 表格单元格文字颜色 */
+.text-gray-4 { color: var(--text-secondary); }
+.text-gray-2 { color: var(--text-muted); }
+.text-primary-color { color: var(--accent); }
+
+/* 模型名称 */
+.model-name {
+  color: var(--accent);
+  font-weight: 500;
+  font-size: 12px;
+  max-width: 200px;
+}
+
+/* 模型概述 */
+.model-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* 数据集链接 */
+.dataset-link {
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: rgba(37, 99, 235, 0.3);
+  display: block;
+  max-width: 90px;
+}
+
+/* 辅助边框 */
+.border-default {
+  border: 1px solid var(--border);
+}
+.border-top-default {
+  border-top: 1px solid var(--border);
+}
+.max-w-70 {
+  max-width: 70px;
+}
+
 /* ========== 标签/徽章 ========== */
 .badge {
   display: inline-flex;
