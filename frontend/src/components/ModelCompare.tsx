@@ -75,16 +75,16 @@ function ModelCompare({ models, onBack }: ModelCompareProps) {
   }
 
   return (
-    <div style={{ padding: '20px' }}>
+    <div className="p-5">
       {/* 头部 */}
-      <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
+      <div className="mb-5 flex items-center justify-between">
+        <div className="flex items-center">
           {onBack && (
-            <button onClick={onBack} className="btn" style={{ marginRight: '12px' }}>
+            <button onClick={onBack} className="btn mr-3">
               ← 返回
             </button>
           )}
-          <h2 style={{ fontSize: '18px', fontWeight: 700, color: C.gray1 }}>
+          <h2 className="text-lg font-bold text-[#111827] flex items-center gap-2">
             <CpuIcon size={18} /> 模型性能对比
           </h2>
         </div>
@@ -93,7 +93,6 @@ function ModelCompare({ models, onBack }: ModelCompareProps) {
             onClick={handleCompare}
             disabled={loading}
             className="btn"
-            style={{ background: C.primary, color: 'white' }}
           >
             {loading ? '加载中...' : '开始对比'}
           </button>
@@ -102,39 +101,37 @@ function ModelCompare({ models, onBack }: ModelCompareProps) {
 
       {/* 错误提示 */}
       {error && (
-        <div style={styles.error}>{error}</div>
+        <div className="p-3 px-4 bg-[#FEE2E2] text-[#DC2626] rounded text-sm mb-4">
+          {error}
+        </div>
       )}
 
       {/* 模型选择 */}
-      <div className="card" style={{ marginBottom: '20px' }}>
-        <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '16px', color: C.gray1 }}>
+      <div className="card mb-5">
+        <h3 className="text-sm font-semibold mb-4 text-[#111827]">
           选择模型 (已选 {selectedModels.length}/5)
         </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px' }}>
+        <div className="grid gap-3 grid-cols-[repeat(auto-fill,minmax(200px,1fr))]">
           {models.map(model => {
             const isSelected = selectedModels.includes(model.name)
             return (
               <div
                 key={model.name}
                 onClick={() => toggleModel(model.name)}
-                style={{
-                  ...styles.modelCard,
-                  border: isSelected ? `2px solid ${C.primary}` : `1px solid ${C.border}`,
-                  background: isSelected ? `${C.primary}10` : 'white'
-                }}
+                className={`p-3 rounded-lg cursor-pointer transition-all ${isSelected ? 'border-2 border-[#0066CC] bg-[#0066CC]/10' : 'border border-[#E2E8F0] bg-white'}`}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div className="flex items-center gap-2">
                   <input
                     type="checkbox"
                     checked={isSelected}
                     onChange={() => {}}
-                    style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                    className="w-4 h-4 cursor-pointer"
                   />
-                  <span style={{ fontWeight: 500, fontSize: '13px', color: C.gray1 }}>
+                  <span className="text-sm font-medium text-[#111827]">
                     {model.name}
                   </span>
                 </div>
-                <div style={{ fontSize: '11px', color: C.gray3, marginTop: '4px', marginLeft: '24px' }}>
+                <div className="text-xs text-muted mt-1 ml-6">
                   {model.algoName} · {model.accuracy}%
                 </div>
               </div>
@@ -147,69 +144,69 @@ function ModelCompare({ models, onBack }: ModelCompareProps) {
       {compareData && compareData.length > 0 && (
         <>
           {/* 精度对比表 */}
-          <div className="card" style={{ marginBottom: '20px' }}>
-            <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '16px', color: C.gray1 }}>
+          <div className="card mb-5">
+            <h3 className="text-sm font-semibold mb-4 text-[#111827]">
               <BarChartIcon size={16} /> 性能指标对比
             </h3>
-            <div style={{ overflowX: 'auto' as const }}>
-              <table style={styles.table}>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm border-collapse">
                 <thead>
                   <tr>
-                    <th style={styles.th}>指标</th>
+                    <th className="p-3 text-left bg-[#F3F4F6] border-b border-[#E2E8F0] font-semibold text-[#374151]">指标</th>
                     {compareData.map(m => (
-                      <th key={m.name} style={styles.th}>{m.name}</th>
+                      <th key={m.name} className="p-3 text-left bg-[#F3F4F6] border-b border-[#E2E8F0] font-semibold text-[#374151]">{m.name}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td style={styles.td}>算法名称</td>
+                    <td className="p-3 border-b border-[#E2E8F0] text-[#111827]">算法名称</td>
                     {compareData.map(m => (
-                      <td key={m.name} style={styles.td}>{m.algoName}</td>
+                      <td key={m.name} className="p-3 border-b border-[#E2E8F0] text-[#111827]">{m.algoName}</td>
                     ))}
                   </tr>
                   <tr>
-                    <td style={styles.td}>模型精度</td>
+                    <td className="p-3 border-b border-[#E2E8F0] text-[#111827]">模型精度</td>
                     {compareData.map(m => (
-                      <td key={m.name} style={{ ...styles.td, fontWeight: 700, color: C.primary }}>
+                      <td key={m.name} className="p-3 border-b border-[#E2E8F0] font-bold text-[#0066CC]">
                         {m.accuracy}%
                       </td>
                     ))}
                   </tr>
                   <tr>
-                    <td style={styles.td}>模型类别</td>
+                    <td className="p-3 border-b border-[#E2E8F0] text-[#111827]">模型类别</td>
                     {compareData.map(m => (
-                      <td key={m.name} style={styles.td}>{m.category}</td>
+                      <td key={m.name} className="p-3 border-b border-[#E2E8F0] text-[#111827]">{m.category}</td>
                     ))}
                   </tr>
                   <tr>
-                    <td style={styles.td}>技术方法</td>
+                    <td className="p-3 border-b border-[#E2E8F0] text-[#111827]">技术方法</td>
                     {compareData.map(m => (
-                      <td key={m.name} style={styles.td}>{m.techMethod}</td>
+                      <td key={m.name} className="p-3 border-b border-[#E2E8F0] text-[#111827]">{m.techMethod}</td>
                     ))}
                   </tr>
                   <tr>
-                    <td style={styles.td}>应用现场</td>
+                    <td className="p-3 border-b border-[#E2E8F0] text-[#111827]">应用现场</td>
                     {compareData.map(m => (
-                      <td key={m.name} style={styles.td}>{m.site || '-'}</td>
+                      <td key={m.name} className="p-3 border-b border-[#E2E8F0] text-[#111827]">{m.site || '-'}</td>
                     ))}
                   </tr>
                   <tr>
-                    <td style={styles.td}>关联数据集</td>
+                    <td className="p-3 border-b border-[#E2E8F0] text-[#111827]">关联数据集</td>
                     {compareData.map(m => (
-                      <td key={m.name} style={styles.td}>{m.dataset || '-'}</td>
+                      <td key={m.name} className="p-3 border-b border-[#E2E8F0] text-[#111827]">{m.dataset || '-'}</td>
                     ))}
                   </tr>
                   <tr>
-                    <td style={styles.td}>维护人员</td>
+                    <td className="p-3 border-b border-[#E2E8F0] text-[#111827]">维护人员</td>
                     {compareData.map(m => (
-                      <td key={m.name} style={styles.td}>{m.maintainer}</td>
+                      <td key={m.name} className="p-3 border-b border-[#E2E8F0] text-[#111827]">{m.maintainer}</td>
                     ))}
                   </tr>
                   <tr>
-                    <td style={styles.td}>维护日期</td>
+                    <td className="p-3 border-b border-[#E2E8F0] text-[#111827]">维护日期</td>
                     {compareData.map(m => (
-                      <td key={m.name} style={styles.td}>{m.maintainDate}</td>
+                      <td key={m.name} className="p-3 border-b border-[#E2E8F0] text-[#111827]">{m.maintainDate}</td>
                     ))}
                   </tr>
                 </tbody>
@@ -218,28 +215,28 @@ function ModelCompare({ models, onBack }: ModelCompareProps) {
           </div>
 
           {/* 精度柱状图 */}
-          <div className="card" style={{ marginBottom: '20px' }}>
-            <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '16px', color: C.gray1 }}>
+          <div className="card mb-5">
+            <h3 className="text-sm font-semibold mb-4 text-[#111827]">
               <BarChartIcon size={16} /> 精度对比
             </h3>
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '20px', height: '200px', padding: '20px' }}>
+            <div className="flex items-end gap-5 h-[200px] p-5">
               {compareData.map((m, idx) => {
                 const maxAccuracy = Math.max(...compareData.map(x => parseFloat(String(x.accuracy)) || 0))
                 const height = (parseFloat(String(m.accuracy)) || 0) / maxAccuracy * 150
                 const colors = [C.primary, '#E8631A', C.success, '#8E44AD', '#C0392B']
                 return (
-                  <div key={m.name} style={{ flex: 1, textAlign: 'center' as const }}>
-                    <div style={{ fontSize: '14px', fontWeight: 700, color: colors[idx % colors.length], marginBottom: '8px' }}>
+                  <div key={m.name} className="flex-1 text-center">
+                    <div className="text-sm font-bold mb-2" style={{ color: colors[idx % colors.length] }}>
                       {m.accuracy}%
                     </div>
-                    <div style={{
-                      width: '100%',
-                      height: `${height}px`,
-                      background: colors[idx % colors.length],
-                      borderRadius: '4px 4px 0 0',
-                      transition: 'height 0.3s'
-                    }} />
-                    <div style={{ fontSize: '11px', color: C.gray3, marginTop: '8px', wordBreak: 'break-all' as const }}>
+                    <div
+                      className="w-full rounded-t transition-all duration-300"
+                      style={{
+                        height: `${height}px`,
+                        background: colors[idx % colors.length]
+                      }}
+                    />
+                    <div className="text-xs text-muted mt-2 break-all">
                       {m.name}
                     </div>
                   </div>
@@ -249,23 +246,23 @@ function ModelCompare({ models, onBack }: ModelCompareProps) {
           </div>
 
           {/* 曲线对比 */}
-          <div className="card" style={{ marginBottom: '20px' }}>
-            <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '16px', color: C.gray1 }}>
+          <div className="card mb-5">
+            <h3 className="text-sm font-semibold mb-4 text-[#111827]">
               📉 训练曲线对比
             </h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
+            <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(200px,1fr))]">
               {(['map50_curve', 'map50_95_curve', 'PR_curve'] as const).map(chartKey => {
                 const hasAny = compareData.some(m => m.charts && m.charts[chartKey])
                 if (!hasAny) return null
                 return (
                   <div key={chartKey}>
-                    <div style={{ fontSize: '12px', color: C.gray3, marginBottom: '8px' }}>
+                    <div className="text-xs text-muted mb-2">
                       {chartKey.replace('_curve', '').toUpperCase()} 曲线
                     </div>
-                    <div style={{ display: 'flex', gap: '8px', overflowX: 'auto' as const }}>
+                    <div className="flex gap-2 overflow-x-auto">
                       {compareData.map((m, idx) => {
                         if (!m.charts || !m.charts[chartKey]) {
-                          return <div key={m.name} style={{ width: '80px', height: '60px', background: C.gray7, borderRadius: '4px', flexShrink: 0 }} />
+                          return <div key={m.name} className="w-[80px] h-[60px] bg-[#F3F4F6] rounded shrink-0" />
                         }
                         const colors = [C.primary, '#E8631A', C.success, '#8E44AD', '#C0392B']
                         return (
@@ -273,13 +270,9 @@ function ModelCompare({ models, onBack }: ModelCompareProps) {
                             key={m.name}
                             src={m.charts[chartKey]}
                             alt={m.name}
+                            className="w-[80px] h-[60px] object-cover rounded shrink-0 transition-all"
                             style={{
-                              width: '80px',
-                              height: '60px',
-                              objectFit: 'cover' as const,
-                              borderRadius: '4px',
-                              border: `2px solid ${colors[idx % colors.length]}`,
-                              flexShrink: 0
+                              border: `2px solid ${colors[idx % colors.length]}`
                             }}
                             title={m.name}
                           />
@@ -296,47 +289,12 @@ function ModelCompare({ models, onBack }: ModelCompareProps) {
 
       {/* 空状态 */}
       {compareData && compareData.length === 0 && (
-        <div style={{ textAlign: 'center' as const, padding: '60px', color: C.gray3 }}>
+        <div className="text-center p-10 text-muted">
           未找到对比数据
         </div>
       )}
     </div>
   )
-}
-
-const styles = {
-  error: {
-    padding: '12px 16px',
-    background: '#FEE2E2',
-    color: '#DC2626',
-    borderRadius: '6px',
-    fontSize: '13px',
-    marginBottom: '16px'
-  },
-  modelCard: {
-    padding: '12px',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    transition: 'all 0.2s'
-  },
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse' as const,
-    fontSize: '13px'
-  },
-  th: {
-    padding: '10px 12px',
-    textAlign: 'left' as const,
-    background: C.gray7,
-    borderBottom: `1px solid ${C.border}`,
-    fontWeight: 600,
-    color: C.gray2
-  },
-  td: {
-    padding: '10px 12px',
-    borderBottom: `1px solid ${C.border}`,
-    color: C.gray1
-  }
 }
 
 export default ModelCompare

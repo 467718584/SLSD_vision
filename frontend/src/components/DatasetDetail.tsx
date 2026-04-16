@@ -33,8 +33,8 @@ interface SplitImages {
 function InfoItem({ label, value }: { label: string; value?: string | number }) {
   return (
     <div>
-      <label style={{ fontSize: '12px', color: C.gray3 }}>{label}</label>
-      <div style={{ marginTop: '4px', fontSize: '13px', fontWeight: 500, color: var(--text-primary) }}>
+      <label className="text-xs text-muted">{label}</label>
+      <div className="mt-1 text-sm font-medium text-primary">
         {value || '-'}
       </div>
     </div>
@@ -49,22 +49,15 @@ function ImageSection({ title, images, onPreview, getImageUrl }: {
   getImageUrl: (path: string) => string
 }) {
   return (
-    <div style={{ marginBottom: '16px' }}>
-      <div style={{ fontSize: '12px', fontWeight: 600, color: C.gray2, marginBottom: '8px' }}>{title}</div>
-      <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '8px' }}>
+    <div className="mb-4">
+      <div className="text-xs font-semibold text-secondary mb-2">{title}</div>
+      <div className="flex flex-wrap gap-2">
         {images.map((img, idx) => (
           <img
             key={idx}
             src={getImageUrl(img)}
             alt={`preview-${idx}`}
-            style={{
-              width: '100px',
-              height: '75px',
-              objectFit: 'cover' as const,
-              borderRadius: '6px',
-              cursor: 'pointer',
-              border: `1px solid ${C.border}`
-            }}
+            className="w-[100px] h-[75px] object-cover rounded cursor-pointer border border-[#E2E8F0]"
             onClick={() => onPreview(img)}
             loading="lazy"
           />
@@ -106,14 +99,14 @@ function DatasetDetail({ ds, onBack, onRefresh, onEdit }: DatasetDetailProps) {
   }
 
   return (
-    <div style={{ padding: '20px' }}>
+    <div className="p-5">
       {/* 头部 */}
-      <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <button onClick={onBack} className="btn" style={{ marginRight: '12px' }}>
+      <div className="mb-5 flex items-center justify-between">
+        <div className="flex items-center">
+          <button onClick={onBack} className="btn mr-3">
             ← 返回
           </button>
-          <span style={{ fontSize: '18px', fontWeight: 600, color: var(--text-primary) }}>
+          <span className="text-lg font-semibold text-primary">
             {ds.name}
           </span>
         </div>
@@ -125,11 +118,11 @@ function DatasetDetail({ ds, onBack, onRefresh, onEdit }: DatasetDetailProps) {
       </div>
 
       {/* 基本信息卡片 */}
-      <div className="card" style={{ marginBottom: '16px' }}>
-        <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '16px', color: var(--text-primary) }}>
+      <div className="card mb-4">
+        <h3 className="text-sm font-semibold mb-4 text-primary">
           基本信息
         </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+        <div className="grid grid-cols-4 gap-4">
           <InfoItem label="算法类型" value={ds.algoType} />
           <InfoItem label="技术方法" value={ds.techMethod || '目标检测算法'} />
           <InfoItem label="样本数量" value={ds.total?.toLocaleString()} />
@@ -140,24 +133,16 @@ function DatasetDetail({ ds, onBack, onRefresh, onEdit }: DatasetDetailProps) {
           <InfoItem label="维护日期" value={ds.maintainDate} />
         </div>
         {ds.desc && (
-          <div style={{ marginTop: '16px' }}>
-            <label style={{ fontSize: '12px', color: C.gray3 }}>描述</label>
-            <p style={{ marginTop: '4px', color: C.gray2, fontSize: '13px' }}>{ds.desc}</p>
+          <div className="mt-4">
+            <label className="text-xs text-muted">描述</label>
+            <p className="mt-1 text-sm text-secondary">{ds.desc}</p>
           </div>
         )}
         {ds.source && (
-          <div style={{ marginTop: '12px' }}>
-            <label style={{ fontSize: '12px', color: C.gray3 }}>数据来源</label>
-            <div style={{ marginTop: '4px' }}>
-              <span style={{
-                display: 'inline-block',
-                padding: '2px 8px',
-                borderRadius: '4px',
-                fontSize: '11px',
-                background: '#E3F2FD',
-                border: '1px solid #90CAF9',
-                color: '#1565C0'
-              }}>
+          <div className="mt-3">
+            <label className="text-xs text-muted">数据来源</label>
+            <div className="mt-1">
+              <span className="inline-block px-[8px] py-[2px] text-xs rounded bg-[#E3F2FD] border border-[#90CAF9] text-[#1565C0]">
                 {ds.source}
               </span>
             </div>
@@ -167,24 +152,18 @@ function DatasetDetail({ ds, onBack, onRefresh, onEdit }: DatasetDetailProps) {
 
       {/* 类别统计卡片 */}
       {ds.classInfo && Object.keys(ds.classInfo).length > 0 && (
-        <div className="card" style={{ marginBottom: '16px' }}>
-          <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '16px', color: var(--text-primary) }}>
+        <div className="card mb-4">
+          <h3 className="text-sm font-semibold mb-4 text-primary">
             类别统计
           </h3>
-          <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '12px' }}>
+          <div className="flex flex-wrap gap-3">
             {Object.entries(ds.classInfo).map(([key, value]) => {
               const count = typeof value === 'number' ? value : (value.count || 0)
               const name = typeof value === 'object' ? (value.name || key) : key
               return (
-                <div key={key} style={{
-                  background: C.primaryBg,
-                  border: `1px solid ${C.primaryBd}`,
-                  borderRadius: '8px',
-                  padding: '12px 16px',
-                  minWidth: '120px'
-                }}>
-                  <div style={{ fontSize: '11px', color: C.primary, marginBottom: '4px' }}>{name}</div>
-                  <div style={{ fontSize: '18px', fontWeight: 700, color: C.primary }}>
+                <div key={key} className="rounded-lg p-3 px-4 min-w-[120px] bg-[#EBF3FC] border border-[#BFDBF7]">
+                  <div className="text-xs text-[#0066CC] mb-1">{name}</div>
+                  <div className="text-xl font-bold text-[#0066CC]">
                     {count.toLocaleString()}
                   </div>
                 </div>
@@ -195,12 +174,12 @@ function DatasetDetail({ ds, onBack, onRefresh, onEdit }: DatasetDetailProps) {
       )}
 
       {/* 数据集预览卡片 */}
-      <div className="card" style={{ marginBottom: '16px' }}>
-        <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '16px', color: var(--text-primary) }}>
+      <div className="card mb-4">
+        <h3 className="text-sm font-semibold mb-4 text-primary">
           数据集预览
         </h3>
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: C.gray3 }}>加载中...</div>
+          <div className="text-center p-10 text-muted">加载中...</div>
         ) : (
           <>
             {/* Train集 */}
@@ -216,7 +195,7 @@ function DatasetDetail({ ds, onBack, onRefresh, onEdit }: DatasetDetailProps) {
               <ImageSection title={`测试集 (${splitImages.test.length})`} images={splitImages.test.slice(0, 6)} onPreview={setPreviewImage} getImageUrl={getImageUrl} />
             )}
             {splitImages.train.length === 0 && splitImages.val.length === 0 && splitImages.test.length === 0 && (
-              <div style={{ textAlign: 'center', padding: '40px', color: C.gray3 }}>暂无预览图片</div>
+              <div className="text-center p-10 text-muted">暂无预览图片</div>
             )}
           </>
         )}
@@ -224,42 +203,13 @@ function DatasetDetail({ ds, onBack, onRefresh, onEdit }: DatasetDetailProps) {
 
       {/* 图片预览弹窗 */}
       {previewImage && (
-        <div style={styles.previewOverlay} onClick={() => setPreviewImage(null)}>
-          <img src={getImageUrl(previewImage)} alt="preview" style={styles.previewImage} />
-          <button onClick={() => setPreviewImage(null)} style={styles.previewClose}>×</button>
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[10000]" onClick={() => setPreviewImage(null)}>
+          <img src={getImageUrl(previewImage)} alt="preview" className="max-w-[90%] max-h-[90%] rounded-lg" />
+          <button onClick={() => setPreviewImage(null)} className="absolute top-5 right-5 w-10 h-10 bg-white rounded-full text-xl cursor-pointer border-0">×</button>
         </div>
       )}
     </div>
   )
-}
-
-const styles = {
-  previewOverlay: {
-    position: 'fixed' as const,
-    top: 0, left: 0, right: 0, bottom: 0,
-    background: 'rgba(0, 0, 0, 0.8)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 10000
-  },
-  previewImage: {
-    maxWidth: '90%',
-    maxHeight: '90%',
-    borderRadius: '8px'
-  },
-  previewClose: {
-    position: 'absolute' as const,
-    top: '20px',
-    right: '20px',
-    background: 'white',
-    border: 'none',
-    borderRadius: '50%',
-    width: '40px',
-    height: '40px',
-    fontSize: '20px',
-    cursor: 'pointer'
-  }
 }
 
 export default DatasetDetail
