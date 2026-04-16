@@ -477,8 +477,8 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
           </div>
 
           {/* 筛选按钮组 */}
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-            <span style={{ fontSize: "12px", color: C.gray3, marginRight: "4px" }}>算法:</span>
+          <div className="flex items-center gap-2" style={{ flexWrap: "wrap" }}>
+            <span className="text-sm text-muted mr-1">算法:</span>
             {modelAlgos.slice(0, 6).map(algo => (
               <button
                 key={algo}
@@ -722,14 +722,14 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
           )}
         </div>
 
-      <span style={{ marginLeft: "0", marginBottom: "12px", display: "block", fontSize: "12px", color: C.gray4 }}>
+      <div className="text-sm text-muted mb-3">
         {selectedIds.size > 0 && (
           <span style={{ marginRight: '12px', color: C.primary }}>
             已选 {selectedIds.size} 项
           </span>
         )}
         显示 {filteredModels.length} 条
-      </span>
+      </div>
 
       {/* 批量操作栏 */}
       {selectedIds.size > 0 && (
