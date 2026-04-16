@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { C } from '../constants'
-import { BarChartIcon } from './Icons'
+import { BarChartIcon, CpuIcon } from './Icons'
 
 // 模型类型定义
 interface Model {
@@ -85,7 +85,7 @@ function ModelCompare({ models, onBack }: ModelCompareProps) {
             </button>
           )}
           <h2 style={{ fontSize: '18px', fontWeight: 700, color: C.gray1 }}>
-            🤖 模型性能对比
+            <CpuIcon size={18} /> 模型性能对比
           </h2>
         </div>
         {selectedModels.length >= 2 && (
@@ -220,7 +220,7 @@ function ModelCompare({ models, onBack }: ModelCompareProps) {
           {/* 精度柱状图 */}
           <div className="card" style={{ marginBottom: '20px' }}>
             <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '16px', color: C.gray1 }}>
-              📈 精度对比
+              <BarChartIcon size={16} /> 精度对比
             </h3>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: '20px', height: '200px', padding: '20px' }}>
               {compareData.map((m, idx) => {
