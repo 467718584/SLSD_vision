@@ -55,17 +55,14 @@ interface ModelListProps {
 const MemoizedTag = React.memo(({ label, colors }: { label: string; colors: { bg?: string; border?: string; text?: string } }) => {
   const c = colors || { bg: C.gray6, border: C.border, text: C.gray2 }
   return (
-    <span style={{
-      display: "inline-block",
-      padding: "2px 8px",
-      borderRadius: "4px",
-      fontSize: "11px",
-      fontWeight: 500,
-      background: c.bg,
-      border: `1px solid ${c.border}`,
-      color: c.text,
-      whiteSpace: "nowrap"
-    }}>
+    <span className="inline-block text-xs font-medium whitespace-nowrap model-tag"
+      style={{
+        padding: "2px 8px",
+        borderRadius: "4px",
+        background: c.bg,
+        border: `1px solid ${c.border}`,
+        color: c.text
+      }}>
       {label}
     </span>
   )
