@@ -202,7 +202,7 @@ function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
                   className="input"
                   onKeyPress={e => e.key === 'Enter' && handleAddAnnotationType()}
                 />
-                <button onClick={handleAddAnnotationType} className="btn btn-sm" className="btn btn-sm btn-warning">添加</button>
+                <button onClick={handleAddAnnotationType} className="btn btn-sm btn-warning">添加</button>
               </div>
             </div>
 
@@ -226,7 +226,7 @@ function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
                   className="input"
                   onKeyPress={e => e.key === 'Enter' && handleAddSite()}
                 />
-                <button onClick={handleAddSite} className="btn btn-sm" className="btn btn-sm" style={{ background: '#1565C0', color: 'white' }}>添加</button>
+                <button onClick={handleAddSite} className="btn btn-sm" style={{ background: '#1565C0', color: 'white' }}>添加</button>
               </div>
             </div>
 

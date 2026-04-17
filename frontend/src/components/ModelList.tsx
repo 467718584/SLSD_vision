@@ -637,7 +637,7 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
           <table className="table min-w-1100">
             <thead>
               <tr className="table-tr-header">
-                <th style={th("36px", true)}>
+                <th className="th-base th-c w-36">
                   <input type="checkbox" checked={selectedIds.size === filteredModels.length && filteredModels.length > 0} onChange={toggleSelectAll} className="cursor-pointer w-16" />
                 </th>
                 <th style={th("48px", true)}>编号</th>
