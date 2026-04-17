@@ -126,8 +126,8 @@ function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
       <div className="modal" onClick={e => e.stopPropagation()}>
         {/* 标题栏 */}
         <div className="modal-header">
-          <h3 className="font-semibold text-sm" style={{ margin: 0, color: C.gray1 }}>系统设置</h3>
-          <button onClick={onClose} className="btn btn-ghost btn-sm" style={{ fontSize: '20px', lineHeight: 1 }}>×</button>
+          <h3 className="modal-title">系统设置</h3>
+          <button onClick={onClose} className="modal-close">×</button>
         </div>
 
         {loading ? (
@@ -141,7 +141,7 @@ function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
                 {algoTypes.map(type => (
                   <span key={type} className="tag tag-primary">
                     {type}
-                    <button onClick={() => handleRemove(algoTypes, setAlgoTypes, type)} className="btn btn-ghost btn-sm" style={{ padding: '0 4px', fontSize: '14px', lineHeight: 1 }}>×</button>
+                    <button onClick={() => handleRemove(algoTypes, setAlgoTypes, type)} className="btn btn-ghost btn-sm" style={{ padding: '0 4px' }}>×</button>
                   </span>
                 ))}
               </div>
@@ -178,7 +178,7 @@ function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
                   className="input"
                   onKeyPress={e => e.key === 'Enter' && handleAddTechMethod()}
                 />
-                <button onClick={handleAddTechMethod} className="btn btn-success btn-sm">添加</button>
+                <button onClick={handleAddTechMethod} className="btn btn-sm" style={{ background: C.success, color: 'white' }}>添加</button>
               </div>
             </div>
 
@@ -202,7 +202,7 @@ function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
                   className="input"
                   onKeyPress={e => e.key === 'Enter' && handleAddAnnotationType()}
                 />
-                <button onClick={handleAddAnnotationType} className="btn btn-sm" style={{ background: C.orange, color: 'white' }}>添加</button>
+                <button onClick={handleAddAnnotationType} className="btn btn-sm" className="btn btn-sm btn-warning">添加</button>
               </div>
             </div>
 
@@ -226,7 +226,7 @@ function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
                   className="input"
                   onKeyPress={e => e.key === 'Enter' && handleAddSite()}
                 />
-                <button onClick={handleAddSite} className="btn btn-sm" style={{ background: '#1565C0', color: 'white' }}>添加</button>
+                <button onClick={handleAddSite} className="btn btn-sm" className="btn btn-sm" style={{ background: '#1565C0', color: 'white' }}>添加</button>
               </div>
             </div>
 
