@@ -59,8 +59,8 @@ const td = (c = false) => ({
 function EmptyState({ message }: { message: string }) {
   return (
     <div className="flex flex-col items-center justify-center p-6 text-sm" style={{ color: C.gray3 }}>
-      <div className="text-4xl mb-3">🏗️</div>
-      <div style={{ color: C.gray3 }}>{message}</div>
+      <div className="text-4xl mb-3"><FolderIcon size={32} /></div>
+      <div className="text-muted">{message}</div>
     </div>
   )
 }
@@ -121,12 +121,10 @@ export default function SiteManagement({ onRefresh }: SiteManagementProps) {
   return (
     <div className="p-5">
       {/* 页面标题 */}
-      <div className="flex justify-between items-center mb-5">
+      <div className="page-header mb-5">
         <div>
-          <h2 className="text-lg font-bold m-0" style={{ color: C.gray1 }}>
-            🏗️ 应用现场管理
-          </h2>
-          <p className="text-xs mt-1" style={{ color: C.gray3 }}>
+          <h2 className="page-title"><FolderIcon size={18} /> 应用现场管理</h2>
+          <p className="text-sm text-muted mt-1">
             查看所有应用现场的关联统计信息（数据来源于数据集管理和模型管理）
           </p>
         </div>
@@ -142,29 +140,38 @@ export default function SiteManagement({ onRefresh }: SiteManagementProps) {
               onClick={onRefresh}
               className="btn btn-primary btn-sm"
             >
-              ↩️ 返回
+              <RefreshIcon size={14} /> 返回
             </button>
           )}
         </div>
       </div>
 
       {/* 统计卡片 */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="card text-center p-4">
-          <div className="text-3xl font-bold" style={{ color: C.primary }}>{sites.length}</div>
-          <div className="text-xs mt-1" style={{ color: C.gray3 }}>应用现场总数</div>
-        </div>
-        <div className="card text-center p-4">
-          <div className="text-3xl font-bold" style={{ color: '#E8631A' }}>
-            {sites.reduce((s, site) => s + site.dataset_count, 0)}
+      <div className="stats-grid mb-6">
+        <div className="stat-card">
+          <div className="stat-icon blue"><FolderIcon size={20} /></div>
+          <div className="stat-info">
+            <div className="stat-value">{sites.length}</div>
+            <div className="stat-label">应用现场总数</div>
           </div>
-          <div className="text-xs mt-1" style={{ color: C.gray3 }}>关联数据集总数</div>
         </div>
-        <div className="card text-center p-4">
-          <div className="text-3xl font-bold" style={{ color: '#8E44AD' }}>
-            {sites.reduce((s, site) => s + site.model_count, 0)}
+        <div className="stat-card">
+          <div className="stat-icon orange"><FolderIcon size={20} /></div>
+          <div className="stat-info">
+            <div className="stat-value">
+              {sites.reduce((s, site) => s + site.dataset_count, 0)}
+            </div>
+            <div className="stat-label">关联数据集总数</div>
           </div>
-          <div className="text-xs mt-1" style={{ color: C.gray3 }}>关联模型总数</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon" style={{ background: '#F3E8FF', color: '#8E44AD' }}><CpuIcon size={20} /></div>
+          <div className="stat-info">
+            <div className="stat-value">
+              {sites.reduce((s, site) => s + site.model_count, 0)}
+            </div>
+            <div className="stat-label">关联模型总数</div>
+          </div>
         </div>
       </div>
 
@@ -176,13 +183,13 @@ export default function SiteManagement({ onRefresh }: SiteManagementProps) {
           <div className="overflow-x-auto">
             <table className="table w-full">
               <thead>
-                <tr style={{ background: C.gray7 }}>
-                  <th style={th('80px', true)}>编号</th>
-                  <th style={th('200px')}>现场名称</th>
-                  <th style={th('120px', true)}>关联数据集</th>
-                  <th style={th('120px', true)}>关联模型</th>
-                  <th style={th('120px')}>维护人员</th>
-                  <th style={th('140px')}>维护日期</th>
+                <tr>
+                  <th className="table th" style={{ width: '80px', textAlign: 'center' }}>编号</th>
+                  <th className="table th" style={{ width: '200px' }}>现场名称</th>
+                  <th className="table th" style={{ width: '120px', textAlign: 'center' }}>关联数据集</th>
+                  <th className="table th" style={{ width: '120px', textAlign: 'center' }}>关联模型</th>
+                  <th className="table th" style={{ width: '120px' }}>维护人员</th>
+                  <th className="table th" style={{ width: '140px' }}>维护日期</th>
                 </tr>
               </thead>
               <tbody>
@@ -191,36 +198,28 @@ export default function SiteManagement({ onRefresh }: SiteManagementProps) {
                     key={site.id}
                     className="hover:bg-gray-50 transition-colors"
                   >
-                    <td style={{ ...td(true), color: C.gray3 }} className="text-xs">
+                    <td className="table td text-xs" style={{ textAlign: 'center', color: C.gray3 }}>
                       {String(site.id).padStart(3, '0')}
                     </td>
-                    <td style={td()}>
+                    <td className="table td">
                       <MemoizedSiteTag site={site.name} />
                     </td>
-                    <td style={{ ...td(true), fontWeight: 600 }}>
-                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold"
-                        style={{
-                          background: site.dataset_count > 0 ? C.primaryBg : C.gray6,
-                          color: site.dataset_count > 0 ? C.primary : C.gray3,
-                        }}>
-                        <FolderIcon size={14} /> {site.dataset_count}
+                    <td className="table td" style={{ textAlign: 'center' }}>
+                      <span className={`badge ${site.dataset_count > 0 ? 'badge-primary' : ''}`}>
+                        <FolderIcon size={12} /> {site.dataset_count}
                       </span>
                     </td>
-                    <td style={{ ...td(true), fontWeight: 600 }}>
-                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold"
-                        style={{
-                          background: site.model_count > 0 ? '#FDF0E7' : C.gray6,
-                          color: site.model_count > 0 ? '#E8631A' : C.gray3,
-                        }}>
-                        <CpuIcon size={14} /> {site.model_count}
+                    <td className="table td" style={{ textAlign: 'center' }}>
+                      <span className="badge">
+                        <CpuIcon size={12} /> {site.model_count}
                       </span>
                     </td>
-                    <td style={td()}>
+                    <td className="table td">
                       <span style={{ color: site.maintainer && site.maintainer !== '-' ? C.gray1 : C.gray4 }}>
                         {site.maintainer || '-'}
                       </span>
                     </td>
-                    <td style={td()}>
+                    <td className="table td">
                       <span style={{ color: site.maintain_date && site.maintain_date !== '-' ? C.gray1 : C.gray4 }}>
                         {site.maintain_date || '-'}
                       </span>
@@ -234,7 +233,7 @@ export default function SiteManagement({ onRefresh }: SiteManagementProps) {
       )}
 
       {/* 底部说明 */}
-      <div className="mt-4 p-3 rounded-lg text-xs" style={{ background: C.gray7, color: C.gray3 }}>
+      <div className="mt-4 p-3 rounded-lg text-sm text-muted" style={{ background: C.gray7 }}>
         💡 说明：关联数据集和关联模型的数量会根据数据集管理和模型管理中选择的"数据来源"/"应用现场"自动统计。
         新增或删除应用现场请前往 <strong style={{ color: C.gray2 }}>设置</strong> 页面操作。
       </div>

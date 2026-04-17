@@ -517,11 +517,7 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
               <button
                 onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
                 className={`btn btn-sm ${showAdvancedFilters ? 'btn-primary' : 'btn-ghost'}`}
-                style={{
-                  border: `1px solid ${showAdvancedFilters ? C.primary : C.border}`,
-                  fontWeight: showAdvancedFilters ? 600 : 400,
-                  gap: "4px"
-                }}
+                style={{ fontWeight: showAdvancedFilters ? 600 : 400, gap: "4px" }}
               >
                 高级 {activeFilterCount > 0 && `(${activeFilterCount})`}
               </button>
@@ -680,10 +676,8 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }:
                     onClick={() => onSelectModel(m)}
                     onMouseEnter={e => { e.currentTarget.style.background = isSelected ? C.primaryBg : C.primaryBg }}
                     onMouseLeave={e => { e.currentTarget.style.background = isSelected ? C.primaryBg : (idx % 2 === 0 ? C.white : "#FAFCFE") }}
+                    className="cursor-pointer"
                     style={{
-                      cursor: "pointer",
-                      background: isDragOver ? C.primaryBg : isSelected ? C.primaryBg : (idx % 2 === 0 ? C.white : "#FAFCFE"),
-                      transition: "background .1s",
                       opacity: isDragging ? 0.5 : 1,
                       borderTop: isDragOver && draggedIdx !== null && draggedIdx < idx ? `2px solid ${C.primary}` : undefined,
                       borderBottom: isDragOver && draggedIdx !== null && draggedIdx > idx ? `2px solid ${C.primary}` : undefined,
