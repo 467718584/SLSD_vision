@@ -4,6 +4,8 @@
 from flask import Blueprint, request, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
 import os
+import shutil
+import tempfile
 
 from .errors import api_handler, validate_dataset_name, ApiError
 
@@ -66,8 +68,30 @@ def validate_name():
 def upload_dataset():
     """上传数据集"""
     from modules.dataset_manager import upload_dataset as _upload
-    result = _upload(request)
-    return jsonify(result)
+
+    # 提取参数
+    dataset_name = request.form.get('name', '').strip()
+    uploaded_file = request.files.get('file')
+
+    if not dataset_name:
+        return jsonify({"success": False, "error": "数据集名称不能为空"}), 400
+    if not uploaded_file or uploaded_file.filename == '':
+        return jsonify({"success": False, "error": "没有上传文件"}), 400
+
+    # 调用上传
+    result = _upload(uploaded_file, dataset_name)
+
+    if result:
+        # 上传成功后生成图表
+        from modules.dataset_manager import generate_dataset_charts
+        try:
+            generate_dataset_charts(dataset_name)
+        except Exception as chart_err:
+            print(f"生成图表时出错: {chart_err}")
+
+        return jsonify({"success": True, "dataset": result})
+    else:
+        return jsonify({"success": False, "error": "上传失败"}), 500
 
 
 @dataset_bp.route('/<name>/images')
@@ -81,7 +105,7 @@ def get_dataset_images(name):
 
 @dataset_bp.route('/<name>/split-images')
 def get_split_images(name):
-    """获取按split分类的图片"""
+    """获取按split分类的图片（兼容旧接口）"""
     from modules.dataset_manager import get_dataset_images as _get_images
     try:
         images = _get_images(name)
@@ -94,6 +118,17 @@ def get_split_images(name):
                 result['val'].append(img)
             elif '/test/' in img:
                 result['test'].append(img)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@dataset_bp.route('/<name>/preview-images')
+def get_preview_images(name):
+    """获取数据集预览图片，分原图和标注图四组"""
+    from modules.dataset_manager import get_dataset_split_images as _get_split_images
+    try:
+        result = _get_split_images(name, max_per_split=8)
         return jsonify(result)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -148,13 +183,57 @@ def update_dataset(name):
 def download_dataset(name):
     """下载数据集"""
     dataset_path = os.path.join(DATASETS_DIR, name)
-    if os.path.exists(dataset_path):
+    if not os.path.exists(dataset_path):
+        return jsonify({"error": "Dataset not found"}), 404
+
+    if os.path.isdir(dataset_path):
+        # 目录打包成zip下载
+        try:
+            # 创建临时zip文件，delete=False手动控制生命周期
+            temp_file = tempfile.NamedTemporaryFile(
+                suffix='.zip',
+                delete=False,
+                prefix=f'dataset_{name}_'
+            )
+            temp_zip_path = temp_file.name
+            temp_file.close()
+
+            # shutil.make_archive(base_name, format, root_dir)
+            # base_name 不带扩展名，会自动添加 .zip
+            archive_base = temp_zip_path[:-4]  # 去掉 .zip
+            shutil.make_archive(archive_base, 'zip', root_dir=dataset_path)
+            zip_path = archive_base + '.zip'
+
+            # 获取数据集名称作为下载文件名
+            download_name = f"{name}.zip"
+
+            # 发送文件后删除临时zip
+            response = send_from_directory(
+                os.path.dirname(zip_path),
+                os.path.basename(zip_path),
+                as_attachment=True,
+                download_name=download_name
+            )
+
+            # 下载完成后清理临时文件
+            def cleanup(path):
+                try:
+                    os.remove(path)
+                except Exception:
+                    pass
+
+            response.call_on_close(lambda: cleanup(zip_path))
+            return response
+
+        except Exception as e:
+            return jsonify({"error": f"打包失败: {str(e)}"}), 500
+    else:
+        # 单文件直接下载
         return send_from_directory(
             os.path.dirname(dataset_path),
             os.path.basename(dataset_path),
             as_attachment=True
         )
-    return jsonify({"error": "Dataset not found"}), 404
 
 
 @dataset_bp.route('/<name>/class-info', methods=['POST'])

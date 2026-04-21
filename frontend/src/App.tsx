@@ -6,6 +6,7 @@ import RawData from './components/RawData'
 import ModelList from './components/ModelList'
 import ModelCompare from './components/ModelCompare'
 import DatasetVersions from './components/DatasetVersions'
+import QuickActions from './components/QuickActions'
 import UploadModal from './components/UploadModal'
 import ModelUploadModal from './components/ModelUploadModal'
 import DatasetEditModal from './components/DatasetEditModal'
@@ -14,6 +15,7 @@ import SettingsDialog from './components/SettingsDialog'
 import AuditLogs from './components/AuditLogs'
 import UsageStats from './components/UsageStats'
 import SiteManagement from './components/SiteManagement'
+import RecentActivity from './components/RecentActivity'
 import { Login, Register, UserInfo } from './components/Auth'
 import { useKeyboardShortcuts, KEYBOARD_SHORTCUTS } from './hooks/useKeyboardShortcuts'
 import {
@@ -103,6 +105,10 @@ interface OverviewProps {
   datasets: Dataset[]
   models: Model[]
   stats: Stats
+  onUploadDataset: () => void
+  onCreateModel: () => void
+  onViewDatasets: () => void
+  onViewModels: () => void
 }
 
 interface StatCardProps {
@@ -173,7 +179,7 @@ function VersionSelector({ datasets, onSelectDataset }: VersionSelectorProps) {
   )
 }
 
-function Overview({ datasets, models, stats }: OverviewProps) {
+function Overview({ datasets, models, stats, onUploadDataset, onCreateModel, onViewDatasets, onViewModels }: OverviewProps) {
   const avgAccuracy = models.length > 0
     ? (models.reduce((s, m) => s + (parseFloat(String(m.accuracy)) || 0), 0) / models.length).toFixed(1)
     : '-'
@@ -189,6 +195,13 @@ function Overview({ datasets, models, stats }: OverviewProps) {
         <StatCard label="Images" value={(stats.datasets?.totalImages || 0).toLocaleString()} icon={<FileTextIcon size={20} />} color="orange" />
         <StatCard label="Accuracy" value={`${avgAccuracy}%`} icon={<BarChartIcon size={20} />} color="blue" />
       </div>
+      <QuickActions
+        onUploadDataset={onUploadDataset}
+        onCreateModel={onCreateModel}
+        onViewDatasets={onViewDatasets}
+        onViewModels={onViewModels}
+      />
+      <RecentActivity />
     </div>
   )
 }
@@ -345,7 +358,16 @@ function App() {
   // 详情页懒加载
   if (selectedDataset) {
     return (
-      <Suspense fallback={<div>加载中...</div>}>
+      <Suspense fallback={
+        <div className="p-6 space-y-4">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="skeleton w-10 h-10 rounded" />
+            <div className="skeleton w-48 h-6" />
+          </div>
+          <div className="skeleton w-full h-32 rounded" />
+          <div className="skeleton w-full h-48 rounded" />
+        </div>
+      }>
         <DatasetDetail
           ds={selectedDataset}
           onBack={() => setSelectedDataset(null)}
@@ -364,7 +386,16 @@ function App() {
 
   if (selectedModel) {
     return (
-      <Suspense fallback={<div>加载中...</div>}>
+      <Suspense fallback={
+        <div className="p-6 space-y-4">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="skeleton w-10 h-10 rounded" />
+            <div className="skeleton w-48 h-6" />
+          </div>
+          <div className="skeleton w-full h-32 rounded" />
+          <div className="skeleton w-full h-48 rounded" />
+        </div>
+      }>
         <ModelDetail
           model={selectedModel}
           datasets={datasets}
@@ -442,6 +473,7 @@ function App() {
             onSelectDataset={setSelectedDataset}
             onRefresh={loadData}
             onShowUpload={() => setShowUpload(true)}
+            isLoading={loading}
           />
         )}
 
@@ -453,6 +485,7 @@ function App() {
             onSelectModel={setSelectedModel}
             onRefresh={loadData}
             onShowUpload={() => setShowModelUpload(true)}
+            isLoading={loading}
           />
         )}
 
@@ -512,7 +545,15 @@ function App() {
 
         {/* 总览页面 */}
         {currentPage === 'overview' && (
-          <Overview datasets={datasets} models={models} stats={stats} />
+          <Overview
+            datasets={datasets}
+            models={models}
+            stats={stats}
+            onUploadDataset={() => setShowUpload(true)}
+            onCreateModel={() => setShowModelUpload(true)}
+            onViewDatasets={() => setCurrentPage('datasets')}
+            onViewModels={() => setCurrentPage('models')}
+          />
         )}
       </div>
 

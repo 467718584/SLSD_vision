@@ -478,6 +478,64 @@ def delete_dataset_by_name(name):
     return affected > 0
 
 
+def update_dataset(name, data):
+    """更新数据集信息
+    
+    Args:
+        name: 数据集名称
+        data: 字典，包含要更新的字段如 algo_type, tech_method, source 等
+    
+    Returns:
+        bool: 更新是否成功
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # 构建更新语句
+    updates = []
+    params = []
+    
+    # algo_type 字段
+    if 'algoType' in data and data['algoType'] is not None:
+        updates.append("algo_type = ?")
+        params.append(data['algoType'])
+    elif 'algo_type' in data and data['algo_type'] is not None:
+        updates.append("algo_type = ?")
+        params.append(data['algo_type'])
+    
+    # tech_method 字段
+    if 'techMethod' in data and data['techMethod'] is not None:
+        updates.append("tech_method = ?")
+        params.append(data['techMethod'])
+    elif 'tech_method' in data and data['tech_method'] is not None:
+        updates.append("tech_method = ?")
+        params.append(data['tech_method'])
+    
+    # source 字段
+    if 'source' in data and data['source'] is not None:
+        updates.append("source = ?")
+        params.append(data['source'])
+    
+    # class_info 字段
+    if 'class_info' in data and data['class_info'] is not None:
+        updates.append("class_info = ?")
+        params.append(data['class_info'])
+    
+    if not updates:
+        conn.close()
+        return False
+
+    params.append(name)
+    sql = f"UPDATE datasets SET {', '.join(updates)} WHERE name = ?"
+    
+    cursor.execute(sql, params)
+    conn.commit()
+    affected = cursor.rowcount
+    conn.close()
+    
+    return affected > 0
+
+
 def update_model_by_name(name, data):
     """更新模型信息"""
     conn = get_connection()
@@ -568,13 +626,16 @@ def get_dataset_stats():
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute('SELECT COUNT(*) as count, SUM(total) as total_images FROM datasets')
+    cursor.execute('SELECT COUNT(*) as count, SUM(total) as total_images, SUM(img_count_train) as total_train, SUM(img_count_val) as total_val, SUM(img_count_test) as total_test FROM datasets')
     row = cursor.fetchone()
     conn.close()
 
     return {
         'count': row[0] or 0,
-        'total_images': row[1] or 0
+        'total_images': row[1] or 0,
+        'total_train': row[2] or 0,
+        'total_val': row[3] or 0,
+        'total_test': row[4] or 0
     }
 
 
@@ -680,6 +741,34 @@ def delete_raw_data_by_name(name):
     return affected > 0
 
 
+def update_raw_data(name, data):
+    """更新原始数据信息"""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # 构建更新语句
+    set_clause = []
+    values = []
+    for key, value in data.items():
+        if key not in ('id', 'name', 'created_at'):
+            set_clause.append(f"{key} = ?")
+            values.append(value)
+
+    if not set_clause:
+        conn.close()
+        return False
+
+    values.append(name)
+    sql = f"UPDATE raw_data SET {', '.join(set_clause)}, updated_at = CURRENT_TIMESTAMP WHERE name = ?"
+
+    cursor.execute(sql, values)
+    conn.commit()
+    affected = cursor.rowcount
+    conn.close()
+
+    return affected > 0
+
+
 # ========== 应用现场管理 ==========
 def add_site(data):
     """添加应用现场"""
@@ -726,6 +815,34 @@ def delete_site_by_name(name):
     cursor = conn.cursor()
 
     cursor.execute('DELETE FROM sites WHERE name = ?', (name,))
+    conn.commit()
+    affected = cursor.rowcount
+    conn.close()
+
+    return affected > 0
+
+
+def update_site(name, data):
+    """更新应用现场信息"""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # 构建更新语句
+    set_clause = []
+    values = []
+    for key, value in data.items():
+        if key not in ('id', 'name', 'created_at'):
+            set_clause.append(f"{key} = ?")
+            values.append(value)
+
+    if not set_clause:
+        conn.close()
+        return False
+
+    values.append(name)
+    sql = f"UPDATE sites SET {', '.join(set_clause)}, updated_at = CURRENT_TIMESTAMP WHERE name = ?"
+
+    cursor.execute(sql, values)
     conn.commit()
     affected = cursor.rowcount
     conn.close()

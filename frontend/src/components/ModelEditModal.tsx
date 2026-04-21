@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { C } from '../constants'
+import { queryClient } from './ReactQueryProvider'
+import { queryKeys } from '../hooks/useApi'
 
 // 模型类型
 interface Model {
@@ -110,7 +112,30 @@ function ModelEditModal({ isOpen, onClose, onSave, model, datasets }: ModelEditM
       const data = await res.json()
 
       if (data.success || data.message) {
+        // 联动逻辑：如果选择了新的应用现场，自动同步到settings.sites
+        if (site && !sites.includes(site)) {
+          try {
+            const settingsRes = await fetch('/api/settings')
+            const settingsData = await settingsRes.json()
+            const currentSites = settingsData.sites || []
+            if (!currentSites.includes(site)) {
+              await fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sites: [...currentSites, site] })
+              })
+            }
+          } catch (syncErr) {
+            console.warn('自动同步应用现场失败:', syncErr)
+          }
+        }
         alert('保存成功')
+        // Invalidate React Query cache for models
+        queryClient.invalidateQueries({ queryKey: queryKeys.models })
+        queryClient.invalidateQueries({ queryKey: queryKeys.stats })
+        if (model?.name) {
+          queryClient.invalidateQueries({ queryKey: queryKeys.model(model.name) })
+        }
         if (onSave) onSave()
         if (onClose) onClose()
       } else {

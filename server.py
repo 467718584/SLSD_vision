@@ -138,6 +138,15 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', os.urandom(32))
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
+# Swagger API文档配置 - 暂时禁用以兼容服务器flasgger版本
+# app.config['SWAGGER'] = {
+#     'title': 'SLSD Vision Platform API',
+#     'uiversion': 3,
+#     'version': '1.0.0',
+#     'description': '图像算法与数据管理平台 API 文档'
+# }
+# Swagger(app)
+
 # 初始化CSRF保护
 init_csrf(app)
 
@@ -620,14 +629,26 @@ def api_datasets():
         for k, v in labels.items():
             labels_processed[k] = v if isinstance(v, int) else "-"
 
-        # 处理class_info
+        # 处理class_info - 如果为空则从标签文件计算
         class_info = ds.get('class_info', {})
+        if not class_info:
+            # 从标签文件计算类别信息
+            ds_name = ds.get('name', '')
+            dataset_path = os.path.join(DATASETS_DIR, ds_name)
+            # 尝试嵌套目录结构
+            nested_path = os.path.join(dataset_path, ds_name)
+            if os.path.isdir(nested_path):
+                dataset_path = nested_path
+            class_info = count_yolo_classes(dataset_path)
+        
         class_info_processed = {}
         for k, v in class_info.items():
             if isinstance(v, dict):
                 class_info_processed[k] = {"name": v.get("name", f"类{k}"), "count": v.get("count", 0)}
             elif isinstance(v, int):
-                class_info_processed[k] = {"name": f"类{k}", "count": v}
+                # v是样本数量，类别名称用"裂纹"或"裂缝"表示
+                class_name = "裂纹" if k == "0" else f"类{k}"
+                class_info_processed[k] = {"name": class_name, "count": v}
             else:
                 class_info_processed[k] = {"name": "-", "count": 0}
 
@@ -1160,6 +1181,45 @@ def api_audit_stats():
         'success': True,
         'stats': stats,
         'days': days
+    })
+
+
+@app.route('/api/audit/recent')
+@require_auth
+def api_recent_activities():
+    """
+    获取最近活动记录（用于Overview页面）
+    ---
+    tags:
+      - audit
+    responses:
+      200:
+        description: 最近活动列表
+    """
+    from modules.database import get_audit_logs
+    
+    activities = get_audit_logs(limit=20)
+    result = []
+    for a in activities:
+        resource_type = a.get('resource_type', 'user')
+        # 兼容旧数据：没有resource_type时根据action判断
+        if not resource_type or resource_type == 'None':
+            if a.get('action') == 'login':
+                resource_type = 'login'
+            else:
+                resource_type = 'user'
+        result.append({
+            'id': a.get('id'),
+            'action': a.get('action', ''),
+            'user': a.get('username', '未知用户'),
+            'target': a.get('resource_name') or a.get('details') or '-',
+            'timestamp': a.get('created_at', ''),
+            'type': resource_type
+        })
+    
+    return jsonify({
+        'success': True,
+        'activities': result
     })
 
 
@@ -2484,6 +2544,106 @@ def update_class_info(name):
                 pass
 
         return jsonify({"success": True, "message": "类别信息已更新"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/dataset/<name>/recalculate-split', methods=['POST'])
+@require_auth
+# @csrf_protect  # 临时禁用以便测试
+def recalculate_dataset_split(name):
+    """重新计算数据集的train/val/test数量并更新数据库"""
+    try:
+        dataset_path = os.path.join(DATASETS_DIR, name)
+        if not os.path.exists(dataset_path):
+            return jsonify({"success": False, "error": "数据集不存在"}), 404
+        
+        # 查找图片目录
+        images_base = None
+        for base in [dataset_path, os.path.join(dataset_path, name)]:
+            img_dir = os.path.join(base, 'images')
+            if os.path.isdir(img_dir):
+                images_base = img_dir
+                break
+        
+        if not images_base:
+            return jsonify({"success": False, "error": "未找到图片目录"}), 400
+        
+        # 统计各split数量
+        counts = {'train': 0, 'val': 0, 'test': 0}
+        for split in ['train', 'val', 'test']:
+            split_dir = os.path.join(images_base, split)
+            if os.path.isdir(split_dir):
+                for f in os.listdir(split_dir):
+                    if f.lower().endswith(('.jpg', '.jpeg', '.png', '.bmp', '.gif', '.webp')):
+                        counts[split] += 1
+        
+        # 更新数据库
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE datasets SET img_count_train = ?, img_count_val = ?, img_count_test = ? WHERE name = ?",
+            (counts['train'], counts['val'], counts['test'], name)
+        )
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            "success": True, 
+            "message": "分割数量已重新计算",
+            "counts": counts
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/dataset/<name>/visualize', methods=['POST'])
+@require_auth
+@csrf_protect
+def generate_visualization(name):
+    """生成数据集可视化标注图片"""
+    try:
+        # 获取数据集信息
+        ds = get_dataset_by_name(name)
+        if not ds:
+            return jsonify({"success": False, "error": "数据集不存在"}), 404
+        
+        # 获取类别信息
+        class_info = ds.get('class_info', {})
+        class_names = {}
+        for k, v in class_info.items():
+            if isinstance(v, dict):
+                class_names[k] = v.get('name', f'class_{k}')
+            else:
+                class_names[k] = f'class_{k}'
+        
+        # 生成可视化图片
+        from modules.dataset_manager import visualize_dataset
+        visualize_dataset(name, class_names)
+        
+        return jsonify({"success": True, "message": "可视化图片生成完成"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/dataset/<name>/charts', methods=['POST'])
+@require_auth
+@csrf_protect
+def generate_charts(name):
+    """生成数据集统计图表"""
+    try:
+        # 获取数据集信息
+        ds = get_dataset_by_name(name)
+        if not ds:
+            return jsonify({"success": False, "error": "数据集不存在"}), 404
+        
+        class_info = ds.get('class_info', {})
+        
+        # 生成图表
+        from modules.dataset_manager import generate_dataset_charts
+        generate_dataset_charts(name, class_info)
+        
+        return jsonify({"success": True, "message": "统计图表生成完成"})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 

@@ -87,6 +87,17 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* ========== Hover & Transition Utilities ========== */
+.hover\:bg-secondary:hover { background: var(--bg-secondary); }
+.hover\:shadow-sm:hover { box-shadow: var(--shadow-sm); }
+.hover\:shadow-md:hover { box-shadow: var(--shadow-md); }
+.hover\:shadow-lg:hover { box-shadow: var(--shadow-lg); }
+.transition-opacity { transition: opacity 0.2s ease; }
+.transition-shadow { transition: box-shadow 0.2s ease; }
+.transition-all { transition: all 0.2s ease; }
+.transition-colors { transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease; }
+.transition-transform { transition: transform 0.15s ease; }
+
 /* ========== 侧边栏 ========== */
 .sidebar {
   position: fixed;
@@ -379,7 +390,8 @@ body {
 
 .stat-card:hover {
   border-color: var(--accent);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-1px);
 }
 
 .stat-icon {
@@ -445,7 +457,7 @@ body {
 
 .card:hover {
   border-color: var(--border);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-lg);
 }
 
 .card-header {
@@ -495,6 +507,7 @@ body {
 
 .btn-primary:hover {
   background: var(--accent-hover);
+  box-shadow: var(--shadow-md);
 }
 
 .btn-secondary {
@@ -506,6 +519,7 @@ body {
 .btn-secondary:hover {
   background: var(--bg-tertiary);
   border-color: var(--text-muted);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-ghost {
@@ -525,6 +539,7 @@ body {
 
 .btn-danger:hover {
   background: #DC2626;
+  box-shadow: var(--shadow-md);
 }
 
 .btn-sm {
@@ -574,7 +589,7 @@ body {
 
 .table th {
   background: var(--bg-secondary);
-  padding: 12px 16px;
+  padding: 0;  /* 改为0，由th()内联样式控制，避免覆盖 .th-base 的 padding */
   text-align: left;
   font-size: 12px;
   font-weight: 600;
@@ -585,7 +600,7 @@ body {
 }
 
 .table td {
-  padding: 14px 16px;
+  padding: 0;  /* 改为0，由td()内联样式控制 */
   font-size: 14px;
   color: var(--text-primary);
   border-bottom: 1px solid var(--border-light);
@@ -597,6 +612,7 @@ body {
 
 .table tr:hover td {
   background: var(--bg-secondary);
+  transition: background 0.15s ease;
 }
 
 .table-tr-header {
@@ -723,6 +739,8 @@ body {
   box-shadow: var(--shadow-lg);
   z-index: 100;
   animation: fadeIn 0.15s ease;
+  transform-origin: top right;
+  transition: transform 0.15s ease, opacity 0.15s ease;
 }
 
 .dropdown-item {
@@ -1155,3 +1173,28 @@ body {
 .tr-dragging { opacity: 0.5; }
 .tr-drag-over-top { border-top: 2px solid var(--accent); }
 .tr-drag-over-bottom { border-bottom: 2px solid var(--accent); }
+
+/* ========== 图片响应式 ========== */
+.img-fluid {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* ========== 网格布局 ========== */
+.grid {
+  display: grid;
+}
+
+.grid-cols-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.grid-cols-5 {
+  grid-template-columns: repeat(5, 1fr);
+}
+
+/* ModelDetail 页面专用 */
+.page-header {
+  margin-bottom: 24px;
+}

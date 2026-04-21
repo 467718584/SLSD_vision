@@ -1,3 +1,18 @@
+// 原始数据类型定义
+export interface RawData {
+  id: number;
+  name: string;
+  algo_type?: string;
+  description?: string;
+  maintain_date?: string;
+  maintainer?: string;
+  dataset?: string;
+  is_annotated?: boolean;
+  file_size?: number;
+  file_count?: number;
+  source?: string;
+}
+
 // 数据集类型定义
 export interface Dataset {
   id: number;

@@ -141,7 +141,7 @@ function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
                 {algoTypes.map(type => (
                   <span key={type} className="tag tag-primary">
                     {type}
-                    <button onClick={() => handleRemove(algoTypes, setAlgoTypes, type)} className="btn btn-ghost btn-sm" style={{ padding: '0 4px' }}>×</button>
+                    <button onClick={() => handleRemove(algoTypes, setAlgoTypes, type)} className="btn btn-ghost btn-sm transition-all" style={{ padding: '0 4px' }}>×</button>
                   </span>
                 ))}
               </div>
@@ -154,7 +154,7 @@ function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
                   className="input"
                   onKeyPress={e => e.key === 'Enter' && handleAddAlgoType()}
                 />
-                <button onClick={handleAddAlgoType} className="btn btn-primary btn-sm">添加</button>
+                <button onClick={handleAddAlgoType} className="btn btn-primary btn-sm transition-all">添加</button>
               </div>
             </div>
 
@@ -165,7 +165,7 @@ function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
                 {techMethods.map(type => (
                   <span key={type} className="tag tag-success">
                     {type}
-                    <button onClick={() => handleRemove(techMethods, setTechMethods, type)} className="btn btn-ghost btn-sm" style={{ padding: '0 4px', fontSize: '14px', lineHeight: 1, color: '#047857' }}>×</button>
+                    <button onClick={() => handleRemove(techMethods, setTechMethods, type)} className="btn btn-ghost btn-sm transition-all" style={{ padding: '0 4px', fontSize: '14px', lineHeight: 1, color: '#047857' }}>×</button>
                   </span>
                 ))}
               </div>
@@ -178,7 +178,7 @@ function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
                   className="input"
                   onKeyPress={e => e.key === 'Enter' && handleAddTechMethod()}
                 />
-                <button onClick={handleAddTechMethod} className="btn btn-sm" style={{ background: C.success, color: 'white' }}>添加</button>
+                <button onClick={handleAddTechMethod} className="btn btn-sm transition-all" style={{ background: C.success, color: 'white' }}>添加</button>
               </div>
             </div>
 
@@ -189,7 +189,7 @@ function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
                 {annotationTypes.map(type => (
                   <span key={type} className="tag tag-warning">
                     {type}
-                    <button onClick={() => handleRemove(annotationTypes, setAnnotationTypes, type)} className="btn btn-ghost btn-sm" style={{ padding: '0 4px', fontSize: '14px', lineHeight: 1, color: C.orange }}>×</button>
+                    <button onClick={() => handleRemove(annotationTypes, setAnnotationTypes, type)} className="btn btn-ghost btn-sm transition-all" style={{ padding: '0 4px', fontSize: '14px', lineHeight: 1, color: C.orange }}>×</button>
                   </span>
                 ))}
               </div>
@@ -202,7 +202,7 @@ function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
                   className="input"
                   onKeyPress={e => e.key === 'Enter' && handleAddAnnotationType()}
                 />
-                <button onClick={handleAddAnnotationType} className="btn btn-sm btn-warning">添加</button>
+                <button onClick={handleAddAnnotationType} className="btn btn-sm btn-warning transition-all">添加</button>
               </div>
             </div>
 
@@ -213,7 +213,7 @@ function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
                 {sites.map(type => (
                   <span key={type} className="tag" style={{ background: '#E3F2FD', borderColor: '#90CAF9', color: '#1565C0' }}>
                     {type}
-                    <button onClick={() => handleRemove(sites, setSites, type)} className="btn btn-ghost btn-sm" style={{ padding: '0 4px', fontSize: '14px', lineHeight: 1, color: '#1565C0' }}>×</button>
+                    <button onClick={() => handleRemove(sites, setSites, type)} className="btn btn-ghost btn-sm transition-all" style={{ padding: '0 4px', fontSize: '14px', lineHeight: 1, color: '#1565C0' }}>×</button>
                   </span>
                 ))}
               </div>
@@ -226,7 +226,7 @@ function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
                   className="input"
                   onKeyPress={e => e.key === 'Enter' && handleAddSite()}
                 />
-                <button onClick={handleAddSite} className="btn btn-sm" style={{ background: '#1565C0', color: 'white' }}>添加</button>
+                <button onClick={handleAddSite} className="btn btn-sm transition-all" style={{ background: '#1565C0', color: 'white' }}>添加</button>
               </div>
             </div>
 
@@ -237,7 +237,7 @@ function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
                 {sources.map(type => (
                   <span key={type} className="tag" style={{ background: '#FFF3E0', borderColor: '#FFCC80', color: '#E65100' }}>
                     {type}
-                    <button onClick={() => handleRemove(sources, setSources, type)} className="btn btn-ghost btn-sm" style={{ padding: '0 4px', fontSize: '14px', lineHeight: 1, color: '#E65100' }}>×</button>
+                    <button onClick={() => handleRemove(sources, setSources, type)} className="btn btn-ghost btn-sm transition-all" style={{ padding: '0 4px', fontSize: '14px', lineHeight: 1, color: '#E65100' }}>×</button>
                   </span>
                 ))}
               </div>
@@ -250,7 +250,7 @@ function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
                   className="input"
                   onKeyPress={e => e.key === 'Enter' && handleAddSource()}
                 />
-                <button onClick={handleAddSource} className="btn btn-sm" style={{ background: '#E65100', color: 'white' }}>添加</button>
+                <button onClick={handleAddSource} className="btn btn-sm transition-all" style={{ background: '#E65100', color: 'white' }}>添加</button>
               </div>
             </div>
           </div>

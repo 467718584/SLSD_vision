@@ -251,17 +251,19 @@ def detect_annotation_format(dataset_path):
     Returns:
         检测到的格式 ('yolo', 'coco', 'voc') 或 None
     """
-    # 检查YOLO格式
-    yolo_labels_dir = os.path.join(dataset_path, 'labels')
-    if os.path.isdir(yolo_labels_dir):
-        # 先检查根目录
-        yolo_files = [f for f in os.listdir(yolo_labels_dir) if f.endswith('.txt')]
-        if yolo_files:
-            return 'yolo'
-        # 递归检查子目录（train/val/test等）
-        for root, dirs, files in os.walk(yolo_labels_dir):
-            if any(f.endswith('.txt') for f in files):
+    # 检查YOLO格式（支持嵌套目录结构）
+    # 先检查 dataset_path/labels，然后检查 dataset_path/{name}/labels
+    for base_path in [dataset_path, os.path.join(dataset_path, os.path.basename(dataset_path))]:
+        yolo_labels_dir = os.path.join(base_path, 'labels')
+        if os.path.isdir(yolo_labels_dir):
+            # 先检查根目录
+            yolo_files = [f for f in os.listdir(yolo_labels_dir) if f.endswith('.txt')]
+            if yolo_files:
                 return 'yolo'
+            # 递归检查子目录（train/val/test等）
+            for root, dirs, files in os.walk(yolo_labels_dir):
+                if any(f.endswith('.txt') for f in files):
+                    return 'yolo'
 
     # 检查COCO格式
     for filename in os.listdir(dataset_path):
@@ -276,12 +278,13 @@ def detect_annotation_format(dataset_path):
 
     # 检查VOC格式
     voc_dirs = ['Annotations', 'VOCAnnotations', 'annotations']
-    for voc_dir in voc_dirs:
-        voc_path = os.path.join(dataset_path, voc_dir)
-        if os.path.isdir(voc_path):
-            xml_files = [f for f in os.listdir(voc_path) if f.endswith('.xml')]
-            if xml_files:
-                return 'voc'
+    for base_path in [dataset_path, os.path.join(dataset_path, os.path.basename(dataset_path))]:
+        for voc_dir in voc_dirs:
+            voc_path = os.path.join(base_path, voc_dir)
+            if os.path.isdir(voc_path):
+                xml_files = [f for f in os.listdir(voc_path) if f.endswith('.xml')]
+                if xml_files:
+                    return 'voc'
 
     # 检查根目录下的VOC XML文件
     for filename in os.listdir(dataset_path):

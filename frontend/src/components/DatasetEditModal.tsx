@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { C } from '../constants'
+import { queryClient } from './ReactQueryProvider'
+import { queryKeys } from '../hooks/useApi'
 
 // 数据集类型
 interface Dataset {
@@ -105,10 +107,32 @@ function DatasetEditModal({ isOpen, onClose, onSave, dataset }: DatasetEditModal
       const data = await res.json()
 
       if (data.success || data.message) {
+        // 联动逻辑：如果选择了新的数据来源，自动同步到settings.sites
+        if (source && !sources.includes(source)) {
+          try {
+            const settingsRes = await fetch('/api/settings')
+            const settingsData = await settingsRes.json()
+            const currentSites = settingsData.sites || []
+            if (!currentSites.includes(source)) {
+              await fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sites: [...currentSites, source] })
+              })
+            }
+          } catch (syncErr) {
+            console.warn('自动同步应用现场失败:', syncErr)
+          }
+        }
         alert('保存成功')
+        // Invalidate React Query cache for datasets
+        queryClient.invalidateQueries({ queryKey: queryKeys.datasets })
+        queryClient.invalidateQueries({ queryKey: queryKeys.stats })
+        if (dataset?.name) {
+          queryClient.invalidateQueries({ queryKey: queryKeys.dataset(dataset.name) })
+        }
         if (onSave) onSave()
         if (onClose) onClose()
-        window.location.reload()
       } else {
         alert('保存失败: ' + (data.error || '未知错误'))
       }

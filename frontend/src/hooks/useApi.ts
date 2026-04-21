@@ -5,7 +5,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import * as api from '../api'
-import type { Dataset, Model, Settings, Stats, AuditLog, DatasetVersion } from '../types'
+import type { Dataset, Model, Settings, Stats, AuditLog, DatasetVersion, RawData } from '../types'
 
 // ============== Query Keys ==============
 export const queryKeys = {
@@ -18,6 +18,7 @@ export const queryKeys = {
   stats: ['stats'] as const,
   settings: ['settings'] as const,
   auditLogs: (page: number) => ['auditLogs', page] as const,
+  rawData: ['rawData'] as const,
 }
 
 // ============== Dataset Hooks ==============
@@ -190,6 +191,80 @@ export function useCreateVersion() {
       api.createDatasetVersion(name, data),
     onSuccess: (_, { name }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.datasetVersions(name) })
+    },
+  })
+}
+
+// ============== RawData Hooks ==============
+
+/**
+ * 获取原始数据列表
+ */
+
+/**
+ * 获取原始数据列表
+ */
+export function useRawDataList() {
+  return useQuery({
+    queryKey: queryKeys.rawData,
+    queryFn: api.fetchRawDataList,
+    staleTime: 1000 * 60 * 2,
+  })
+}
+
+/**
+ * 添加原始数据
+ */
+export function useAddRawData() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: (formData: FormData) => api.addRawData(formData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.rawData })
+    },
+  })
+}
+
+/**
+ * 更新原始数据
+ */
+export function useUpdateRawData() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: ({ name, data }: { name: string; data: Partial<RawData> }) =>
+      api.updateRawData(name, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.rawData })
+    },
+  })
+}
+
+/**
+ * 删除原始数据
+ */
+export function useDeleteRawData() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: (name: string) => api.deleteRawData(name),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.rawData })
+    },
+  })
+}
+
+/**
+ * 批量删除原始数据
+ */
+export function useBatchDeleteRawData() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: (names: string[]) => api.batchDeleteRawData(names),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.rawData })
     },
   })
 }

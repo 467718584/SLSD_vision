@@ -92,7 +92,7 @@ function ModelCompare({ models, onBack }: ModelCompareProps) {
           <button
             onClick={handleCompare}
             disabled={loading}
-            className="btn"
+            className="btn btn-primary transition-all"
           >
             {loading ? '加载中...' : '开始对比'}
           </button>
@@ -118,7 +118,7 @@ function ModelCompare({ models, onBack }: ModelCompareProps) {
               <div
                 key={model.name}
                 onClick={() => toggleModel(model.name)}
-                className={`p-3 rounded-lg cursor-pointer transition-all ${isSelected ? 'border-2 border-[#0066CC] bg-[#0066CC]/10' : 'border border-[#E2E8F0] bg-white'}`}
+                className={`p-3 rounded-lg cursor-pointer transition-all hover:shadow-md ${isSelected ? 'border-2 border-[#0066CC] bg-[#0066CC]/10' : 'border border-[#E2E8F0] bg-white'}`}
               >
                 <div className="flex items-center gap-2">
                   <input
@@ -159,7 +159,7 @@ function ModelCompare({ models, onBack }: ModelCompareProps) {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
+                  <tr className="hover:bg-secondary transition-colors">
                     <td className="p-3 border-b border-[#E2E8F0] text-[#111827]">算法名称</td>
                     {compareData.map(m => (
                       <td key={m.name} className="p-3 border-b border-[#E2E8F0] text-[#111827]">{m.algoName}</td>

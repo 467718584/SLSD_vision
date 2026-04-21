@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { C } from '../constants'
+import { UploadIcon } from './Icons'
 
 // Props
 interface UploadModalProps {
@@ -24,8 +25,12 @@ function UploadModal({ isOpen, onClose, onSuccess }: UploadModalProps) {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
   const [progress, setProgress] = useState(0)
+  const [progressText, setProgressText] = useState('')
   const [showNameWarning, setShowNameWarning] = useState(false)
   const [nameWarningMsg, setNameWarningMsg] = useState('')
+  const [uploadSpeed, setUploadSpeed] = useState('')
+  const [uploadedSize, setUploadedSize] = useState(0)
+  const [totalSize, setTotalSize] = useState(0)
 
   // 设置选项
   const [algoTypes, setAlgoTypes] = useState<string[]>([
@@ -113,11 +118,35 @@ function UploadModal({ isOpen, onClose, onSuccess }: UploadModalProps) {
     await doUpload()
   }
 
+  // 格式化文件大小
+  function formatSize(bytes: number) {
+    if (bytes < 1024) return bytes + ' B'
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+    if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+    return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB'
+  }
+
+  // 获取文件总大小
+  function getTotalSize() {
+    if (uploadMode === 'folder' && files) {
+      let total = 0
+      for (let i = 0; i < files.length; i++) {
+        total += files[i].size
+      }
+      return total
+    }
+    return file ? file.size : 0
+  }
+
   // 执行上传
   async function doUpload() {
     setError('')
     setUploading(true)
-    setProgress(10)
+    setProgress(0)
+    setProgressText('准备上传...')
+    setUploadSpeed('')
+    setTotalSize(getTotalSize())
+    setUploadedSize(0)
 
     const formData = new FormData()
     if (uploadMode === 'folder' && files) {
@@ -136,37 +165,59 @@ function UploadModal({ isOpen, onClose, onSuccess }: UploadModalProps) {
     formData.append('annotationType', annotationType)
     formData.append('skipValidation', skipValidation.toString())
 
-    try {
-      setProgress(30)
-      const response = await fetch('/api/dataset/upload', {
-        method: 'POST',
-        body: formData
-      })
-      setProgress(70)
+    return new Promise<void>((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+      const startTime = Date.now()
 
-      const contentType = response.headers.get('content-type')
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text()
-        setError('服务器错误: ' + text.substring(0, 100))
-        setUploading(false)
-        return
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          const percent = Math.round((e.loaded / e.total) * 100)
+          setProgress(percent)
+          setUploadedSize(e.loaded)
+          setTotalSize(e.total)
+          const elapsed = (Date.now() - startTime) / 1000
+          const speed = elapsed > 0 ? e.loaded / elapsed : 0
+          setUploadSpeed(formatSize(speed) + '/s')
+          setProgressText(`上传中 ${formatSize(e.loaded)} / ${formatSize(e.total)}`)
+        }
       }
 
-      const data = await response.json()
-      if (data.success) {
-        setProgress(100)
-        if (onClose) onClose()
-        setName(''); setFile(null); setFiles(null); setDescription('')
-        alert('上传成功！')
-        if (onSuccess) onSuccess()
-      } else {
-        setError(data.error || '上传失败')
-        setUploading(false)
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const data = JSON.parse(xhr.responseText)
+            if (data.success) {
+              setProgress(100)
+              setProgressText('上传完成!')
+              setUploadSpeed('')
+              if (onClose) onClose()
+              setName(''); setFile(null); setFiles(null); setDescription('')
+              alert('上传成功!')
+              if (onSuccess) onSuccess()
+            } else {
+              setError(data.error || '上传失败')
+              setUploading(false)
+            }
+          } catch {
+            setError('服务器响应格式错误')
+            setUploading(false)
+          }
+        } else {
+          setError('上传失败: HTTP ' + xhr.status)
+          setUploading(false)
+        }
+        resolve()
       }
-    } catch (e: any) {
-      setError('上传失败: ' + e.message)
-      setUploading(false)
-    }
+
+      xhr.onerror = () => {
+        setError('网络错误,上传失败')
+        setUploading(false)
+        resolve()
+      }
+
+      xhr.open('POST', '/api/dataset/upload')
+      xhr.send(formData)
+    })
   }
 
   // 确认覆盖
@@ -191,7 +242,7 @@ function UploadModal({ isOpen, onClose, onSuccess }: UploadModalProps) {
         {/* 标题栏 */}
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-sm" style={{ margin: 0, color: C.gray1 }}>新建数据集</h3>
-          <button onClick={onClose} className="btn btn-ghost btn-sm" style={{ fontSize: '24px', lineHeight: 1, padding: 0 }}>×</button>
+          <button onClick={onClose} className="btn btn-ghost btn-sm transition-all" style={{ fontSize: '24px', lineHeight: 1, padding: 0 }}>×</button>
         </div>
 
         {/* 上传方式选择 */}
@@ -317,10 +368,28 @@ function UploadModal({ isOpen, onClose, onSuccess }: UploadModalProps) {
           </label>
         </div>
 
-        {/* 进度条 */}
+        {/* 进度条 - 真实上传进度 */}
         {uploading && (
-          <div className="mb-3" style={{ height: '4px', background: C.gray6, borderRadius: '2px', overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${progress}%`, background: C.primary, transition: 'width 0.3s' }} />
+          <div className="mb-3">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <UploadIcon size={16} />
+                <span className="text-sm" style={{ color: C.gray2 }}>{progressText}</span>
+              </div>
+              <div className="flex items-center gap-3">
+                {uploadSpeed && <span className="text-xs" style={{ color: C.primary }}>{uploadSpeed}</span>}
+                <span className="text-sm font-semibold" style={{ color: C.primary }}>{progress}%</span>
+              </div>
+            </div>
+            <div style={{ height: '8px', background: C.gray6, borderRadius: '4px', overflow: 'hidden' }}>
+              <div style={{ 
+                height: '100%', 
+                width: `${progress}%`, 
+                background: `linear-gradient(90deg, ${C.primary} 0%, ${C.primaryLight} 100%)`,
+                borderRadius: '4px',
+                transition: 'width 0.2s ease-out'
+              }} />
+            </div>
           </div>
         )}
 
@@ -344,11 +413,11 @@ function UploadModal({ isOpen, onClose, onSuccess }: UploadModalProps) {
 
         {/* 按钮 */}
         <div className="flex gap-2 justify-end mt-4">
-          <button onClick={onClose} className="btn btn-secondary btn-sm">取消</button>
+          <button onClick={onClose} className="btn btn-secondary btn-sm transition-all">取消</button>
           <button
             onClick={handleSubmit}
             disabled={uploading}
-            className="btn btn-primary btn-sm"
+            className="btn btn-primary btn-sm transition-all"
             style={{ opacity: uploading ? 0.6 : 1, cursor: uploading ? 'not-allowed' : 'pointer' }}
           >
             {uploading ? '上传中...' : '上传'}

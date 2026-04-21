@@ -1,12 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
 import { C, ALGO_COLORS, SITE_COLORS, TECH_METHOD_COLORS } from '../constants'
 import { batchExportDatasets } from '../api'
-import { queryKeys } from '../hooks/useApi'
 import ConfirmDialog from './ConfirmDialog'
-import { SkeletonTable } from './ui/Skeleton'
-import EmptyState from './ui/EmptyState'
-import { FolderIcon } from './Icons'
 
 // 高级搜索筛选类型
 interface DatasetSearchFilters {
@@ -16,7 +11,7 @@ interface DatasetSearchFilters {
   source: string
   dateRange: { start: string; end: string }
   sampleRange: { min: string; max: string }
-  hasTest: string
+  split: string
 }
 
 interface ModelSearchFilters {
@@ -37,7 +32,6 @@ interface Dataset {
   techMethod?: string
   total?: number
   split?: string
-  hasTest?: boolean
   annotationType?: string
   maintainer?: string
   maintainDate?: string
@@ -51,7 +45,6 @@ interface DatasetListProps {
   onSelectDataset: (ds: Dataset) => void
   onRefresh: () => void
   onShowUpload: () => void
-  isLoading?: boolean
 }
 
 // 基础标签组件
@@ -94,12 +87,11 @@ const th = (w: string, c = false) => ({
   color: C.gray1,
   textAlign: c ? "center" as const : "left" as const,
   width: w,
-  whiteSpace: "nowrap" as const,
-  verticalAlign: "middle" as const
+  whiteSpace: "nowrap" as const
 })
 
 const td = (w: string, c = false) => ({
-  padding: "10px 12px",
+  padding: "9px 12px",
   fontSize: "12px",
   color: C.gray2,
   borderBottom: `1px solid ${C.gray6}`,
@@ -181,11 +173,10 @@ const DistChart = React.memo(({ datasetName, size = 50 }: { datasetName: string;
 })
 
 // 数据集列表组件
-function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload, isLoading }: DatasetListProps) {
+function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload }: DatasetListProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [filterType, setFilterType] = useState('全部')
   const [deleteTarget, setDeleteTarget] = useState<{ name: string } | null>(null)
-  const queryClient = useQueryClient()
   // 批量选择状态
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [batchDeleteTarget, setBatchDeleteTarget] = useState<{ names: string[] } | null>(null)
@@ -198,7 +189,7 @@ function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload, isLoa
     source: '全部',
     dateRange: { start: '', end: '' },
     sampleRange: { min: '', max: '' },
-    hasTest: '全部'
+    split: '全部'
   })
 
   // 高级筛选面板显示状态
@@ -207,13 +198,12 @@ function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload, isLoa
   // 计算活跃筛选条件数量
   const activeFilterCount = useMemo(() => {
     let count = 0
-    if (searchFilters.hasTest !== '全部') count++
     if (searchFilters.dateRange.start) count++
     if (searchFilters.dateRange.end) count++
     if (searchFilters.sampleRange.min) count++
     if (searchFilters.sampleRange.max) count++
     return count
-  }, [searchFilters.hasTest, searchFilters.dateRange, searchFilters.sampleRange])
+  }, [searchFilters.dateRange, searchFilters.sampleRange])
 
   // 初始化从localStorage加载保存的搜索条件
   useEffect(() => {
@@ -251,7 +241,11 @@ function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload, isLoa
     return ['全部', ...Array.from(srcs)]
   }, [datasets])
 
-
+  // 获取所有分配比例
+  const splits = useMemo(() => {
+    const sp = new Set(datasets.map(ds => ds.split).filter(Boolean))
+    return ['全部', ...Array.from(sp)]
+  }, [datasets])
 
   // 拖拽排序状态
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null)
@@ -264,6 +258,8 @@ function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload, isLoa
       const matchType = searchFilters.algoType === '全部' || ds.algoType === searchFilters.algoType
       const matchTech = searchFilters.techMethod === '全部' || searchFilters.techMethod === '目标检测算法' || ds.techMethod === searchFilters.techMethod
       const matchSource = searchFilters.source === '全部' || ds.source === searchFilters.source
+      const matchSplit = searchFilters.split === '全部' || ds.split === searchFilters.split
+      
       // 日期范围
       let matchDate = true
       if (searchFilters.dateRange.start || searchFilters.dateRange.end) {
@@ -278,12 +274,7 @@ function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload, isLoa
       if (searchFilters.sampleRange.min && total < parseInt(searchFilters.sampleRange.min)) matchSample = false
       if (searchFilters.sampleRange.max && total > parseInt(searchFilters.sampleRange.max)) matchSample = false
       
-      // 是否有测试集筛选
-      let matchHasTest = true
-      if (searchFilters.hasTest === '有测试集') matchHasTest = ds.hasTest === true
-      else if (searchFilters.hasTest === '无测试集') matchHasTest = ds.hasTest === false
-
-      return matchSearch && matchType && matchTech && matchSource && matchHasTest && matchDate && matchSample
+      return matchSearch && matchType && matchTech && matchSource && matchSplit && matchDate && matchSample
     })
   }, [datasets, searchFilters])
 
@@ -392,8 +383,7 @@ function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload, isLoa
       const res = await fetch(`/api/dataset/${encodeURIComponent(deleteTarget.name)}`, { method: 'DELETE' })
       const data = await res.json()
       if (data.success) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.datasets })
-        queryClient.invalidateQueries({ queryKey: queryKeys.stats })
+        onRefresh()
       } else {
         alert(`删除失败: ${data.error}`)
       }
@@ -490,41 +480,10 @@ function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload, isLoa
     window.open(`/api/dataset/${encodeURIComponent(name)}/download`, '_blank')
   }
 
-  // 加载状态
-  if (isLoading) {
-    return (
-      <div className="p-6">
-        <div className="mb-4 space-y-2">
-          <Skeleton height={32} width="200px" />
-          <Skeleton height={16} width="150px" />
-        </div>
-        <SkeletonTable rows={8} columns={14} />
-      </div>
-    )
-  }
-
-  // 空状态
-  if (datasets.length === 0) {
-    return (
-      <div className="p-6">
-        <EmptyState
-          icon={<FolderIcon size={64} />}
-          title="暂无数据集"
-          description="上传数据集开始使用"
-          action={{
-            label: "上传数据集",
-            onClick: onShowUpload,
-            variant: "primary"
-          }}
-        />
-      </div>
-    )
-  }
-
   return (
     <div>
       {/* 头部 */}
-      <div className="page-header mb-4" style={{ paddingRight: "8px" }}>
+      <div className="page-header mb-4">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="page-title">数据集管理</h2>
@@ -535,14 +494,13 @@ function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload, isLoa
           <button
             onClick={onShowUpload}
             className="btn btn-primary"
-            style={{ marginLeft: "16px" }}
           >
             + 新建数据集
           </button>
         </div>
       </div>
 
-        <div className="card p-4 mb-3">
+        <div className="card mb-3">
           {/* 搜索栏 */}
           <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
             <input
@@ -614,7 +572,20 @@ function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload, isLoa
                 {src}
               </button>
             ))}
-
+            <span className="text-sm text-muted ml-2 mr-1">分配:</span>
+            {splits.slice(0, 5).map(sp => (
+              <button
+                key={sp}
+                onClick={() => {
+                  const newFilters = { ...searchFilters, split: sp }
+                  setSearchFilters(newFilters)
+                  persistFilters(newFilters)
+                }}
+                className={`btn btn-sm ${searchFilters.split === sp ? 'btn-primary' : 'btn-secondary'}`}
+              >
+                {sp}
+              </button>
+            ))}
             <div style={{ marginLeft: "auto", display: "flex", gap: "8px", alignItems: "center" }}>
               {/* 高级筛选按钮 */}
               <button
@@ -628,7 +599,7 @@ function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload, isLoa
               {(searchFilters.dateRange.start || searchFilters.dateRange.end || searchFilters.sampleRange.min || searchFilters.sampleRange.max) && (
                 <button
                   onClick={() => {
-                    const newFilters = { ...searchFilters, hasTest: '全部', dateRange: { start: '', end: '' }, sampleRange: { min: '', max: '' } }
+                    const newFilters = { ...searchFilters, dateRange: { start: '', end: '' }, sampleRange: { min: '', max: '' } }
                     setSearchFilters(newFilters)
                     persistFilters(newFilters)
                   }}
@@ -650,43 +621,6 @@ function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload, isLoa
               gap: "24px",
               flexWrap: "wrap"
             }}>
-              {/* 是否有测试集 */}
-              <div>
-                <div style={{ fontSize: "11px", color: C.gray3, marginBottom: "4px", fontWeight: 500 }}>是否有测试集</div>
-                <div style={{ display: "flex", gap: "8px" }}>
-                  <button
-                    onClick={() => {
-                      const newFilters = { ...searchFilters, hasTest: '全部' }
-                      setSearchFilters(newFilters)
-                      persistFilters(newFilters)
-                    }}
-                    className={`btn btn-sm ${searchFilters.hasTest === '全部' ? 'btn-primary' : 'btn-secondary'}`}
-                  >
-                    全部
-                  </button>
-                  <button
-                    onClick={() => {
-                      const newFilters = { ...searchFilters, hasTest: '有测试集' }
-                      setSearchFilters(newFilters)
-                      persistFilters(newFilters)
-                    }}
-                    className={`btn btn-sm ${searchFilters.hasTest === '有测试集' ? 'btn-primary' : 'btn-secondary'}`}
-                  >
-                    有测试集
-                  </button>
-                  <button
-                    onClick={() => {
-                      const newFilters = { ...searchFilters, hasTest: '无测试集' }
-                      setSearchFilters(newFilters)
-                      persistFilters(newFilters)
-                    }}
-                    className={`btn btn-sm ${searchFilters.hasTest === '无测试集' ? 'btn-primary' : 'btn-secondary'}`}
-                  >
-                    无测试集
-                  </button>
-                </div>
-              </div>
-
               {/* 日期范围 */}
               <div>
                 <div style={{ fontSize: "11px", color: C.gray3, marginBottom: "4px", fontWeight: 500 }}>维护日期范围</div>
@@ -785,8 +719,8 @@ function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload, isLoa
 
       {/* 批量操作栏 */}
       {selectedIds.size > 0 && (
-        <div className="card p-3 mb-3 batch-action-card">
-          <div className="flex items-center gap-3">
+        <div className="card mb-3" style={{ background: C.primaryBg, borderColor: C.primaryBd }}>
+          <div className="card-body flex items-center gap-3">
             <span className="text-sm font-medium text-accent">
               已选择 {selectedIds.size} 个数据集
             </span>
@@ -814,10 +748,10 @@ function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload, isLoa
 
       {/* 数据表格 */}
       <div className="table-container">
-        <div className="overflow-x-auto">
-          <table className="table min-w-1200">
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "1180px" }}>
             <thead>
-              <tr className="table-tr-header">
+              <tr>
                 <th style={th("36px", true)}>
                   <input
                     type="checkbox"
@@ -827,7 +761,7 @@ function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload, isLoa
                   />
                 </th>
                 <th style={th("48px", true)}>编号</th>
-                <th style={th("100px", true)}>算法类型</th>
+                <th style={th("110px", true)}>算法类型</th>
                 <th style={th("110px", true)}>技术方法</th>
                 <th style={th("210px")}>数据集名称</th>
                 <th style={th("70px", true)}>分配比例</th>
@@ -859,7 +793,6 @@ function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload, isLoa
                   onClick={() => onSelectDataset(ds)}
                   onMouseEnter={e => { e.currentTarget.style.background = isSelected ? C.primaryBg : C.primaryBg }}
                   onMouseLeave={e => { e.currentTarget.style.background = isSelected ? C.primaryBg : (idx % 2 === 0 ? C.white : "#FAFCFE") }}
-                  className={`cursor-pointer ${isSelected ? 'bg-primary' : (idx % 2 === 0 ? 'bg-white' : '')}`}
                   style={{
                     cursor: "pointer",
                     background: isDragOver ? C.primaryBg : isSelected ? C.primaryBg : (idx % 2 === 0 ? C.white : "#FAFCFE"),
@@ -880,7 +813,7 @@ function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload, isLoa
                   <td style={td("48px", true)}>
                     <span style={{ fontWeight: 600, color: C.gray4 }}>{ds.id}</span>
                   </td>
-                  <td style={td("100px", true)}>
+                  <td style={td("110px", true)}>
                     <MemoizedAlgoTag type={ds.algoType} />
                   </td>
                   <td style={td("110px", true)}>
@@ -969,8 +902,8 @@ function DatasetList({ datasets, onSelectDataset, onRefresh, onShowUpload, isLoa
                   <td style={td("72px", true)}>
                     <span style={{ fontSize: "11px", color: C.gray2, fontWeight: 500 }}>{ds.maintainer}</span>
                   </td>
-                  <td style={{ ...td("110px", true), textAlign: 'right' }}>
-                    <div className="flex gap-1 justify-end">
+                  <td style={td("110px", true)}>
+                    <div className="flex gap-1">
                       <button
                         onClick={(e) => downloadDataset(ds.name, e)}
                         title="下载数据集"

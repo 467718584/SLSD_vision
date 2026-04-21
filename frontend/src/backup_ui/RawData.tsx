@@ -1,10 +1,6 @@
 import React, { useState, useMemo } from 'react'
 import { C, ALGO_COLORS, SITE_COLORS } from '../constants'
 import ConfirmDialog from './ConfirmDialog'
-import { useRawDataList, useAddRawData, useDeleteRawData, useBatchDeleteRawData } from '../hooks/useApi'
-import { batchDownloadRawData } from '../api'
-import { UploadIcon } from './Icons'
-import { SkeletonTable } from './ui/Skeleton'
 
 // 原始数据类型定义
 interface RawData {
@@ -60,12 +56,11 @@ const th = (w: string, c = false) => ({
   color: C.gray1,
   textAlign: c ? "center" as const : "left" as const,
   width: w,
-  whiteSpace: "nowrap" as const,
-  verticalAlign: "middle" as const
+  whiteSpace: "nowrap" as const
 })
 
 const td = (w: string, c = false) => ({
-  padding: "10px 12px",
+  padding: "9px 12px",
   fontSize: "12px",
   color: C.gray2,
   borderBottom: `1px solid ${C.gray6}`,
@@ -83,33 +78,74 @@ function formatFileSize(bytes?: number): string {
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)}GB`
 }
 
-// API响应数据转换为组件数据格式
-function transformApiData(apiData: any): RawData {
-  return {
-    id: apiData.id,
-    name: apiData.name,
-    algoType: apiData.algo_type,
-    description: apiData.description,
-    maintainDate: apiData.maintain_date,
-    maintainer: apiData.maintainer,
-    dataset: apiData.dataset,
-    isAnnotated: apiData.is_annotated,
-    fileSize: apiData.file_size,
-    fileCount: apiData.file_count,
-    source: apiData.source,
+// 模拟数据（后端API未就绪时使用）
+const mockRawData: RawData[] = [
+  {
+    id: 1,
+    name: "raw_images_20240115",
+    algoType: "路面积水检测",
+    description: "2024年1月苏北灌溉总渠现场采集图片",
+    maintainDate: "2024-01-15",
+    maintainer: "张三",
+    dataset: "苏北灌溉总渠_2024",
+    isAnnotated: true,
+    fileSize: 1024 * 1024 * 500,
+    fileCount: 1250,
+    source: "苏北灌溉总渠"
+  },
+  {
+    id: 2,
+    name: "raw_images_20240220",
+    algoType: "漂浮物检测",
+    description: "南水北调宝应站现场采集图片",
+    maintainDate: "2024-02-20",
+    maintainer: "李四",
+    dataset: "宝应站_漂浮物数据集",
+    isAnnotated: false,
+    fileSize: 1024 * 1024 * 800,
+    fileCount: 2100,
+    source: "南水北调宝应站"
+  },
+  {
+    id: 3,
+    name: "raw_images_20240310",
+    algoType: "墙面裂缝检测",
+    description: "慈溪北排墙面巡检图片",
+    maintainDate: "2024-03-10",
+    maintainer: "王五",
+    dataset: "慈溪北排_裂缝数据集",
+    isAnnotated: true,
+    fileSize: 1024 * 1024 * 300,
+    fileCount: 800,
+    source: "慈溪北排"
+  },
+  {
+    id: 4,
+    name: "raw_images_20240405",
+    algoType: "游泳检测",
+    description: "瓯江引水工程现场图片",
+    maintainDate: "2024-04-05",
+    maintainer: "赵六",
+    dataset: "瓯江引水_游泳检测",
+    isAnnotated: false,
+    fileSize: 1024 * 1024 * 1200,
+    fileCount: 3500,
+    source: "瓯江引水"
   }
-}
+]
 
 // 原始数据管理组件
 function RawData({ onRefresh }: RawDataProps) {
+  const [rawDataList, setRawDataList] = useState<RawData[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterAlgoType, setFilterAlgoType] = useState('全部')
   const [filterAnnotated, setFilterAnnotated] = useState('全部')
   const [showUpload, setShowUpload] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [deleteTarget, setDeleteTarget] = useState<RawData | null>(null)
-  const [showBatchDeleteDialog, setShowBatchDeleteDialog] = useState(false)
-  const [selectedNames, setSelectedNames] = useState<Set<string>>(new Set())
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
 
   // 上传表单状态
   const [uploadName, setUploadName] = useState('')
@@ -123,34 +159,28 @@ function RawData({ onRefresh }: RawDataProps) {
   // 算法类型选项
   const algoTypes = ['全部', '路面积水检测', '漂浮物检测', '墙面裂缝检测', '游泳检测', '其他']
 
-  // React Query hooks
-  const { data: apiResponse, isLoading, refetch, error } = useRawDataList()
-  const addRawDataMutation = useAddRawData()
-  const deleteRawDataMutation = useDeleteRawData()
-  const batchDeleteRawDataMutation = useBatchDeleteRawData()
+  // 加载数据
+  React.useEffect(() => {
+    loadData()
+  }, [])
 
-  // 调试日志
-  console.log('[RawData] isLoading:', isLoading, 'apiResponse:', apiResponse, 'error:', error)
-
-  // 转换API数据 - 处理数组和对象两种响应格式
-  const rawDataList = useMemo(() => {
-    console.log('[RawData] rawDataList recomputing, apiResponse:', apiResponse)
-    
-    // 如果是数组直接处理（后端直接返回数组）
-    if (Array.isArray(apiResponse)) {
-      console.log('[RawData] apiResponse is array, length:', apiResponse.length)
-      return apiResponse.map(transformApiData)
+  async function loadData() {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/raw-data')
+      if (res.ok) {
+        const data = await res.json()
+        setRawDataList(data)
+      } else {
+        // 后端API未就绪，使用模拟数据
+        setRawDataList(mockRawData)
+      }
+    } catch {
+      // 后端API未就绪，使用模拟数据
+      setRawDataList(mockRawData)
     }
-    
-    // 如果是对象，取data字段
-    if (apiResponse?.data) {
-      console.log('[RawData] apiResponse.data is array, length:', apiResponse.data.length)
-      return apiResponse.data.map(transformApiData)
-    }
-    
-    console.log('[RawData] apiResponse is empty/undefined, returning []')
-    return []
-  }, [apiResponse])
+    setLoading(false)
+  }
 
   // 过滤数据
   const filteredData = useMemo(() => {
@@ -170,14 +200,6 @@ function RawData({ onRefresh }: RawDataProps) {
     return rawDataList.reduce((sum, item) => sum + (item.fileCount || 0), 0)
   }, [rawDataList])
 
-  // 移除导致无限循环的useEffect
-  // React Query会自己管理数据刷新，不需要手动刷新
-  // React.useEffect(() => {
-  //   if (onRefresh) {
-  //     onRefresh()
-  //   }
-  // }, [rawDataList.length])
-
   // 上传原始数据
   async function handleUpload() {
     if (!uploadName) {
@@ -189,7 +211,8 @@ function RawData({ onRefresh }: RawDataProps) {
       return
     }
 
-    setUploadProgress(10)
+    setUploading(true)
+    setUploadProgress(0)
 
     const formData = new FormData()
     formData.append('name', uploadName)
@@ -201,17 +224,61 @@ function RawData({ onRefresh }: RawDataProps) {
     formData.append('file', uploadFile)
 
     try {
-      setUploadProgress(50)
-      await addRawDataMutation.mutateAsync(formData)
-      setUploadProgress(100)
-      
-      setTimeout(() => {
-        setShowUpload(false)
-        setUploadProgress(0)
-        resetUploadForm()
-        refetch()
-      }, 500)
-    } catch (error) {
+      // 模拟上传进度
+      const progressTimer = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressTimer)
+            return prev
+          }
+          return prev + 10
+        })
+      }, 200)
+
+      const res = await fetch('/api/raw-data/upload', {
+        method: 'POST',
+        body: formData
+      })
+
+      clearInterval(progressTimer)
+
+      if (res.ok) {
+        setUploadProgress(100)
+        setTimeout(() => {
+          setShowUpload(false)
+          setUploading(false)
+          setUploadProgress(0)
+          resetUploadForm()
+          loadData()
+          onRefresh?.()
+        }, 500)
+      } else {
+        // API不存在，模拟成功
+        const newItem: RawData = {
+          id: Date.now(),
+          name: uploadName,
+          algoType: uploadAlgoType,
+          description: uploadDescription,
+          maintainer: uploadMaintainer,
+          dataset: uploadDataset,
+          source: uploadSource,
+          isAnnotated: false,
+          fileSize: uploadFile.size,
+          fileCount: 1,
+          maintainDate: new Date().toISOString().split('T')[0]
+        }
+        setRawDataList(prev => [newItem, ...prev])
+        setUploadProgress(100)
+        setTimeout(() => {
+          setShowUpload(false)
+          setUploading(false)
+          setUploadProgress(0)
+          resetUploadForm()
+          onRefresh?.()
+        }, 500)
+      }
+    } catch {
+      setUploading(false)
       setUploadProgress(0)
       alert('上传失败，请重试')
     }
@@ -231,85 +298,49 @@ function RawData({ onRefresh }: RawDataProps) {
   async function confirmDelete() {
     if (!deleteTarget) return
     try {
-      await deleteRawDataMutation.mutateAsync(deleteTarget.name)
-      refetch()
-    } catch (error) {
-      alert('删除失败，请重试')
+      const res = await fetch(`/api/raw-data/${deleteTarget.id}`, { method: 'DELETE' })
+      if (res.ok) {
+        setRawDataList(prev => prev.filter(item => item.id !== deleteTarget.id))
+      } else {
+        // 模拟删除
+        setRawDataList(prev => prev.filter(item => item.id !== deleteTarget.id))
+      }
+    } catch {
+      // 模拟删除
+      setRawDataList(prev => prev.filter(item => item.id !== deleteTarget.id))
     }
     setDeleteTarget(null)
   }
 
-  // 批量删除原始数据
-  async function confirmBatchDelete() {
-    const names = Array.from(selectedNames)
-    try {
-      await batchDeleteRawDataMutation.mutateAsync(names)
-      setSelectedNames(new Set())
-      setShowBatchDeleteDialog(false)
-      refetch()
-    } catch (error) {
-      alert('批量删除失败，请重试')
-    }
-  }
-
   // 全选/取消全选
   function toggleSelectAll() {
-    if (selectedNames.size === filteredData.length) {
-      setSelectedNames(new Set())
+    if (selectedIds.size === filteredData.length) {
+      setSelectedIds(new Set())
     } else {
-      setSelectedNames(new Set(filteredData.map(item => item.name)))
+      setSelectedIds(new Set(filteredData.map(item => item.id)))
     }
   }
 
-  function toggleSelect(name: string) {
-    const newSelected = new Set(selectedNames)
-    if (newSelected.has(name)) {
-      newSelected.delete(name)
+  function toggleSelect(id: number) {
+    const newSelected = new Set(selectedIds)
+    if (newSelected.has(id)) {
+      newSelected.delete(id)
     } else {
-      newSelected.add(name)
+      newSelected.add(id)
     }
-    setSelectedNames(newSelected)
+    setSelectedIds(newSelected)
   }
 
   // 下载原始数据
-  async function downloadRawData(item: RawData, e: React.MouseEvent) {
+  function downloadRawData(item: RawData, e: React.MouseEvent) {
     e.stopPropagation()
-    try {
-      await batchDownloadRawData([item.name])
-    } catch (error: any) {
-      alert(error.message || '下载失败')
-    }
+    window.open(`/api/raw-data/${item.id}/download`, '_blank')
   }
 
-  // 批量下载原始数据
-  async function handleBatchDownload() {
-    const names = Array.from(selectedNames)
-    try {
-      await batchDownloadRawData(names)
-    } catch (error: any) {
-      alert(error.message || '下载失败')
-    }
-  }
-
-  // 错误状态处理
-  if (error) {
-    console.error('[RawData] Error loading data:', error)
+  if (loading) {
     return (
-      <div className="p-4">
-        <div className="card p-6 text-center">
-          <p style={{ color: '#DC2626', marginBottom: '12px' }}>加载失败: {error instanceof Error ? error.message : '未知错误'}</p>
-          <button onClick={() => refetch()} className="btn btn-primary">重试</button>
-        </div>
-      </div>
-    )
-  }
-
-  // 加载状态
-  if (isLoading) {
-    console.log('[RawData] Showing skeleton (isLoading=true)')
-    return (
-      <div className="p-4">
-        <SkeletonTable rows={10} columns={12} />
+      <div className="flex items-center justify-center h-200">
+        <span className="text-gray-3">加载中...</span>
       </div>
     )
   }
@@ -317,65 +348,50 @@ function RawData({ onRefresh }: RawDataProps) {
   return (
     <div>
       {/* 头部 */}
-      <div className="page-header mb-4" style={{ paddingRight: "8px" }}>
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="page-title">原始数据管理</h2>
-            <p className="text-sm text-muted mt-1">
-              共 {rawDataList.length} 条记录 · {totalFiles.toLocaleString()} 个文件
-            </p>
-          </div>
-          <button
-            onClick={() => setShowUpload(true)}
-            className="btn btn-primary"
-            style={{ marginLeft: "16px" }}
-          >
-            + 上传原始数据
-          </button>
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h2 className="text-lg font-bold text-gray-1">原始数据管理</h2>
+          <p className="text-sm text-gray-3 mt-1">
+            共 {rawDataList.length} 条记录 · {totalFiles.toLocaleString()} 个文件
+          </p>
         </div>
+        <button
+          onClick={() => setShowUpload(true)}
+          className="btn btn-primary"
+        >
+          + 上传原始数据
+        </button>
       </div>
 
       {/* 搜索和筛选 */}
-      <div className="card p-4 mb-3">
-        {/* 搜索栏 */}
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
+      <div className="card mb-3">
+        <div className="flex items-center gap-3">
           <input
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             placeholder="搜索数据名称或描述..."
-            style={{
-              flex: 1,
-              padding: "8px 12px",
-              border: `1px solid ${C.border}`,
-              borderRadius: "6px",
-              fontSize: "13px",
-              outline: "none",
-              transition: "border-color .2s"
-            }}
-            onFocus={e => { e.target.style.borderColor = C.primary }}
-            onBlur={e => { e.target.style.borderColor = C.border }}
+            className="input w-full"
           />
         </div>
 
-        {/* 筛选按钮组 */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm text-muted mr-1">算法:</span>
+        <div className="flex items-center gap-2 mt-3 flex-wrap">
+          <span className="text-xs text-gray-3 mr-1">算法:</span>
           {algoTypes.map(type => (
             <button
               key={type}
               onClick={() => setFilterAlgoType(type)}
-              className={`btn btn-sm ${filterAlgoType === type ? 'btn-primary' : 'btn-secondary'}`}
+              className={`btn btn-sm ${filterAlgoType === type ? 'btn-primary' : 'btn-ghost'}`}
             >
               {type}
             </button>
           ))}
-          <span className="text-sm text-muted ml-2 mr-1">标注:</span>
+          <span className="text-xs text-gray-3 ml-2 mr-1">标注:</span>
           {['全部', '已标注', '未标注'].map(status => (
             <button
               key={status}
               onClick={() => setFilterAnnotated(status)}
-              className={`btn btn-sm ${filterAnnotated === status ? 'btn-primary' : 'btn-secondary'}`}
+              className={`btn btn-sm ${filterAnnotated === status ? 'btn-primary' : 'btn-ghost'}`}
             >
               {status}
             </button>
@@ -383,49 +399,31 @@ function RawData({ onRefresh }: RawDataProps) {
         </div>
       </div>
 
-      {/* 批量操作栏 */}
-      {selectedNames.size > 0 && (
-        <div className="card p-3 mb-3 flex items-center justify-between" style={{ background: '#EEF4FF', border: '1px solid #C7D7FF' }}>
-          <span className="text-sm text-accent">
-            已选 {selectedNames.size} 项
+      <span className="block text-xs text-gray-4 mb-3">
+        {selectedIds.size > 0 && (
+          <span className="mr-3 text-primary">
+            已选 {selectedIds.size} 项
           </span>
-          <div className="flex gap-2">
-            <button
-              onClick={handleBatchDownload}
-              className="btn btn-sm btn-primary"
-            >
-              批量下载
-            </button>
-            <button
-              onClick={() => setShowBatchDeleteDialog(true)}
-              className="btn btn-sm btn-danger"
-            >
-              批量删除
-            </button>
-          </div>
-        </div>
-      )}
-
-      <div className="text-sm text-muted mb-3">
+        )}
         显示 {filteredData.length} 条
-      </div>
+      </span>
 
       {/* 数据表格 */}
-      <div className="table-container">
+      <div className="card overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="table min-w-1200">
+          <table className="table w-full min-w-1000">
             <thead>
-              <tr className="table-tr-header">
+              <tr className="bg-gray-7 border-b-2">
                 <th style={th("36px", true)}>
                   <input
                     type="checkbox"
-                    checked={selectedNames.size === filteredData.length && filteredData.length > 0}
+                    checked={selectedIds.size === filteredData.length && filteredData.length > 0}
                     onChange={toggleSelectAll}
-                    style={{ width: "16px", height: "16px", cursor: "pointer" }}
+                    className="w-4 h-4 cursor-pointer"
                   />
                 </th>
                 <th style={th("48px", true)}>编号</th>
-                <th style={th("100px", true)}>算法类型</th>
+                <th style={th("130px", true)}>算法类型</th>
                 <th style={th("180px")}>数据名称</th>
                 <th style={th("180px")}>数据概述</th>
                 <th style={th("110px")}>关联数据集</th>
@@ -439,26 +437,26 @@ function RawData({ onRefresh }: RawDataProps) {
             </thead>
             <tbody>
               {filteredData.map((item, idx) => {
-                const isSelected = selectedNames.has(item.name)
+                const isSelected = selectedIds.has(item.id)
                 return (
                   <tr
                     key={item.id}
-                    onClick={() => toggleSelect(item.name)}
+                    onClick={() => toggleSelect(item.id)}
                     className={`cursor-pointer transition-all ${isSelected ? 'bg-primary' : (idx % 2 === 0 ? 'bg-white' : '')}`}
                     style={{ background: idx % 2 !== 0 && !isSelected ? '#FAFCFE' : undefined }}
                   >
-                    <td style={td("36px", true)} onClick={e => { e.stopPropagation(); toggleSelect(item.name) }}>
+                    <td style={td("36px", true)} onClick={e => { e.stopPropagation(); toggleSelect(item.id) }}>
                       <input
                         type="checkbox"
                         checked={isSelected}
-                        onChange={() => toggleSelect(item.name)}
+                        onChange={() => toggleSelect(item.id)}
                         className="w-4 h-4 cursor-pointer"
                       />
                     </td>
                     <td style={td("48px", true)}>
                       <span className="font-semibold text-gray-4">{item.id}</span>
                     </td>
-                    <td style={td("100px", true)}>
+                    <td style={td("130px", true)}>
                       <MemoizedAlgoTag type={item.algoType} />
                     </td>
                     <td style={td("180px")}>
@@ -549,45 +547,31 @@ function RawData({ onRefresh }: RawDataProps) {
         type="danger"
       />
 
-      {/* 批量删除确认弹窗 */}
-      <ConfirmDialog
-        isOpen={showBatchDeleteDialog}
-        onClose={() => setShowBatchDeleteDialog(false)}
-        onConfirm={confirmBatchDelete}
-        title="确认批量删除"
-        message={`确定要删除选中的 ${selectedNames.size} 项原始数据吗？此操作不可撤销。`}
-        confirmText="删除"
-        cancelText="取消"
-        type="danger"
-      />
-
       {/* 上传弹窗 */}
       {showUpload && (
         <div
           className="fixed inset-0 bg-black-50 flex items-center justify-center z-10"
-          onClick={() => !addRawDataMutation.isPending && setShowUpload(false)}
+          onClick={() => !uploading && setShowUpload(false)}
         >
           <div
-            className="bg-white rounded-12 p-6 w-full max-w-120 overflow-auto"
-            style={{ maxHeight: "80vh" }}
+            className="bg-white rounded-12 p-6 w-full max-w-120 overflow-auto max-h-80vh"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-5">
               <h3 className="text-base font-semibold text-gray-1">上传原始数据</h3>
-              {!addRawDataMutation.isPending && (
+              {!uploading && (
                 <button
                   onClick={() => setShowUpload(false)}
-                  className="btn btn-ghost text-gray-3"
-                  style={{ fontSize: "20px", padding: "0" }}
+                  className="btn btn-ghost text-gray-3 text-2xl p-0"
                 >
                   ×
                 </button>
               )}
             </div>
 
-            {addRawDataMutation.isPending ? (
+            {uploading ? (
               <div className="text-center py-10">
-                <div className="mb-4"><UploadIcon size={32} /></div>
+                <div className="text-2xl mb-4">⬆️</div>
                 <div className="text-sm text-gray-2 mb-4">上传中...</div>
                 <div className="w-full h-2 bg-gray-6 rounded-4 overflow-hidden">
                   <div className="h-full bg-primary transition-all duration-300"

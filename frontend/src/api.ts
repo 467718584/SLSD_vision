@@ -10,6 +10,7 @@ import type {
   Stats,
   AuditLog,
   DatasetVersion,
+  RawData,
   ApiResponse,
   SearchParams,
   UploadFormData
@@ -530,6 +531,192 @@ interface StorageInfo {
 export async function fetchHealth(): Promise<ApiResponse<HealthStatus>> {
   const res = await fetch('/api/health', { headers: getHeaders() })
   return res.json()
+}
+
+// ============== 原始数据 API ==============
+
+/**
+ * 获取原始数据列表
+ */
+export async function fetchRawDataList(): Promise<ApiResponse<RawData[]>> {
+  console.log('[fetchRawDataList] Starting fetch')
+  
+  // 创建AbortController用于超时
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 10000) // 10秒超时
+  
+  try {
+    const res = await fetch('/api/raw-data', { 
+      headers: getHeaders(),
+      signal: controller.signal
+    })
+    clearTimeout(timeoutId)
+    
+    console.log('[fetchRawDataList] Response status:', res.status)
+    
+    // 先读取响应文本
+    const text = await res.text()
+    console.log('[fetchRawDataList] Response body:', text || '(empty)')
+    
+    if (!res.ok) {
+      throw new Error(`获取原始数据列表失败: ${res.status} ${res.statusText}`)
+    }
+    
+    // 手动解析JSON
+    try {
+      const data = JSON.parse(text || '[]')
+      console.log('[fetchRawDataList] Parsed data:', JSON.stringify(data).substring(0, 100))
+      
+      // 确保返回正确的格式
+      if (Array.isArray(data)) {
+        // API直接返回数组，需要包装
+        return { success: true, data: data }
+      } else if (data && typeof data === 'object') {
+        // API返回对象，保持原样
+        return data
+      } else {
+        // 未知格式，返回空数组
+        return { success: true, data: [] }
+      }
+    } catch (e) {
+      console.error('[fetchRawDataList] JSON parse error:', e)
+      return { success: true, data: [] }
+    }
+  } catch (e) {
+    console.error('[fetchRawDataList] Fetch error:', e)
+    if (e instanceof Error && e.name === 'AbortError') {
+      throw new Error('请求超时，请检查网络连接')
+    }
+    throw e
+  }
+}
+
+/**
+ * 添加原始数据
+ */
+export async function addRawData(formData: FormData): Promise<ApiResponse<RawData>> {
+  const res = await fetch('/api/raw-data', {
+    method: 'POST',
+    headers: {
+      'X-CSRF-Token': getCsrfToken(),
+      'Authorization': localStorage.getItem('token') ? `Bearer ${localStorage.getItem('token')}` : ''
+    },
+    body: formData
+  })
+  return res.json()
+}
+
+/**
+ * 更新原始数据
+ */
+export async function updateRawData(name: string, data: Partial<RawData>): Promise<ApiResponse<RawData>> {
+  const res = await fetch(`/api/raw-data/${encodeURIComponent(name)}`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(data)
+  })
+  return res.json()
+}
+
+/**
+ * 删除原始数据
+ */
+export async function deleteRawData(name: string): Promise<ApiResponse<void>> {
+  const res = await fetch(`/api/raw-data/${encodeURIComponent(name)}`, {
+    method: 'DELETE',
+    headers: getHeaders()
+  })
+  return res.json()
+}
+
+/**
+ * 批量删除原始数据
+ */
+export async function batchDeleteRawData(names: string[]): Promise<ApiResponse<{ results: { success: string[]; failed: { name: string; error: string }[] } }>> {
+  const res = await fetch('/api/raw-data/batch-delete', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ names })
+  })
+  return res.json()
+}
+
+/**
+ * 下载原始数据
+ */
+export async function downloadRawData(name: string): Promise<void> {
+  const res = await fetch(`/api/raw-data/${encodeURIComponent(name)}/download`, {
+    method: 'GET',
+    headers: {
+      'Authorization': localStorage.getItem('token') ? `Bearer ${localStorage.getItem('token')}` : ''
+    }
+  })
+  
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: '下载失败' }))
+    throw new Error(err.error || '下载失败')
+  }
+  
+  // 获取文件名
+  const contentDisposition = res.headers.get('Content-Disposition')
+  let filename = `${name}_raw_data.zip`
+  if (contentDisposition) {
+    const match = contentDisposition.match(/filename[*]?=[\"']?(.+?)[\"']?(?:;|$)/)
+    if (match) filename = match[1]
+  }
+  
+  // 下载文件
+  const blob = await res.blob()
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  window.URL.revokeObjectURL(url)
+}
+
+/**
+ * 批量下载原始数据
+ */
+export async function batchDownloadRawData(names: string[]): Promise<void> {
+  if (names.length === 0) throw new Error('请选择要下载的数据')
+  if (names.length > 10) throw new Error('最多只能下载10个数据')
+  
+  const res = await fetch('/api/raw-data/batch-download', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': getCsrfToken(),
+      'Authorization': localStorage.getItem('token') ? `Bearer ${localStorage.getItem('token')}` : ''
+    },
+    body: JSON.stringify({ names })
+  })
+  
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: '下载失败' }))
+    throw new Error(err.error || '下载失败')
+  }
+  
+  // 获取ZIP文件名
+  const contentDisposition = res.headers.get('Content-Disposition')
+  let filename = `raw_data_export_${Date.now()}.zip`
+  if (contentDisposition) {
+    const match = contentDisposition.match(/filename[*]?=[\"']?(.+?)[\"']?(?:;|$)/)
+    if (match) filename = match[1]
+  }
+  
+  // 下载文件
+  const blob = await res.blob()
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  window.URL.revokeObjectURL(url)
 }
 
 /**

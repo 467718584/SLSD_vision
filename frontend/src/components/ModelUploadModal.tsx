@@ -142,7 +142,7 @@ function ModelUploadModal({ isOpen, onClose, onSuccess, datasets }: ModelUploadM
         {/* 标题栏 */}
         <div className="modal-header">
           <h3 className="font-semibold text-sm" style={{ margin: 0, color: C.gray1 }}>新建模型</h3>
-          <button onClick={onClose} className="btn btn-ghost btn-sm" style={{ fontSize: '20px', lineHeight: 1, padding: 0 }}>×</button>
+          <button onClick={onClose} className="btn btn-ghost btn-sm transition-all" style={{ fontSize: '20px', lineHeight: 1, padding: 0 }}>×</button>
         </div>
 
         {/* 表单内容 */}
@@ -262,11 +262,11 @@ function ModelUploadModal({ isOpen, onClose, onSuccess, datasets }: ModelUploadM
 
         {/* 底部按钮 */}
         <div className="modal-footer">
-          <button onClick={onClose} className="btn btn-secondary btn-sm">取消</button>
+          <button onClick={onClose} className="btn btn-secondary btn-sm transition-all">取消</button>
           <button
             onClick={handleSubmit}
             disabled={uploading}
-            className="btn btn-primary btn-sm"
+            className="btn btn-primary btn-sm transition-all"
             style={{ opacity: uploading ? 0.7 : 1, cursor: uploading ? 'not-allowed' : 'pointer' }}
           >
             {uploading ? '上传中...' : '上传'}

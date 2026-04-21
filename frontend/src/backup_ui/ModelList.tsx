@@ -1,12 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
 import { C, ALGO_COLORS, SITE_COLORS, TECH_METHOD_COLORS, MODEL_CAT_COLORS } from '../constants'
 import { batchExportModels } from '../api'
-import { queryKeys } from '../hooks/useApi'
 import ConfirmDialog from './ConfirmDialog'
-import { SkeletonTable } from './ui/Skeleton'
-import EmptyState from './ui/EmptyState'
-import { FolderIcon } from './Icons'
 
 // 高级搜索筛选类型
 interface DatasetSearchFilters {
@@ -54,7 +49,6 @@ interface ModelListProps {
   onSelectModel: (m: Model) => void
   onRefresh: () => void
   onShowUpload: () => void
-  isLoading?: boolean
 }
 
 // 基础标签组件
@@ -69,6 +63,14 @@ const MemoizedTag = React.memo(({ label, colors }: { label: string; colors: { bg
         border: `1px solid ${c.border}`,
         color: c.text
       }}>
+    <span
+      className="memoized-tag"
+      style={{
+        background: c.bg,
+        borderColor: c.border,
+        color: c.text,
+      }}
+    >
       {label}
     </span>
   )
@@ -98,12 +100,11 @@ const th = (w: string, c = false) => ({
   color: C.gray1,
   textAlign: c ? "center" as const : "left" as const,
   width: w,
-  whiteSpace: "nowrap" as const,
-  verticalAlign: "middle" as const
+  whiteSpace: "nowrap" as const
 })
 
 const td = (w: string, c = false) => ({
-  padding: "10px 12px",
+  padding: "9px 12px",
   fontSize: "12px",
   color: C.gray2,
   borderBottom: `1px solid ${C.gray6}`,
@@ -117,20 +118,19 @@ const AccuracyBar = React.memo(({ value, width = 60 }: { value?: number; width?:
   const color = (value || 0) >= 95 ? C.success : (value || 0) >= 85 ? C.primary : C.warning
   return (
     <div className="flex items-center gap-2">
-      <div style={{ width, height: "6px", background: C.gray6, borderRadius: "3px", overflow: "hidden" }}>
-        <div style={{ width: `${value || 0}%`, height: "100%", background: color, borderRadius: "3px" }} />
+      <div className="accuracy-bar-track" style={{ width }}>
+        <div className="accuracy-bar-fill" style={{ width: `${value || 0}%`, background: color }} />
       </div>
-      <span style={{ fontSize: "13px", fontWeight: 700, color, minWidth: "46px" }}>{value}%</span>
+      <span className="accuracy-value" style={{ color }}>{value}%</span>
     </div>
   )
 })
 
 // 模型列表组件
-function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload, isLoading }: ModelListProps) {
+function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload }: ModelListProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [filterType, setFilterType] = useState('全部')
   const [deleteTarget, setDeleteTarget] = useState<{ name: string } | null>(null)
-  const queryClient = useQueryClient()
   // 批量选择状态
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [batchDeleteTarget, setBatchDeleteTarget] = useState<{ names: string[] } | null>(null)
@@ -312,8 +312,7 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload, i
       const res = await fetch(`/api/model/${encodeURIComponent(deleteTarget.name)}`, { method: 'DELETE' })
       const data = await res.json()
       if (data.success) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.models })
-        queryClient.invalidateQueries({ queryKey: queryKeys.stats })
+        onRefresh()
       } else {
         alert(`删除失败: ${data.error}`)
       }
@@ -422,41 +421,10 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload, i
     }
   }
 
-  // 加载状态
-  if (isLoading) {
-    return (
-      <div className="p-6">
-        <div className="mb-4 space-y-2">
-          <Skeleton height={32} width="180px" />
-          <Skeleton height={16} width="120px" />
-        </div>
-        <SkeletonTable rows={8} columns={13} />
-      </div>
-    )
-  }
-
-  // 空状态
-  if (models.length === 0) {
-    return (
-      <div className="p-6">
-        <EmptyState
-          icon={<FolderIcon size={64} />}
-          title="暂无模型"
-          description="上传模型开始使用"
-          action={{
-            label: "上传模型",
-            onClick: onShowUpload,
-            variant: "primary"
-          }}
-        />
-      </div>
-    )
-  }
-
   return (
     <div>
       {/* 头部 */}
-      <div className="page-header mb-4" style={{ paddingRight: "8px" }}>
+      <div className="page-header mb-4">
         <div className="flex items-center justify-between">
           <div>
           <h2 className="page-title">算法模型管理</h2>
@@ -467,7 +435,6 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload, i
         <button
           onClick={onShowUpload}
           className="btn btn-primary"
-          style={{ marginLeft: "16px" }}
         >
           + 新建模型
         </button>
@@ -476,7 +443,7 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload, i
 
         <div className="card p-4 mb-3">
           {/* 搜索栏 */}
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
+          <div className="flex items-center gap-3 mb-3">
             <input
               type="text"
               value={searchFilters.searchQuery}
@@ -487,17 +454,7 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload, i
                 persistFilters(newFilters)
               }}
               placeholder="搜索模型名称..."
-              style={{
-                flex: 1,
-                padding: "8px 12px",
-                border: `1px solid ${C.border}`,
-                borderRadius: "6px",
-                fontSize: "13px",
-                outline: "none",
-                transition: "border-color .2s"
-              }}
-              onFocus={e => { e.target.style.borderColor = C.primary }}
-              onBlur={e => { e.target.style.borderColor = C.border }}
+              className="input"
             />
           </div>
 
@@ -513,7 +470,7 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload, i
                   setFilterType(algo)
                   persistFilters(newFilters)
                 }}
-                className={`btn btn-sm ${searchFilters.algoName === algo ? 'btn-primary' : 'btn-secondary'}`}
+                className={`btn btn-sm ${searchFilters.algoName === algo ? 'btn-primary' : 'btn-ghost'}`}
               >
                 {algo}
               </button>
@@ -527,7 +484,7 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload, i
                   setSearchFilters(newFilters)
                   persistFilters(newFilters)
                 }}
-                className={`btn btn-sm ${searchFilters.techMethod === tech ? 'btn-primary' : 'btn-secondary'}`}
+                className={`btn btn-sm ${searchFilters.techMethod === tech ? 'btn-primary' : 'btn-ghost'}`}
               >
                 {tech}
               </button>
@@ -541,7 +498,7 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload, i
                   setSearchFilters(newFilters)
                   persistFilters(newFilters)
                 }}
-                className={`btn btn-sm ${searchFilters.site === site ? 'btn-primary' : 'btn-secondary'}`}
+                className={`btn btn-sm ${searchFilters.site === site ? 'btn-primary' : 'btn-ghost'}`}
               >
                 {site}
               </button>
@@ -555,7 +512,7 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload, i
                   setSearchFilters(newFilters)
                   persistFilters(newFilters)
                 }}
-                className={`btn btn-sm ${searchFilters.category === cat ? 'btn-primary' : 'btn-secondary'}`}
+                className={`btn btn-sm ${searchFilters.category === cat ? 'btn-primary' : 'btn-ghost'}`}
               >
                 {cat}
               </button>
@@ -564,8 +521,7 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload, i
               {/* 高级筛选按钮 */}
               <button
                 onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                className={`btn btn-sm ${showAdvancedFilters ? 'btn-primary' : 'btn-secondary'}`}
-                style={{ fontWeight: showAdvancedFilters ? 600 : 400, gap: "4px" }}
+                className={`btn btn-sm gap-1 ${showAdvancedFilters ? 'btn-primary' : 'btn-ghost'}`}
               >
                 高级 {activeFilterCount > 0 && `(${activeFilterCount})`}
               </button>
@@ -577,7 +533,7 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload, i
                     setSearchFilters(newFilters)
                     persistFilters(newFilters)
                   }}
-                  className="btn btn-sm btn-secondary border-default"
+                  className="btn btn-sm btn-ghost border-default"
                 >
                   重置
                 </button>
@@ -675,7 +631,7 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload, i
             <button onClick={handleBatchDelete} className="btn btn-danger btn-sm">
               批量删除
             </button>
-            <button onClick={() => setSelectedIds(new Set())} className="btn btn-secondary btn-sm">
+            <button onClick={() => setSelectedIds(new Set())} className="btn btn-ghost btn-sm">
               取消选择
             </button>
           </div>
@@ -685,25 +641,25 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload, i
       {/* 模型表格 */}
       <div className="table-container">
         <div className="overflow-x-auto">
-          <table className="table min-w-1200">
+          <table className="table min-w-1100">
             <thead>
               <tr className="table-tr-header">
-                <th style={th("36px", true)}>
-                  <input type="checkbox" checked={selectedIds.size === filteredModels.length && filteredModels.length > 0} onChange={toggleSelectAll} style={{ width: "16px", height: "16px", cursor: "pointer" }} />
+                <th className="th-base th-c w-36">
+                  <input type="checkbox" checked={selectedIds.size === filteredModels.length && filteredModels.length > 0} onChange={toggleSelectAll} className="cursor-pointer w-16" />
                 </th>
-                <th style={th("48px", true)}>编号</th>
-                <th style={th("100px", true)}>算法类型</th>
-                <th style={th("110px", true)}>技术方法</th>
-                <th style={th("180px")}>模型名称</th>
-                <th style={th("110px")}>模型类别</th>
-                <th style={th("140px")}>模型概述</th>
-                <th style={th("80px", true)}>精度曲线</th>
-                <th style={th("80px", true)}>模型精度</th>
-                <th style={th("100px", true)}>应用现场</th>
-                <th style={th("100px")}>使用数据集</th>
-                <th style={th("86px", true)}>维护日期</th>
-                <th style={th("72px", true)}>维护人员</th>
-                <th style={th("110px", true)}>操作</th>
+                <th className="th-base th-c w-48">编号</th>
+                <th className="th-base th-c w-100">算法类型</th>
+                <th className="th-base th-c w-110">技术方法</th>
+                <th className="th-base th-l w-180">模型名称</th>
+                <th className="th-base th-l w-120">模型类别</th>
+                <th className="th-base th-l w-140">模型概述</th>
+                <th className="th-base th-c w-80">精度曲线</th>
+                <th className="th-base th-c w-80">模型精度</th>
+                <th className="th-base th-c w-100">应用现场</th>
+                <th className="th-base th-l w-100">使用数据集</th>
+                <th className="th-base th-c w-80">维护日期</th>
+                <th className="th-base th-c w-70">维护人员</th>
+                <th className="th-base th-c w-90">操作</th>
               </tr>
             </thead>
             <tbody>
@@ -724,10 +680,9 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload, i
                     onClick={() => onSelectModel(m)}
                     onMouseEnter={e => { e.currentTarget.style.background = isSelected ? C.primaryBg : C.primaryBg }}
                     onMouseLeave={e => { e.currentTarget.style.background = isSelected ? C.primaryBg : (idx % 2 === 0 ? C.white : "#FAFCFE") }}
-                    className={`cursor-pointer ${isSelected ? 'bg-primary' : (idx % 2 === 0 ? 'bg-white' : '')}`}
+                    className="cursor-pointer"
                     style={{
                       opacity: isDragging ? 0.5 : 1,
-                      background: isDragOver ? C.primaryBg : isSelected ? C.primaryBg : (idx % 2 === 0 ? C.white : "#FAFCFE"),
                       borderTop: isDragOver && draggedIdx !== null && draggedIdx < idx ? `2px solid ${C.primary}` : undefined,
                       borderBottom: isDragOver && draggedIdx !== null && draggedIdx > idx ? `2px solid ${C.primary}` : undefined,
                     }}
@@ -744,12 +699,12 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload, i
                     <td className="td-base td-c w-110">
                       <MemoizedTechMethodTag type={m.techMethod || "目标检测算法"} />
                     </td>
-                    <td className="td-base td-l w-180">
+                    <td className="td-base td-l w-220">
                       <div className="truncate model-name" title={m.name}>
                         {m.name}
                       </div>
                     </td>
-                    <td className="td-base td-l w-110">
+                    <td className="td-base td-l w-120">
                       <MemoizedModelCatTag cat={m.category} />
                     </td>
                     <td className="td-base td-l w-140">
@@ -789,10 +744,10 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload, i
                         />
                       </div>
                     </td>
-                    <td className="td-base td-c w-80">
+                    <td style={td("80px", true)}>
                       <AccuracyBar value={m.accuracy} width={50} />
                     </td>
-                    <td className="td-base td-c w-100">
+                    <td style={td("100px", true)}>
                       <MemoizedSiteTag site={m.site} />
                     </td>
                     <td className="td-base td-l w-100">
@@ -801,14 +756,14 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload, i
                         {m.dataset || "-"}
                       </span>
                     </td>
-                    <td className="td-base td-c w-86">
+                    <td className="td-base td-c w-80">
                       <span className="text-sm text-muted">{m.maintainDate}</span>
                     </td>
-                    <td className="td-base td-c w-72">
+                    <td className="td-base td-c w-70">
                       <span className="text-sm font-medium text-gray-2">{m.maintainer}</span>
                     </td>
-                    <td className="td-base w-110" style={{ textAlign: 'right' }}>
-                      <div className="flex gap-1 justify-end">
+                    <td className="td-base td-c w-90">
+                      <div className="flex gap-1">
                         <button onClick={(e) => downloadModel(m.name, e)} title="下载模型" className="btn btn-primary btn-sm">下载</button>
                         <button onClick={(e) => { e.stopPropagation(); setDeleteTarget({ name: m.name }); }} title="删除模型" className="btn btn-danger btn-sm">删除</button>
                       </div>

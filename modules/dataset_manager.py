@@ -56,37 +56,39 @@ def visualize_dataset(dataset_name, class_names=None):
         images_base = None
         labels_base = None
 
-        # 查找标准YOLO目录结构
-        possible_images_dirs = ['images', 'img', 'pictures', 'data']
-        possible_labels_dirs = ['labels']
-
-        # 检查标准结构
-        for split in ['train', 'val', 'test']:
-            img_dir = os.path.join(dataset_path, 'images', split)
-            lbl_dir = os.path.join(dataset_path, 'labels', split)
+        # 查找标准YOLO目录结构（支持嵌套目录结构）
+        # 检查 dataset_path/images/split 或 dataset_path/{name}/images/split
+        for base in [dataset_path, os.path.join(dataset_path, dataset_name)]:
+            img_dir = os.path.join(base, 'images')
+            lbl_dir = os.path.join(base, 'labels')
             if os.path.isdir(img_dir) and os.path.isdir(lbl_dir):
-                if images_base is None:
-                    images_base = os.path.join(dataset_path, 'images')
-                    labels_base = os.path.join(dataset_path, 'labels')
+                images_base = img_dir
+                labels_base = lbl_dir
                 break
 
-        # 如果没有标准结构，尝试其他方式
+        # 如果没有找到，尝试其他目录结构
         if images_base is None:
-            for dir_name in possible_images_dirs:
-                img_path = os.path.join(dataset_path, dir_name)
-                if os.path.isdir(img_path):
-                    images_base = img_path
+            for dir_name in ['images', 'img', 'pictures', 'data']:
+                for base in [dataset_path, os.path.join(dataset_path, dataset_name)]:
+                    img_path = os.path.join(base, dir_name)
+                    if os.path.isdir(img_path):
+                        images_base = img_path
+                        break
+                if images_base:
                     break
 
         if labels_base is None:
-            for dir_name in possible_labels_dirs:
-                lbl_path = os.path.join(dataset_path, dir_name)
-                if os.path.isdir(lbl_path):
-                    labels_base = lbl_path
+            for dir_name in ['labels']:
+                for base in [dataset_path, os.path.join(dataset_path, dataset_name)]:
+                    lbl_path = os.path.join(base, dir_name)
+                    if os.path.isdir(lbl_path):
+                        labels_base = lbl_path
+                        break
+                if labels_base:
                     break
 
         if images_base is None or labels_base is None:
-            print(f"未找到图片或标注目录")
+            print(f"未找到图片或标注目录: images_base={images_base}, labels_base={labels_base}")
             return False
 
         # 处理每个split
@@ -102,6 +104,8 @@ def visualize_dataset(dataset_name, class_names=None):
         if not splits:
             if os.path.isdir(images_base) and os.path.isdir(labels_base):
                 splits.append(('train', images_base, labels_base))
+
+        print(f"找到 splits: {splits}")
 
         # 处理每个split的图片
         total_processed = 0
@@ -523,56 +527,77 @@ def get_dataset_images(dataset_name, max_images=50):
 
 def get_dataset_split_images(dataset_name, max_per_split=8):
     """
-    获取数据集按split分类的图片（训练集、验证集、测试集）
+    获取数据集按split分类的图片（训练集、验证集、测试集），分原图和标注图
 
     Args:
         dataset_name: 数据集名称
         max_per_split: 每个split最多返回的图片数
 
     Returns:
-        字典，包含train, val, test三个键，每个键对应图片路径列表
+        字典，包含:
+        - train_original: 训练集原图
+        - train_vis: 训练集标注图
+        - val_original: 验证集原图
+        - val_vis: 验证集标注图
+        - test_original: 测试集原图
+        - test_vis: 测试集标注图
     """
     dataset_path = os.path.join(DATASETS_DIR, dataset_name)
 
     if not os.path.exists(dataset_path):
-        return {'train': [], 'val': [], 'test': []}
+        return {
+            'train_original': [], 'train_vis': [],
+            'val_original': [], 'val_vis': [],
+            'test_original': [], 'test_vis': []
+        }
 
-    result = {'train': [], 'val': [], 'test': []}
+    # 使用os.walk递归查找图片，支持嵌套目录结构
+    train_original, val_original, test_original = [], [], []
+    train_vis, val_vis, test_vis = [], [], []
 
-    # 优先使用可视化目录
-    vis_base = os.path.join(dataset_path, 'vis')
-    # 备选使用images目录
-    img_base = os.path.join(dataset_path, 'images')
+    for root, dirs, files in os.walk(dataset_path):
+        # 判断当前目录是否为vis目录或其子目录
+        is_vis_branch = '/vis/' in root or root.endswith('/vis')
+        
+        # 根据路径判断split（更精确的匹配）
+        # 检查路径是否以 /train, /val, /test 结尾或是其子路径
+        has_train = '/train/' in root or root.endswith('/train')
+        has_val = '/val/' in root or root.endswith('/val')
+        has_test = '/test/' in root or root.endswith('/test')
+        
+        for file in files:
+            if any(file.lower().endswith(ext) for ext in SUPPORTED_IMAGE_FORMATS):
+                full_path = os.path.join(root, file)
+                
+                # vis目录下的图片
+                if is_vis_branch:
+                    if has_train:
+                        train_vis.append(full_path)
+                    elif has_val:
+                        val_vis.append(full_path)
+                    elif has_test:
+                        test_vis.append(full_path)
+                else:
+                    # 非vis目录，只处理images或嵌套dataset子目录中的图片
+                    # 跳过vis目录中的文件
+                    if '/vis/' in full_path:
+                        continue
+                    # 根据路径中的split进行分类
+                    if has_train:
+                        train_original.append(full_path)
+                    elif has_val:
+                        val_original.append(full_path)
+                    elif has_test:
+                        test_original.append(full_path)
 
-    for split in ['train', 'val', 'test']:
-        # 优先从vis目录获取，如果没有图片则回退到img目录
-        split_vis_dir = os.path.join(vis_base, split) if os.path.exists(vis_base) else None
-        split_img_dir = os.path.join(img_base, split) if os.path.exists(img_base) else None
-
-        images = []
-        source_dirs = []
-
-        # 优先使用vis目录
-        if split_vis_dir and os.path.isdir(split_vis_dir):
-            source_dirs.append(split_vis_dir)
-
-        # 回退到img目录
-        if split_img_dir and os.path.isdir(split_img_dir):
-            source_dirs.append(split_img_dir)
-        elif not source_dirs and os.path.isdir(img_base):
-            # 如果没有找到split目录，尝试从根目录查找
-            source_dirs.append(img_base)
-
-        for source_dir in source_dirs:
-            for file in os.listdir(source_dir):
-                if any(file.lower().endswith(ext) for ext in SUPPORTED_IMAGE_FORMATS):
-                    images.append(os.path.join(source_dir, file))
-                    if len(images) >= max_per_split:
-                        break
-            if len(images) >= max_per_split:
-                break
-
-        result[split] = images[:max_per_split]
+    result = {
+        'train_original': train_original[:max_per_split],
+        'train_vis': train_vis[:max_per_split],
+        'val_original': val_original[:max_per_split],
+        'val_vis': val_vis[:max_per_split],
+        'test_original': test_original[:max_per_split],
+        'test_vis': test_vis[:max_per_split]
+    }
 
     return result
 

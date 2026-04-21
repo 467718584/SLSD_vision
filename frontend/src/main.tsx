@@ -33,9 +33,9 @@ const originalFetch = window.fetch
 window.fetch = async function(url: RequestInfo | URL, options?: RequestInit): Promise<Response> {
   const token = localStorage.getItem('token')
 
-  const headers: Record<string, string> = {
-    ...(options?.headers as Record<string, string>),
-  }
+  // 构建新的headers（浅拷贝，避免修改原始对象）
+  const existingHeaders = options?.headers as Record<string, string> | undefined
+  const headers: Record<string, string> = existingHeaders ? { ...existingHeaders } : {}
 
   // 对于需要认证的请求，添加token
   if (token && !url.toString().includes('/api/auth/login') && !url.toString().includes('/api/auth/register')) {
@@ -73,18 +73,25 @@ function handleError(error: Error, errorInfo: React.ErrorInfo): void {
   // 可以在这里添加错误上报逻辑
 }
 
-// 入口点
-const rootElement = document.getElementById('root')
-if (rootElement) {
-  ReactDOM.createRoot(rootElement).render(
-    <React.StrictMode>
-      <ErrorBoundary onError={handleError} showDetails={true}>
-        <ReactQueryProvider>
-          <NotificationProvider>
-            <App />
-          </NotificationProvider>
-        </ReactQueryProvider>
-      </ErrorBoundary>
-    </React.StrictMode>
-  )
+// 等待CSRF Token初始化完成
+async function initApp() {
+  await fetchCsrfToken()
+  
+  const rootElement = document.getElementById('root')
+  if (rootElement) {
+    ReactDOM.createRoot(rootElement).render(
+      <React.StrictMode>
+        <ErrorBoundary onError={handleError} showDetails={true}>
+          <ReactQueryProvider>
+            <NotificationProvider>
+              <App />
+            </NotificationProvider>
+          </ReactQueryProvider>
+        </ErrorBoundary>
+      </React.StrictMode>
+    )
+  }
 }
+
+// 启动应用
+initApp()
