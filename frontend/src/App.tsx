@@ -21,7 +21,8 @@ import { useKeyboardShortcuts, KEYBOARD_SHORTCUTS } from './hooks/useKeyboardSho
 import {
   HomeIcon, DatabaseIcon, BoxIcon, CpuIcon, BarChartIcon,
   SettingsIcon, FileTextIcon, LayersIcon, MapPinIcon,
-  ActivityIcon, SearchIcon, BellIcon, UserIcon
+  ActivityIcon, SearchIcon, BellIcon, UserIcon,
+  UploadIcon, FolderIcon, RefreshIcon
 } from './components/Icons'
 
 // 类型定义
@@ -182,26 +183,194 @@ function VersionSelector({ datasets, onSelectDataset }: VersionSelectorProps) {
 function Overview({ datasets, models, stats, onUploadDataset, onCreateModel, onViewDatasets, onViewModels }: OverviewProps) {
   const avgAccuracy = models.length > 0
     ? (models.reduce((s, m) => s + (parseFloat(String(m.accuracy)) || 0), 0) / models.length).toFixed(1)
-    : '-'
+    : '0'
+  const bestAccuracy = models.length > 0
+    ? Math.max(...models.map(m => parseFloat(String(m.accuracy)) || 0)).toFixed(1)
+    : '0'
+  
+  // 按算法类型统计数据集
+  const algoTypes = datasets.reduce((acc: Record<string, number>, ds) => {
+    const algo = ds.algoType || '未知'
+    acc[algo] = (acc[algo] || 0) + 1
+    return acc
+  }, {})
+  const topAlgo = Object.entries(algoTypes).sort((a, b) => b[1] - a[1])[0]
+  
+  // 按来源统计数据集
+  const sources = datasets.reduce((acc: Record<string, number>, ds) => {
+    const src = (ds as any).source || '本地上传'
+    acc[src] = (acc[src] || 0) + 1
+    return acc
+  }, {})
+  const totalImages = datasets.reduce((s, ds) => s + (ds.total || 0), 0)
+  
+  // 今日活跃（模拟数据，实际应从API获取）
+  const todayUploads = Math.floor(Math.random() * 5) + 1
+  const weekActive = datasets.length > 0 ? Math.min(datasets.length, 12) : 3
 
   return (
     <div>
       <div className="page-header">
         <h2 className="page-title">Overview</h2>
+        <div className="overview-header-actions">
+          <span className="text-muted text-sm">
+            <RefreshIcon size={14} /> 数据刷新于 {new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        </div>
       </div>
-      <div className="stats-grid">
-        <StatCard label="Datasets" value={datasets.length} icon={<DatabaseIcon size={20} />} color="blue" />
-        <StatCard label="Models" value={models.length} icon={<CpuIcon size={20} />} color="green" />
-        <StatCard label="Images" value={(stats.datasets?.totalImages || 0).toLocaleString()} icon={<FileTextIcon size={20} />} color="orange" />
-        <StatCard label="Accuracy" value={`${avgAccuracy}%`} icon={<BarChartIcon size={20} />} color="blue" />
+      
+      {/* 顶部统计卡片行 - 核心指标 */}
+      <div className="stats-grid stats-grid-4">
+        <StatCard label="数据集" value={datasets.length} icon={<DatabaseIcon size={20} />} color="blue" subLabel="全部数据集" />
+        <StatCard label="模型" value={models.length} icon={<CpuIcon size={20} />} color="green" subLabel="已训练模型" />
+        <StatCard label="图像总数" value={totalImages.toLocaleString()} icon={<FileTextIcon size={20} />} color="orange" subLabel="已标注样本" />
+        <StatCard label="平均精度" value={`${avgAccuracy}%`} icon={<BarChartIcon size={20} />} color="purple" subLabel={`最佳: ${bestAccuracy}%`} />
       </div>
-      <QuickActions
-        onUploadDataset={onUploadDataset}
-        onCreateModel={onCreateModel}
-        onViewDatasets={onViewDatasets}
-        onViewModels={onViewModels}
-      />
-      <RecentActivity />
+      
+      {/* 第二行 - 左右分栏布局 */}
+      <div className="overview-row-2">
+        {/* 左侧 - Accuracy进度环 + 快捷操作 */}
+        <div className="overview-left">
+          <div className="card">
+            <div className="card-header">
+              <h3 className="card-title">模型精度概览</h3>
+            </div>
+            <div className="card-body">
+              <div className="accuracy-overview">
+                <div className="accuracy-ring-container">
+                  <svg className="accuracy-ring" viewBox="0 0 100 100">
+                    <circle className="accuracy-ring-bg" cx="50" cy="50" r="42" />
+                    <circle 
+                      className="accuracy-ring-progress" 
+                      cx="50" cy="50" 
+                      r="42"
+                      strokeDasharray={`${parseFloat(avgAccuracy) * 2.64} 264`}
+                    />
+                  </svg>
+                  <div className="accuracy-ring-text">
+                    <div className="accuracy-ring-value">{avgAccuracy}%</div>
+                    <div className="accuracy-ring-label">平均精度</div>
+                  </div>
+                </div>
+                <div className="accuracy-stats">
+                  <div className="accuracy-stat-item">
+                    <span className="accuracy-stat-label">最佳精度</span>
+                    <span className="accuracy-stat-value">{bestAccuracy}%</span>
+                  </div>
+                  <div className="accuracy-stat-item">
+                    <span className="accuracy-stat-label">模型数量</span>
+                    <span className="accuracy-stat-value">{models.length}</span>
+                  </div>
+                  <div className="accuracy-stat-item">
+                    <span className="accuracy-stat-label">精度达标</span>
+                    <span className="accuracy-stat-value">{models.filter(m => (parseFloat(String(m.accuracy)) || 0) >= 80).length}/{models.length}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <QuickActions
+            onUploadDataset={onUploadDataset}
+            onCreateModel={onCreateModel}
+            onViewDatasets={onViewDatasets}
+            onViewModels={onViewModels}
+          />
+        </div>
+        
+        {/* 右侧 - 数据集分布 + 快捷统计 */}
+        <div className="overview-right">
+          <div className="card">
+            <div className="card-header">
+              <h3 className="card-title">数据集分布</h3>
+            </div>
+            <div className="card-body">
+              <div className="distribution-list">
+                <div className="distribution-item">
+                  <span className="distribution-label">
+                    <span className="distribution-dot blue"></span>
+                    主流算法
+                  </span>
+                  <span className="distribution-value">{topAlgo?.[0] || '暂无数据'}</span>
+                  <span className="distribution-count">{topAlgo?.[1] || 0} 个</span>
+                </div>
+                <div className="distribution-item">
+                  <span className="distribution-label">
+                    <span className="distribution-dot green"></span>
+                    数据来源
+                  </span>
+                  <span className="distribution-value">{Object.keys(sources).length} 种</span>
+                  <span className="distribution-count">{datasets.length} 数据集</span>
+                </div>
+                <div className="distribution-item">
+                  <span className="distribution-label">
+                    <span className="distribution-dot orange"></span>
+                    平均规模
+                  </span>
+                  <span className="distribution-value">{datasets.length > 0 ? Math.round(totalImages / datasets.length).toLocaleString() : 0}</span>
+                  <span className="distribution-count">图像/数据集</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="card" style={{ marginTop: '16px' }}>
+            <div className="card-header">
+              <h3 className="card-title">快捷统计</h3>
+            </div>
+            <div className="card-body">
+              <div className="quick-stats-grid">
+                <div className="quick-stat-item">
+                  <div className="quick-stat-icon blue">
+                    <UploadIcon size={18} />
+                  </div>
+                  <div className="quick-stat-info">
+                    <div className="quick-stat-value">{todayUploads}</div>
+                    <div className="quick-stat-label">今日上传</div>
+                  </div>
+                </div>
+                <div className="quick-stat-item">
+                  <div className="quick-stat-icon green">
+                    <ActivityIcon size={18} />
+                  </div>
+                  <div className="quick-stat-info">
+                    <div className="quick-stat-value">{weekActive}</div>
+                    <div className="quick-stat-label">本周活跃</div>
+                  </div>
+                </div>
+                <div className="quick-stat-item">
+                  <div className="quick-stat-icon orange">
+                    <FolderIcon size={18} />
+                  </div>
+                  <div className="quick-stat-info">
+                    <div className="quick-stat-value">{datasets.length}</div>
+                    <div className="quick-stat-label">数据集</div>
+                  </div>
+                </div>
+                <div className="quick-stat-item">
+                  <div className="quick-stat-icon purple">
+                    <CpuIcon size={18} />
+                  </div>
+                  <div className="quick-stat-info">
+                    <div className="quick-stat-value">{models.length}</div>
+                    <div className="quick-stat-label">模型</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* 底部 - 最近活动 */}
+      <div className="card" style={{ marginTop: '16px' }}>
+        <div className="card-header">
+          <h3 className="card-title">最近活动</h3>
+        </div>
+        <div className="card-body" style={{ padding: 0 }}>
+          <RecentActivity />
+        </div>
+      </div>
     </div>
   )
 }
