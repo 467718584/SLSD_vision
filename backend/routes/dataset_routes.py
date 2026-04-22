@@ -37,9 +37,15 @@ def search_datasets(query, algo_type=None):
     from modules.database import search_datasets as _search
     return _search(query, algo_type)
 
-# 配置
-DATASETS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'datasets')
-MODELS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'models')
+# 配置 - 使用os.path.abspath确保正确获取项目根目录
+import os
+# __file__ is backend/routes/dataset_routes.py
+# dirname(__file__) = backend/routes
+# dirname(dirname(__file__)) = backend
+# dirname(dirname(abspath(__file__))) = 项目根目录
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATASETS_DIR = os.path.join(PROJECT_ROOT, 'data', 'datasets')
+MODELS_DIR = os.path.join(PROJECT_ROOT, 'data', 'models')
 
 
 @dataset_bp.route('/validate-name', methods=['POST'])

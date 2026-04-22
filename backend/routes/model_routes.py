@@ -10,8 +10,9 @@ import os
 # 创建蓝图
 model_bp = Blueprint('models', __name__, url_prefix='/api/model')
 
-# 配置
-MODELS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'models')
+# 配置 - 使用os.path.abspath确保正确获取项目根目录
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+MODELS_DIR = os.path.join(PROJECT_ROOT, 'data', 'models')
 
 
 def get_all_models():
