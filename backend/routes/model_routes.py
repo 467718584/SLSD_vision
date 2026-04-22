@@ -304,6 +304,18 @@ def model_detail(name):
         return jsonify({"error": str(e)}), 500
 
 
+@model_bp.route('/<name>', methods=['GET'])
+def get_model(name):
+    """获取模型详情"""
+    try:
+        model = get_model_by_name(name)
+        if not model:
+            return jsonify({"success": False, "error": "Model not found"}), 404
+        return jsonify({"success": True, "model": model})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @model_bp.route('/<name>', methods=['PUT'])
 def update_model_api(name):
     """更新模型信息"""

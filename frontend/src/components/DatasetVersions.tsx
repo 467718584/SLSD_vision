@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { C } from '../constants'
 import { LayersIcon, BarChartIcon } from './Icons'
+import EmptyState from './ui/EmptyState'
 
 // 版本类型定义
 interface Version {
@@ -304,9 +305,16 @@ function DatasetVersions({ datasetName, onBack }: DatasetVersionsProps) {
       {loading ? (
         <div className="text-center p-6 text-muted">加载中...</div>
       ) : versions.length === 0 ? (
-        <div className="text-center p-6 text-muted">
-          暂无版本记录
-        </div>
+        <EmptyState
+          icon={<LayersIcon size={48} />}
+          title="暂无版本记录"
+          description="为数据集创建一个版本，以便跟踪数据变化"
+          action={{
+            label: "创建第一个版本",
+            onClick: () => setShowCreateModal(true),
+            variant: "primary"
+          }}
+        />
       ) : (
         <div className="card">
           <h3 className="font-semibold mb-4 text-gray-2">

@@ -119,7 +119,12 @@ const DetailChart = React.memo(({ datasetName, size = 50 }: { datasetName: strin
       .then(res => res.json())
       .then(data => {
         if (data.detail) {
-          setChartUrl(`/data/${data.detail.replace("SLSD_vision/data/", "")}`)
+          // 移除常见的路径前缀，获取相对路径
+          let path = data.detail
+            .replace(/^.*data\/datasets\//, 'datasets/')
+            .replace(/^.*\/data\//, 'data/')
+            .replace(/^data\//, '')
+          setChartUrl(`/data/${path}`)
         }
         setLoading(false)
       })
@@ -155,7 +160,12 @@ const DistChart = React.memo(({ datasetName, size = 50 }: { datasetName: string;
       .then(res => res.json())
       .then(data => {
         if (data.distribution) {
-          setChartUrl(`/data/${data.distribution.replace("SLSD_vision/data/", "")}`)
+          // 移除常见的路径前缀，获取相对路径
+          let path = data.distribution
+            .replace(/^.*data\/datasets\//, 'datasets/')
+            .replace(/^.*\/data\//, 'data/')
+            .replace(/^data\//, '')
+          setChartUrl(`/data/${path}`)
         }
         setLoading(false)
       })

@@ -151,7 +151,18 @@ def get_dataset_charts(name):
     return jsonify(result)
 
 
+@dataset_bp.route('/<name>', methods=['GET'])
+@api_handler
+def get_dataset(name):
+    """获取数据集详情"""
+    dataset = get_dataset_by_name(name)
+    if not dataset:
+        return jsonify({"success": False, "error": "Dataset not found"}), 404
+    return jsonify({"success": True, "dataset": dataset})
+
+
 @dataset_bp.route('/<name>', methods=['DELETE'])
+@api_handler
 def delete_dataset(name):
     """删除数据集"""
     try:
@@ -168,6 +179,7 @@ def delete_dataset(name):
 
 
 @dataset_bp.route('/<name>', methods=['PUT'])
+@api_handler
 def update_dataset(name):
     """更新数据集信息"""
     from modules.database import update_dataset

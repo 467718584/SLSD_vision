@@ -854,9 +854,35 @@ def api_stats():
     """
     ds_stats = get_dataset_stats()
     m_stats = get_model_stats()
+    
+    # 如果数据库中 total_images 为 0，尝试从文件系统统计
+    if ds_stats.get('total_images', 0) == 0:
+        from config import DATASETS_DIR, SUPPORTED_IMAGE_FORMATS
+        import os
+        total_images = 0
+        if os.path.exists(DATASETS_DIR):
+            for dataset_name in os.listdir(DATASETS_DIR):
+                dataset_path = os.path.join(DATASETS_DIR, dataset_name)
+                if os.path.isdir(dataset_path):
+                    for root, dirs, files in os.walk(dataset_path):
+                        if 'vis' in dirs:
+                            dirs.remove('vis')
+                        for f in files:
+                            if any(f.lower().endswith(ext) for ext in SUPPORTED_IMAGE_FORMATS):
+                                total_images += 1
+        ds_stats['total_images'] = total_images
+    
     return jsonify({
-        "datasets": ds_stats,
-        "models": m_stats
+        "datasets": {
+            "count": ds_stats.get('count', 0),
+            "totalImages": ds_stats.get('total_images', 0),
+            "totalTrain": ds_stats.get('total_train', 0),
+            "totalVal": ds_stats.get('total_val', 0),
+            "totalTest": ds_stats.get('total_test', 0)
+        },
+        "models": {
+            "count": m_stats.get('count', 0)
+        }
     })
 
 

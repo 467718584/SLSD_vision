@@ -596,13 +596,13 @@ function DatasetDetail({ ds, onBack, onRefresh, onEdit }: DatasetDetailProps) {
                 {charts.detail && (
                   <div>
                     <div style={{ fontSize: '11px', color: C.gray3, marginBottom: '8px' }}>样本分布图</div>
-                    <img src={charts.detail} alt="样本分布" style={{ width: '100%', borderRadius: '6px', border: `1px solid ${C.border}` }} loading="lazy" />
+                    <img src={getImageUrl(charts.detail)} alt="样本分布" style={{ width: '100%', borderRadius: '6px', border: `1px solid ${C.border}` }} loading="lazy" />
                   </div>
                 )}
                 {charts.distribution && (
                   <div>
                     <div style={{ fontSize: '11px', color: C.gray3, marginBottom: '8px' }}>类别分布图</div>
-                    <img src={charts.distribution} alt="类别分布" style={{ width: '100%', borderRadius: '6px', border: `1px solid ${C.border}` }} loading="lazy" />
+                    <img src={getImageUrl(charts.distribution)} alt="类别分布" style={{ width: '100%', borderRadius: '6px', border: `1px solid ${C.border}` }} loading="lazy" />
                   </div>
                 )}
               </div>

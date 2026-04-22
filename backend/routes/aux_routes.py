@@ -70,12 +70,30 @@ def remove_raw_data(name):
 
 @aux_bp.route('/sites', methods=['GET'])
 def get_sites():
-    """获取应用现场列表"""
+    """获取应用现场列表（含关联统计）"""
     try:
-        data = get_all_sites()
-        return jsonify(data)
+        from modules.database import get_all_datasets, get_all_models
+        sites = get_all_sites()
+        datasets = get_all_datasets()
+        models = get_all_models()
+        
+        result = []
+        for idx, site in enumerate(sites, 1):
+            site_name = site.get('name', '')
+            dataset_count = sum(1 for ds in datasets if ds.get('source') == site_name)
+            model_count = sum(1 for m in models if m.get('site') == site_name)
+            result.append({
+                'id': idx,
+                'name': site_name,
+                'dataset_count': dataset_count,
+                'model_count': model_count,
+                'maintainer': site.get('maintainer', '-'),
+                'maintain_date': site.get('maintain_date', '-'),
+                'description': site.get('description', '')
+            })
+        return jsonify({"success": True, "data": result})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 @aux_bp.route('/sites', methods=['POST'])
