@@ -11,7 +11,7 @@ import os
 model_bp = Blueprint('models', __name__, url_prefix='/api/model')
 
 # 配置 - 使用os.path.abspath确保正确获取项目根目录
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 MODELS_DIR = os.path.join(PROJECT_ROOT, 'data', 'models')
 
 

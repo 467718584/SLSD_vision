@@ -40,10 +40,11 @@ def search_datasets(query, algo_type=None):
 # 配置 - 使用os.path.abspath确保正确获取项目根目录
 import os
 # __file__ is backend/routes/dataset_routes.py
-# dirname(__file__) = backend/routes
-# dirname(dirname(__file__)) = backend
-# dirname(dirname(abspath(__file__))) = 项目根目录
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# abspath(__file__) = /home/ubuntu/SLSD_vision/backend/routes/dataset_routes.py
+# dirname(abspath(__file__)) = /home/ubuntu/SLSD_vision/backend/routes
+# dirname(dirname(abspath(__file__))) = /home/ubuntu/SLSD_vision/backend
+# dirname(dirname(dirname(abspath(__file__)))) = /home/ubuntu/SLSD_vision
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DATASETS_DIR = os.path.join(PROJECT_ROOT, 'data', 'datasets')
 MODELS_DIR = os.path.join(PROJECT_ROOT, 'data', 'models')
 
