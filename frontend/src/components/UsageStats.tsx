@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { C } from '../constants'
-import { BarChartIcon, FolderIcon, CpuIcon } from './Icons'
+import { BarChartIcon, FolderIcon, CpuIcon, UsersIcon } from './Icons'
 
 // 类型定义
 interface UsageSummary {
@@ -335,14 +335,14 @@ export default function UsageStats(props: UsageStatsProps) {
           <div className="text-xs" style={{ color: C.gray3 }}>模型上传</div>
         </div>
         <div className="card text-center p-5">
-          <div className="text-3xl mb-2">🗂️</div>
+          <div className="text-3xl mb-2"><FolderIcon size={28} /></div>
           <div className="text-3xl font-bold mb-1" style={{ color: C.success }}>
             {summary?.total_raw_data ?? 0}
           </div>
           <div className="text-xs" style={{ color: C.gray3 }}>原始数据上传</div>
         </div>
         <div className="card text-center p-5">
-          <div className="text-3xl mb-2">👥</div>
+          <div className="text-3xl mb-2"><UsersIcon size={28} /></div>
           <div className="text-3xl font-bold mb-1" style={{ color: '#8E44AD' }}>
             {summary?.active_users ?? 0}
           </div>

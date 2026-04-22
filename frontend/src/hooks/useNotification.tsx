@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, createContext, useContext } from 'react'
 import { C } from '../constants'
+import { CheckIcon, XIcon, AlertCircleIcon, InfoIcon } from '../components/Icons'
 
 // 通知类型
 export type NotificationType = 'success' | 'error' | 'warning' | 'info'
@@ -22,11 +23,11 @@ interface NotificationContextType {
 }
 
 // 颜色配置
-const NOTIFICATION_COLORS: Record<NotificationType, { bg: string; border: string; icon: string }> = {
-  success: { bg: C.successBg, border: '#A8D5C0', icon: '✓' },
-  error: { bg: '#FDECEC', border: '#F5BCBC', icon: '✕' },
-  warning: { bg: C.warningBg, border: '#F9D9B0', icon: '⚠' },
-  info: { bg: C.primaryBg, border: C.primaryBd, icon: 'ℹ' }
+const NOTIFICATION_COLORS: Record<NotificationType, { bg: string; border: string; icon: React.ReactNode }> = {
+  success: { bg: C.successBg, border: '#A8D5C0', icon: <CheckIcon size={14} /> },
+  error: { bg: '#FDECEC', border: '#F5BCBC', icon: <XIcon size={14} /> },
+  warning: { bg: C.warningBg, border: '#F9D9B0', icon: <AlertCircleIcon size={14} /> },
+  info: { bg: C.primaryBg, border: C.primaryBd, icon: <InfoIcon size={14} /> }
 }
 
 const NOTIFICATION_TEXT_COLORS: Record<NotificationType, string> = {
@@ -141,7 +142,7 @@ function NotificationToast({
           e.currentTarget.style.color = C.gray3
         }}
       >
-        ✕
+        <XIcon size={14} />
       </button>
     </div>
   )

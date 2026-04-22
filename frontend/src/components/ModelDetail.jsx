@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { C, MODEL_CAT_COLORS, SITE_COLORS } from '../constants'
+import { BarChartIcon, CheckIcon, XIcon, RulerIcon, RepeatIcon, PackageIcon } from './Icons'
 
 // 模型详情页组件
 function ModelDetail({ model, datasets, onBack, onEdit }) {
@@ -126,12 +127,12 @@ function ModelDetail({ model, datasets, onBack, onEdit }) {
             数据统计
           </h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
-            <StatCard label="总样本数" value={stats.totalSamples} icon="📊" color={C.primary} />
-            <StatCard label="正样本数" value={stats.positiveSamples} icon="✓" color={C.success} />
-            <StatCard label="负样本数" value={stats.negativeSamples} icon="✗" color={C.orange} />
-            <StatCard label="图像尺寸" value={stats.imageSize} icon="📐" color={C.gray2} isText />
-            <StatCard label="训练轮次" value={`${stats.epochs} epochs`} icon="🔄" color={C.primary} />
-            <StatCard label="批大小" value={stats.batchSize} icon="📦" color={C.gray2} />
+            <StatCard label="总样本数" value={stats.totalSamples} icon={<BarChartIcon size={18} />} color={C.primary} />
+            <StatCard label="正样本数" value={stats.positiveSamples} icon={<CheckIcon size={18} />} color={C.success} />
+            <StatCard label="负样本数" value={stats.negativeSamples} icon={<XIcon size={18} />} color={C.orange} />
+            <StatCard label="图像尺寸" value={stats.imageSize} icon={<RulerIcon size={18} />} color={C.gray2} isText />
+            <StatCard label="训练轮次" value={`${stats.epochs} epochs`} icon={<RepeatIcon size={18} />} color={C.primary} />
+            <StatCard label="批大小" value={stats.batchSize} icon={<PackageIcon size={18} />} color={C.gray2} />
           </div>
           <div style={{ marginTop: '12px', padding: '10px 12px', background: C.gray8, borderRadius: '6px' }}>
             <label style={{ fontSize: '11px', color: C.gray3 }}>检测类别</label>

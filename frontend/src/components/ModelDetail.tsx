@@ -41,6 +41,7 @@ interface ModelDetailResponse {
   csv_charts: (string | null)[]
   weights?: { best?: string; last?: string }
   batch_images?: string[]
+  predictions?: string[]
 }
 
 // 信息项组件
@@ -302,6 +303,49 @@ function ModelDetail({ model, datasets, onBack, onEdit }: ModelDetailProps) {
           )}
         </div>
       </div>
+
+      {/* 预测效果展示 */}
+      {detailData?.predictions && detailData.predictions.length > 0 && (
+        <div className="card mb-4">
+          <div className="card-header" style={{ padding: '16px 20px' }}>
+            <h3 className="card-title">预测效果</h3>
+          </div>
+          <div className="card-body" style={{ padding: '16px 20px' }}>
+            <div
+              className="grid"
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+                gap: '16px',
+              }}
+            >
+              {detailData.predictions.map((src, index) => (
+                <div key={index} className="text-center">
+                  <img
+                    src={src}
+                    alt={`预测效果 ${index + 1}`}
+                    className="img-fluid transition-all"
+                    style={{
+                      width: '100%',
+                      height: '200px',
+                      objectFit: 'cover',
+                      borderRadius: '6px',
+                      border: '1px solid var(--border)',
+                      cursor: 'pointer',
+                      imageRendering: '-webkit-optimize-contrast',
+                    }}
+                    loading="lazy"
+                    onClick={() => handlePreview(src)}
+                  />
+                  <div className="text-xs text-muted" style={{ marginTop: '6px' }}>
+                    预测效果 {index + 1}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 图片预览弹窗 - 使用 Modal 组件 */}
       <Modal
