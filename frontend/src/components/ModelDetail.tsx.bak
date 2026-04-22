@@ -36,7 +36,17 @@ interface Charts {
 
 interface ModelDetailResponse {
   success: boolean
-  metadata?: Record<string, any>
+  metadata?: {
+    results_data?: {
+      total_epochs?: number
+      max_map50?: number
+      max_map50_95?: number
+      max_precision?: number
+      max_recall?: number
+      max_f1?: number
+    }
+    [key: string]: any
+  }
   charts: Charts
   csv_charts: (string | null)[]
   weights?: { best?: string; last?: string }
@@ -71,7 +81,7 @@ const ChartItem = React.memo(function ChartItem({
         <div
           style={{
             width: '100%',
-            height: '240px',
+            height: '200px',
             background: 'var(--gray-7)',
             borderRadius: '6px',
             display: 'flex',
@@ -96,12 +106,13 @@ const ChartItem = React.memo(function ChartItem({
         className="img-fluid transition-all"
         style={{
           width: '100%',
-          height: '240px',
-          objectFit: 'cover',
+          height: '200px',
+          objectFit: 'contain',
           borderRadius: '6px',
           border: '1px solid var(--border)',
           cursor: 'pointer',
           imageRendering: '-webkit-optimize-contrast',
+          background: 'var(--gray-7)',
         }}
         loading="lazy"
         onClick={() => onPreview(src)}
@@ -130,8 +141,8 @@ function AccuracyCurves({
         <div className="grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
           {curveTitles.map((title, index) => {
             const src = csvCharts[index]
-            // csv_charts 路径需要加上 /data/ 前缀（后端返回的是相对路径）
-            const fullSrc = src ? `/${src}` : undefined
+            // csv_charts 路径已经是 /data/models/... 格式，直接使用
+            const fullSrc = src || undefined
             return (
               <ChartItem
                 key={title}
@@ -164,12 +175,16 @@ function ModelDetail({ model, datasets, onBack, onEdit }: ModelDetailProps) {
 
   const charts = detailData?.charts || {}
   const csvCharts = detailData?.csv_charts || [null, null, null, null]
+  const resultsData = detailData?.metadata?.results_data || {}
+
+  // 计算平均精度（用于显示）
+  const avgAccuracy = resultsData.max_map50 || model.accuracy || 0
 
   // 精度颜色
   const accuracyColor =
-    (model.accuracy || 0) >= 95
+    avgAccuracy >= 95
       ? C.success
-      : (model.accuracy || 0) >= 85
+      : avgAccuracy >= 85
       ? C.primary
       : C.warning
 
@@ -221,22 +236,26 @@ function ModelDetail({ model, datasets, onBack, onEdit }: ModelDetailProps) {
               }
             />
             <InfoItem
-              label="模型精度"
+              label="模型精度 (mAP50)"
               value={
                 <div className="accuracy-bar">
                   <div className="accuracy-bar-track">
                     <div
                       className="accuracy-bar-fill"
                       style={{
-                        width: `${model.accuracy || 0}%`,
+                        width: `${avgAccuracy}%`,
                         background: accuracyColor,
                       }}
                     />
                   </div>
-                  <span className="accuracy-value" style={{ color: accuracyColor }}>{model.accuracy}%</span>
+                  <span className="accuracy-value" style={{ color: accuracyColor }}>{avgAccuracy.toFixed(1)}%</span>
                 </div>
               }
             />
+            <InfoItem label="mAP50-95" value={`${resultsData.max_map50_95?.toFixed(1) || '-'}%`} />
+            <InfoItem label="精确率 (Precision)" value={`${resultsData.max_precision?.toFixed(1) || '-'}%`} />
+            <InfoItem label="召回率 (Recall)" value={`${resultsData.max_recall?.toFixed(1) || '-'}%`} />
+            <InfoItem label="F1分数" value={`${resultsData.max_f1?.toFixed(1) || '-'}%`} />
             <InfoItem
               label="应用现场"
               value={
@@ -315,7 +334,7 @@ function ModelDetail({ model, datasets, onBack, onEdit }: ModelDetailProps) {
             src={previewImage || ''}
             alt="preview"
             className="img-fluid"
-            style={{ maxWidth: '100%', maxHeight: '70vh', borderRadius: '8px' }}
+            style={{ maxWidth: '100%', maxHeight: '70vh', borderRadius: '8px', objectFit: 'contain' }}
           />
         </div>
       </Modal>

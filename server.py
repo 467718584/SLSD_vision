@@ -2736,43 +2736,54 @@ def upload_model():
                         reader = csv.reader(content.splitlines())
                         rows = list(reader)
                         if len(rows) > 1:
-                            # 查找mAP50列（通常是第8列，索引7）
+                            # 查找各指标列
                             header = rows[0] if rows else []
-                            map50_idx = None
-                            map50_95_idx = None
+                            
+                            # YOLO results.csv 通常列顺序: epoch, train/box_loss, train/cls_loss, train/dfl_loss, metrics/precision(B), metrics/recall(B), metrics/mAP50(B), metrics/mAP50-95(B), ...
+                            col_idxs = {
+                                'map50': None,
+                                'map50_95': None,
+                                'precision': None,
+                                'recall': None,
+                                'f1': None
+                            }
+                            
                             for i, h in enumerate(header):
-                                if 'mAP50' in h and '95' not in h:
-                                    map50_idx = i
-                                elif 'mAP50-95' in h or 'mAP50-95(B)' in h:
-                                    map50_95_idx = i
+                                h_lower = h.lower().strip()
+                                if 'map50' in h_lower and '95' not in h_lower:
+                                    col_idxs['map50'] = i
+                                elif 'map50-95' in h_lower or 'map50-95(b)' in h_lower:
+                                    col_idxs['map50_95'] = i
+                                elif 'precision' in h_lower:
+                                    col_idxs['precision'] = i
+                                elif 'recall' in h_lower:
+                                    col_idxs['recall'] = i
+                                elif 'f1' in h_lower:
+                                    col_idxs['f1'] = i
 
-                            # 找到最高的mAP50值
-                            max_map50 = 0
-                            max_map50_95 = 0
+                            # 找到各指标的最高值
+                            max_vals = {k: 0 for k in col_idxs}
                             for row in rows[1:]:
-                                if map50_idx is not None and len(row) > map50_idx:
-                                    try:
-                                        val = float(row[map50_idx])
-                                        if val > max_map50:
-                                            max_map50 = val
-                                    except:
-                                        pass
-                                if map50_95_idx is not None and len(row) > map50_95_idx:
-                                    try:
-                                        val = float(row[map50_95_idx])
-                                        if val > max_map50_95:
-                                            max_map50_95 = val
-                                    except:
-                                        pass
+                                for k, idx in col_idxs.items():
+                                    if idx is not None and len(row) > idx:
+                                        try:
+                                            val = float(row[idx])
+                                            if val > max_vals[k]:
+                                                max_vals[k] = val
+                                        except:
+                                            pass
 
                             results_data = {
                                 'total_epochs': len(rows) - 1,
-                                'max_map50': round(max_map50 * 100, 2),
-                                'max_map50_95': round(max_map50_95 * 100, 2),
+                                'max_map50': round(max_vals['map50'] * 100, 2) if max_vals['map50'] else 0,
+                                'max_map50_95': round(max_vals['map50_95'] * 100, 2) if max_vals['map50_95'] else 0,
+                                'max_precision': round(max_vals['precision'] * 100, 2) if max_vals['precision'] else 0,
+                                'max_recall': round(max_vals['recall'] * 100, 2) if max_vals['recall'] else 0,
+                                'max_f1': round(max_vals['f1'] * 100, 2) if max_vals['f1'] else 0,
                             }
                             # 更新精度为最高mAP50值
-                            if max_map50 > 0:
-                                accuracy = round(max_map50 * 100, 2)
+                            if max_vals['map50'] > 0:
+                                accuracy = round(max_vals['map50'] * 100, 2)
                     except Exception as e:
                         pass
                 elif 'curve' in filename.lower() or 'f1' in filename.lower() or 'p_curve' in filename.lower() or 'r_curve' in filename.lower() or 'pr_curve' in filename.lower():
@@ -2912,13 +2923,30 @@ def model_detail_v2(name):
                     if rel:
                         batch_images.append(rel)
 
+        # 获取预测效果图列表
+        predictions_dir = os.path.join(model_dir, 'predictions')
+        predictions = []
+        if os.path.exists(predictions_dir) and os.path.isdir(predictions_dir):
+            for f in sorted(os.listdir(predictions_dir)):
+                if f.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.bmp')):
+                    path = os.path.join(predictions_dir, f)
+                    rel = get_rel_path(path)
+                    if rel:
+                        predictions.append(rel)
+
+        # 获取pred_summary图表
+        pred_summary_path = os.path.join(predictions_dir, 'summary.jpg') if os.path.exists(predictions_dir) else None
+        if pred_summary_path:
+            charts['pred_summary'] = get_rel_path(pred_summary_path)
+
         return jsonify({
             "success": True,
             "metadata": metadata,
             "charts": charts,
             "csv_charts": csv_charts,
             "weights": weights,
-            "batch_images": batch_images
+            "batch_images": batch_images,
+            "predictions": predictions
         })
 
     except Exception as e:
@@ -3126,7 +3154,9 @@ def generate_model_csv_charts(model_dir, curves_dir):
         os.path.join(curves_dir, 'val_box_loss_curve.png'),
     ]
     if all(os.path.exists(p) for p in cached_charts):
-        return [os.path.relpath(p, base_dir).replace('\\', '/') for p in cached_charts]
+        # 返回 /data/models/... 格式的路径
+        model_name = os.path.basename(model_dir)
+        return [f'/data/models/{model_name}/curves/{os.path.basename(p)}' for p in cached_charts]
 
     # 图表不存在，需要生成
     try:
@@ -3205,7 +3235,8 @@ def generate_model_csv_charts(model_dir, curves_dir):
         map50_path = os.path.join(curves_dir, 'map50_curve.png')
         plt.savefig(map50_path, dpi=200)
         plt.close()
-        chart_paths.append(os.path.relpath(map50_path, base_dir).replace('\\', '/'))
+        model_name = os.path.basename(model_dir)
+        chart_paths.append(f'/data/models/{model_name}/curves/{os.path.basename(map50_path)}')
 
         # 绘制mAP50-95曲线
         plt.figure(figsize=(6, 4))
@@ -3218,7 +3249,7 @@ def generate_model_csv_charts(model_dir, curves_dir):
         map50_95_path = os.path.join(curves_dir, 'map50_95_curve.png')
         plt.savefig(map50_95_path, dpi=200)
         plt.close()
-        chart_paths.append(os.path.relpath(map50_95_path, base_dir).replace('\\', '/'))
+        chart_paths.append(f'/data/models/{model_name}/curves/{os.path.basename(map50_95_path)}')
 
         # 绘制train/box_loss曲线 (放在前面)
         plt.figure(figsize=(6, 4))
@@ -3231,7 +3262,7 @@ def generate_model_csv_charts(model_dir, curves_dir):
         train_box_path = os.path.join(curves_dir, 'train_box_loss_curve.png')
         plt.savefig(train_box_path, dpi=200)
         plt.close()
-        chart_paths.append(os.path.relpath(train_box_path, base_dir).replace('\\', '/'))
+        chart_paths.append(f'/data/models/{model_name}/curves/{os.path.basename(train_box_path)}')
 
         # 绘制val/box_loss曲线
         plt.figure(figsize=(6, 4))
@@ -3244,7 +3275,7 @@ def generate_model_csv_charts(model_dir, curves_dir):
         val_box_path = os.path.join(curves_dir, 'val_box_loss_curve.png')
         plt.savefig(val_box_path, dpi=200)
         plt.close()
-        chart_paths.append(os.path.relpath(val_box_path, base_dir).replace('\\', '/'))
+        chart_paths.append(f'/data/models/{model_name}/curves/{os.path.basename(val_box_path)}')
 
         return chart_paths
 

@@ -47,6 +47,20 @@ function ModelUploadModal({ isOpen, onClose, onSuccess, datasets }: ModelUploadM
     '其他'
   ]
 
+  // 进度相关状态
+  const [progressText, setProgressText] = useState('')
+  const [uploadSpeed, setUploadSpeed] = useState('')
+  const [uploadedSize, setUploadedSize] = useState(0)
+  const [totalSize, setTotalSize] = useState(0)
+
+  // 格式化文件大小
+  function formatSize(bytes: number) {
+    if (bytes < 1024) return bytes + ' B'
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+    if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+    return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB'
+  }
+
   // 加载设置
   useEffect(() => {
     if (isOpen) {
@@ -72,14 +86,18 @@ function ModelUploadModal({ isOpen, onClose, onSuccess, datasets }: ModelUploadM
   if (!isOpen) return null
 
   // 提交上传
-  async function handleSubmit() {
+  function handleSubmit() {
     if (!name.trim()) { setError('请输入模型名称'); return }
     if (!folder || folder.length === 0) { setError('请选择模型文件夹'); return }
     if (!dataset) { setError('请选择关联数据集'); return }
 
     setError('')
     setUploading(true)
-    setProgress(10)
+    setProgress(0)
+    setProgressText('准备上传...')
+    setUploadSpeed('')
+    setTotalSize(getTotalSize())
+    setUploadedSize(0)
 
     const formData = new FormData()
     for (let i = 0; i < folder.length; i++) {
@@ -94,38 +112,72 @@ function ModelUploadModal({ isOpen, onClose, onSuccess, datasets }: ModelUploadM
     formData.append('maintainer', maintainer)
     formData.append('dataset', dataset)
 
-    try {
-      setProgress(30)
-      const response = await fetch('/api/model/upload', {
-        method: 'POST',
-        body: formData
-      })
-      setProgress(70)
+    const xhr = new XMLHttpRequest()
+    const startTime = Date.now()
 
-      const contentType = response.headers.get('content-type')
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text()
-        setError('服务器错误: ' + text.substring(0, 100))
-        setUploading(false)
-        return
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        const percent = Math.round((e.loaded / e.total) * 100)
+        setProgress(percent)
+        setUploadedSize(e.loaded)
+        setTotalSize(e.total)
+        const elapsed = (Date.now() - startTime) / 1000
+        const speed = elapsed > 0 ? e.loaded / elapsed : 0
+        setUploadSpeed(formatSize(speed) + '/s')
+        setProgressText(`上传中 ${formatSize(e.loaded)} / ${formatSize(e.total)}`)
       }
+    }
 
-      const data = await response.json()
-
-      if (data.success) {
-        setProgress(100)
-        if (onClose) onClose()
-        setName(''); setFolder(null); setDescription('')
-        alert('上传成功！')
-        if (onSuccess) onSuccess()
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const data = JSON.parse(xhr.responseText)
+          if (data.success) {
+            setProgress(100)
+            setProgressText('上传完成!')
+            setUploadSpeed('')
+            if (onClose) onClose()
+            setName(''); setFolder(null); setDescription('')
+            alert('上传成功！')
+            if (onSuccess) onSuccess()
+          } else {
+            setError(data.error || '上传失败')
+            setUploading(false)
+          }
+        } catch {
+          setError('服务器响应格式错误')
+          setUploading(false)
+        }
       } else {
-        setError(data.error || '上传失败')
+        try {
+          const data = JSON.parse(xhr.responseText)
+          setError(data.error || '上传失败: HTTP ' + xhr.status)
+        } catch {
+          setError('上传失败: HTTP ' + xhr.status)
+        }
         setUploading(false)
       }
-    } catch (e: any) {
-      setError('上传失败: ' + e.message)
+    }
+
+    xhr.onerror = () => {
+      setError('网络错误,上传失败')
       setUploading(false)
     }
+
+    xhr.open('POST', '/api/model/upload')
+    xhr.send(formData)
+  }
+
+  // 获取文件总大小
+  function getTotalSize() {
+    if (folder && folder.length > 0) {
+      let total = 0
+      for (let i = 0; i < folder.length; i++) {
+        total += folder[i].size
+      }
+      return total
+    }
+    return 0
   }
 
   // 获取文件夹信息
@@ -254,8 +306,14 @@ function ModelUploadModal({ isOpen, onClose, onSuccess, datasets }: ModelUploadM
 
           {/* 进度条 */}
           {uploading && (
-            <div style={{ height: '4px', background: '#E5E7EB', borderRadius: '2px', overflow: 'hidden' }}>
-              <div style={{ height: '100%', width: `${progress}%`, background: C.primary, transition: 'width 0.3s' }} />
+            <div className="mb-4">
+              <div className="flex justify-between text-xs mb-1" style={{ color: C.gray3 }}>
+                <span>{progressText || `上传中 ${progress}%`}</span>
+                {uploadSpeed && <span>{uploadSpeed}</span>}
+              </div>
+              <div style={{ height: '6px', background: '#E5E7EB', borderRadius: '3px', overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${progress}%`, background: C.primary, transition: 'width 0.3s' }} />
+              </div>
             </div>
           )}
         </div>

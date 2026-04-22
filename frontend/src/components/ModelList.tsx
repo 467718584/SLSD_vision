@@ -98,6 +98,7 @@ const th = (w: string, c = false) => ({
   color: C.gray1,
   textAlign: c ? "center" as const : "left" as const,
   width: w,
+  minWidth: w,
   whiteSpace: "nowrap" as const,
   verticalAlign: "middle" as const
 })
@@ -109,6 +110,7 @@ const td = (w: string, c = false) => ({
   borderBottom: `1px solid ${C.gray6}`,
   textAlign: c ? "center" as const : "left" as const,
   width: w,
+  minWidth: w,
   verticalAlign: "middle" as const
 })
 
@@ -688,22 +690,21 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload, i
           <table className="table min-w-1200">
             <thead>
               <tr className="table-tr-header">
-                <th style={th("36px", true)}>
-                  <input type="checkbox" checked={selectedIds.size === filteredModels.length && filteredModels.length > 0} onChange={toggleSelectAll} style={{ width: "16px", height: "16px", cursor: "pointer" }} />
+                <th style={th("36px", true)}>                  <input type="checkbox" checked={selectedIds.size === filteredModels.length && filteredModels.length > 0} onChange={toggleSelectAll} style={{ width: "16px", height: "16px", cursor: "pointer" }} />
                 </th>
                 <th style={th("48px", true)}>编号</th>
-                <th style={th("100px", true)}>算法类型</th>
-                <th style={th("110px", true)}>技术方法</th>
-                <th style={th("180px")}>模型名称</th>
-                <th style={th("110px")}>模型类别</th>
-                <th style={th("140px")}>模型概述</th>
-                <th style={th("80px", true)}>精度曲线</th>
-                <th style={th("80px", true)}>模型精度</th>
-                <th style={th("100px", true)}>应用现场</th>
-                <th style={th("100px")}>使用数据集</th>
-                <th style={th("86px", true)}>维护日期</th>
-                <th style={th("72px", true)}>维护人员</th>
-                <th style={th("110px", true)}>操作</th>
+                <th style={th("90px", true)}>算法类型</th>
+                <th style={th("100px", true)}>技术方法</th>
+                <th style={th("150px")}>模型名称</th>
+                <th style={th("80px")}>类别</th>
+                <th style={th("100px")}>模型概述</th>
+                <th style={th("70px", true)}>曲线</th>
+                <th style={th("80px", true)}>精度</th>
+                <th style={th("90px", true)}>应用现场</th>
+                <th style={th("120px")}>使用数据集</th>
+                <th style={th("80px", true)}>维护日期</th>
+                <th style={th("70px", true)}>维护人</th>
+                <th style={th("90px", true)}>操作</th>
               </tr>
             </thead>
             <tbody>
@@ -732,33 +733,33 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload, i
                       borderBottom: isDragOver && draggedIdx !== null && draggedIdx > idx ? `2px solid ${C.primary}` : undefined,
                     }}
                   >
-                    <td className="td-base td-c w-36" onClick={e => { e.stopPropagation(); toggleSelect(m.id, m.name) }}>
-                      <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(m.id, m.name)} className="cursor-pointer w-16" />
+                    <td style={td("36px", true)} className="td-base td-c" onClick={e => { e.stopPropagation(); toggleSelect(m.id, m.name) }}>
+                      <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(m.id, m.name)} className="cursor-pointer" style={{ width: "16px", height: "16px" }} />
                     </td>
-                    <td className="td-base td-c w-48">
+                    <td style={td("48px", true)} className="td-base td-c">
                       <span className="font-semibold text-gray-4">{m.id}</span>
                     </td>
-                    <td className="td-base td-c w-100">
+                    <td style={td("90px", true)} className="td-base td-c">
                       <MemoizedAlgoTag type={m.algoName} />
                     </td>
-                    <td className="td-base td-c w-110">
+                    <td style={td("100px", true)} className="td-base td-c">
                       <MemoizedTechMethodTag type={m.techMethod || "目标检测算法"} />
                     </td>
-                    <td className="td-base td-l w-180">
+                    <td style={td("150px")} className="td-base td-l">
                       <div className="truncate model-name" title={m.name}>
                         {m.name}
                       </div>
                     </td>
-                    <td className="td-base td-l w-110">
+                    <td style={td("80px")} className="td-base td-l">
                       <MemoizedModelCatTag cat={m.category} />
                     </td>
-                    <td className="td-base td-l w-140">
+                    <td style={td("100px")} className="td-base td-l">
                       <div className="truncate-2 model-desc">
                         {m.description || "-"}
                       </div>
                     </td>
-                    <td className="td-base td-c w-80">
-                      <div className="flex gap-1 flex-wrap justify-center max-w-70" onClick={e => { e.stopPropagation(); onSelectModel(m) }} title="点击查看精度曲线">
+                    <td style={td("70px", true)} className="td-base td-c">
+                      <div className="flex gap-1 flex-wrap justify-center" style={{ maxWidth: "70px" }} onClick={e => { e.stopPropagation(); onSelectModel(m) }} title="点击查看精度曲线">
                         <img
                           src={`/data/models/${encodeURIComponent(m.name)}/curves/map50_curve.png?thumb=1`}
                           alt="mAP50"
@@ -789,25 +790,25 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload, i
                         />
                       </div>
                     </td>
-                    <td className="td-base td-c w-80">
+                    <td style={td("80px", true)} className="td-base td-c">
                       <AccuracyBar value={m.accuracy} width={50} />
                     </td>
-                    <td className="td-base td-c w-100">
+                    <td style={td("90px", true)} className="td-base td-c">
                       <MemoizedSiteTag site={m.site} />
                     </td>
-                    <td className="td-base td-l w-100">
+                    <td style={td("120px")} className="td-base td-l">
                       <span className="truncate text-accent text-sm dataset-link"
                         onClick={e => { e.stopPropagation(); gotoDataset(m.dataset) }} title={m.dataset}>
                         {m.dataset || "-"}
                       </span>
                     </td>
-                    <td className="td-base td-c w-86">
+                    <td style={td("90px", true)} className="td-base td-c">
                       <span className="text-sm text-muted">{m.maintainDate}</span>
                     </td>
-                    <td className="td-base td-c w-72">
+                    <td style={td("80px", true)} className="td-base td-c">
                       <span className="text-sm font-medium text-gray-2">{m.maintainer}</span>
                     </td>
-                    <td className="td-base w-110" style={{ textAlign: 'right' }}>
+                    <td style={td("90px", true)} className="td-base td-c">
                       <div className="flex gap-1 justify-end">
                         <button onClick={(e) => downloadModel(m.name, e)} title="下载模型" className="btn btn-primary btn-sm">下载</button>
                         <button onClick={(e) => { e.stopPropagation(); setDeleteTarget({ name: m.name }); }} title="删除模型" className="btn btn-danger btn-sm">删除</button>

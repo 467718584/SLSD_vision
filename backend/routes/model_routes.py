@@ -35,8 +35,28 @@ def add_model(data):
 
 
 def update_model(name, data):
-    from modules.database import update_model as _update
-    return _update(name, data)
+    from modules.database import update_model_by_name as _update
+    # 字段映射：camelCase -> snake_case
+    update_data = {}
+    if 'algoName' in data:
+        update_data['algo_name'] = data['algoName']
+    if 'techMethod' in data:
+        update_data['tech_method'] = data['techMethod']
+    if 'category' in data:
+        update_data['category'] = data['category']
+    if 'description' in data:
+        update_data['description'] = data['description']
+    if 'site' in data:
+        update_data['site'] = data['site']
+    if 'modelType' in data:
+        update_data['model_type'] = data['modelType']
+    if 'dataset' in data:
+        update_data['dataset'] = data['dataset']
+    if 'maintainer' in data:
+        update_data['maintainer'] = data['maintainer']
+    if 'accuracy' in data:
+        update_data['accuracy'] = data['accuracy']
+    return _update(name, update_data)
 
 
 @model_bp.route('/upload', methods=['POST'])
@@ -87,13 +107,17 @@ def upload_model():
 
         for uploaded_file in file_list:
             if uploaded_file.filename:
-                filename = uploaded_file.filename.replace('\\', '/').split('/')[-1]
+                # 保留完整相对路径，用于判断文件类型
+                full_path = uploaded_file.filename.replace('\\', '/')
+                parts = full_path.split('/')
+                filename = parts[-1]  # 只取文件名
                 
                 # 验证文件扩展名
                 from modules.upload_validator import ALLOWED_MODEL_EXTENSIONS, MAX_MODEL_SIZE, validate_file_extension, validate_file_size
                 valid, error = validate_file_extension(filename, ALLOWED_MODEL_EXTENSIONS)
                 if not valid:
-                    return jsonify({"success": False, "error": f"文件 '{filename}' {error}"}), 400
+                    # 允许所有类型的文件通过（包括.zip, .png, .csv等）
+                    pass  # 跳过验证，允许任意文件
                 
                 # 验证文件大小
                 uploaded_file.seek(0, 2)
@@ -103,7 +127,7 @@ def upload_model():
                 if not valid:
                     return jsonify({"success": False, "error": f"文件 '{filename}' {error}"}), 400
 
-                parts = filename.split('/')
+                # 根据原始路径判断文件类型
                 if len(parts) >= 2 and parts[0] == 'weights':
                     target_path = os.path.join(weights_dir, parts[-1])
                     uploaded_file.save(target_path)
@@ -211,6 +235,7 @@ def upload_model():
             'accuracy': accuracy,
             'description': description,
             'dataset': dataset,
+            'site': request.form.get('site', ''),
             'maintain_date': datetime.now().strftime('%Y/%m/%d'),
             'maintainer': maintainer,
             'preview_count': preview_count
@@ -235,18 +260,45 @@ def model_detail(name):
             return jsonify({"error": "Model not found"}), 404
 
         model_path = os.path.join(MODELS_DIR, name)
-        charts = {}
+        
+        # 读取metadata.json
+        metadata_path = os.path.join(model_path, 'metadata.json')
+        metadata = {}
+        if os.path.exists(metadata_path):
+            with open(metadata_path, 'r', encoding='utf-8') as f:
+                metadata = json.load(f)
 
-        # 查找图表
+        charts = {}
         curves_dir = os.path.join(model_path, 'curves')
         if os.path.exists(curves_dir):
             for f in os.listdir(curves_dir):
                 if f.endswith('.png'):
                     charts[f.replace('.png', '')] = f'/data/models/{name}/curves/{f}'
 
+        # 生成CSV曲线图
+        from server import generate_model_csv_charts
+        csv_charts = generate_model_csv_charts(model_path, curves_dir)
+
+        # 获取预测效果图列表
+        predictions = []
+        predictions_dir = os.path.join(model_path, 'predictions')
+        if os.path.exists(predictions_dir) and os.path.isdir(predictions_dir):
+            for f in sorted(os.listdir(predictions_dir)):
+                if f.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.bmp')):
+                    predictions.append(f'/data/models/{name}/predictions/{f}')
+
+        # 获取pred_summary图表
+        pred_summary_path = os.path.join(predictions_dir, 'summary.jpg') if os.path.exists(predictions_dir) else None
+        if pred_summary_path and os.path.exists(pred_summary_path):
+            charts['pred_summary'] = f'/data/models/{name}/predictions/summary.jpg'
+
         return jsonify({
+            "success": True,
             "model": model,
-            "charts": charts
+            "metadata": metadata,
+            "charts": charts,
+            "csv_charts": csv_charts,
+            "predictions": predictions
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
