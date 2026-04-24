@@ -737,7 +737,7 @@ def api_models():
     # 转换模型数据为驼峰命名
     models_data = []
     for m in models:
-        models_data.append({
+        model_dict = {
             "id": m.get('id', 0),
             "algoName": m.get('algo_name', ''),
             "name": m.get('name', ''),
@@ -751,7 +751,21 @@ def api_models():
             "maintainDate": m.get('maintain_date', ''),
             "maintainer": m.get('maintainer', ''),
             "previewCount": m.get('preview_count', 8)
-        })
+        }
+        # 添加版本相关字段
+        if 'version_count' in m:
+            model_dict['version_count'] = m.get('version_count', 0)
+        if 'latest_version' in m:
+            model_dict['latest_version'] = m.get('latest_version')
+        if 'latest_version_accuracy' in m:
+            model_dict['latest_version_accuracy'] = m.get('latest_version_accuracy')
+        if 'latest_version_map50' in m:
+            model_dict['latest_version_map50'] = m.get('latest_version_map50')
+        if 'latest_version_map50_95' in m:
+            model_dict['latest_version_map50_95'] = m.get('latest_version_map50_95')
+        if 'latest_version_dataset' in m:
+            model_dict['latest_version_dataset'] = m.get('latest_version_dataset')
+        models_data.append(model_dict)
 
     return jsonify(models_data)
 
