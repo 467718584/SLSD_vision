@@ -1,9 +1,12 @@
 import React, { useState, useCallback } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { C, MODEL_CAT_COLORS, SITE_COLORS } from '../constants'
 import { Modal } from './ui/Modal'
 import { ChevronLeftIcon, XIcon, EditIcon } from './Icons'
 import Skeleton from './ui/Skeleton'
+import { VersionSelector, ParamList, ModelVersion, ModelParam, CreateVersionModal, AddParamModal } from './VersionSelector'
+import { CreateVersionData } from './CreateVersionModal'
+import { AddParamData } from './AddParamModal'
 
 // Props
 interface ModelDetailProps {
@@ -151,6 +154,96 @@ function AccuracyCurves({
 // 模型详情页组件
 function ModelDetail({ model, datasets, onBack, onEdit }: ModelDetailProps) {
   const [previewImage, setPreviewImage] = useState<string | null>(null)
+  const [activeVersion, setActiveVersion] = useState<string>('')
+  const [showCreateVersion, setShowCreateVersion] = useState(false)
+  const [showAddParam, setShowAddParam] = useState(false)
+  const queryClient = useQueryClient()
+
+  // 获取模型版本列表
+  const { data: versionsData, isLoading: versionsLoading } = useQuery<{ success: boolean; versions: ModelVersion[] }>({
+    queryKey: ['modelVersions', model.name],
+    queryFn: async () => {
+      const res = await fetch(`/api/model/${encodeURIComponent(model.name)}/versions`)
+      return res.json()
+    },
+    enabled: !!model.name
+  })
+
+  const versions = versionsData?.versions || []
+  const existingVersionNames = versions.map(v => v.versionName)
+
+  // 如果没有选中版本且有版本列表，默认选中第一个
+  React.useEffect(() => {
+    if (!activeVersion && versions.length > 0) {
+      const defaultVer = versions.find(v => v.isDefault) || versions[0]
+      setActiveVersion(defaultVer.versionName)
+    }
+  }, [versions, activeVersion])
+
+  // 获取当前版本的详情
+  const { data: versionDetail, isLoading: versionLoading } = useQuery<{ success: boolean; version: ModelVersion }>({
+    queryKey: ['versionDetail', model.name, activeVersion],
+    queryFn: async () => {
+      const res = await fetch(`/api/model/${encodeURIComponent(model.name)}/versions/${encodeURIComponent(activeVersion)}`)
+      return res.json()
+    },
+    enabled: !!model.name && !!activeVersion
+  })
+
+  const currentVersion = versionDetail?.version
+  const currentParams = currentVersion?.params || []
+
+  // 创建版本mutation
+  const createVersionMutation = useMutation({
+    mutationFn: async (data: CreateVersionData) => {
+      const res = await fetch(`/api/model/${encodeURIComponent(model.name)}/versions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      })
+      if (!res.ok) throw new Error('创建版本失败')
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['modelVersions', model.name] })
+      setShowCreateVersion(false)
+    }
+  })
+
+  // 上传参数文件mutation
+  const uploadParamMutation = useMutation({
+    mutationFn: async (data: AddParamData & { versionName: string }) => {
+      const formData = new FormData()
+      formData.append('file', data.file as File)
+      formData.append('param_type', data.paramType)
+      formData.append('description', data.description)
+      
+      const res = await fetch(`/api/model/${encodeURIComponent(model.name)}/versions/${encodeURIComponent(data.versionName)}/params`, {
+        method: 'POST',
+        body: formData
+      })
+      if (!res.ok) throw new Error('上传失败')
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['versionDetail', model.name, activeVersion] })
+      setShowAddParam(false)
+    }
+  })
+
+  // 删除参数文件mutation
+  const deleteParamMutation = useMutation({
+    mutationFn: async (paramId: number) => {
+      const res = await fetch(`/api/model/${encodeURIComponent(model.name)}/versions/${encodeURIComponent(activeVersion)}/params/${paramId}`, {
+        method: 'DELETE'
+      })
+      if (!res.ok) throw new Error('删除失败')
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['versionDetail', model.name, activeVersion] })
+    }
+  })
 
   // 使用 React Query 缓存模型详情数据，避免重复请求
   const { data: detailData, isLoading: chartsLoading } = useQuery<ModelDetailResponse>({
@@ -182,12 +275,35 @@ function ModelDetail({ model, datasets, onBack, onEdit }: ModelDetailProps) {
   return (
     <div style={{ padding: '20px' }}>
       {/* 头部 - 使用 page-header 布局，Roboflow风格 */}
-      <div className="page-header mb-5">
+      <div className="page-header mb-4">
         <div>
-          <h2 className="page-title">{model.name}</h2>
-          <p className="text-sm text-muted mt-1">模型详细信息</p>
+          <div className="flex items-center gap-3 mb-2">
+            <h2 className="page-title" style={{ margin: 0 }}>{model.name}</h2>
+            {/* 版本选择器 */}
+            {versions.length > 0 && (
+              <VersionSelector
+                versions={versions}
+                activeVersion={activeVersion}
+                onVersionChange={setActiveVersion}
+                onCreateVersion={() => setShowCreateVersion(true)}
+                loading={versionsLoading}
+              />
+            )}
+          </div>
+          <p className="text-sm text-muted mt-1">
+            模型详细信息 {activeVersion && <span className="badge badge-primary ml-2">{activeVersion}</span>}
+          </p>
         </div>
         <div className="flex gap-2">
+          {activeVersion && (
+            <button
+              onClick={() => setShowAddParam(true)}
+              className="btn btn-secondary"
+              style={{ background: '#f59e0b', color: 'white', borderColor: '#f59e0b' }}
+            >
+              + 补充参数
+            </button>
+          )}
           <button onClick={onBack} className="btn btn-secondary">
             <ChevronLeftIcon size={16} />
             返回
@@ -203,6 +319,48 @@ function ModelDetail({ model, datasets, onBack, onEdit }: ModelDetailProps) {
           )}
         </div>
       </div>
+
+      {/* 版本信息提示栏 - 当选中版本时显示 */}
+      {activeVersion && currentVersion && (
+        <div className="card mb-4" style={{ background: `${C.primary}08`, border: `1px solid ${C.primary}20` }}>
+          <div className="card-body" style={{ padding: '12px 16px' }}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                {currentVersion.datasetName && (
+                  <div className="text-sm">
+                    <span className="text-muted">关联数据集: </span>
+                    <span style={{ color: C.primary, fontWeight: 600 }}>{currentVersion.datasetName}</span>
+                    {currentVersion.datasetVersion && <span className="text-muted"> / {currentVersion.datasetVersion}</span>}
+                  </div>
+                )}
+                {currentVersion.total_epochs && (
+                  <div className="text-sm">
+                    <span className="text-muted">训练轮次: </span>
+                    <span style={{ fontWeight: 600 }}>{currentVersion.total_epochs}</span>
+                  </div>
+                )}
+                {currentVersion.map50 && (
+                  <div className="text-sm">
+                    <span className="text-muted">mAP50: </span>
+                    <span style={{ fontWeight: 600, color: C.success }}>{currentVersion.map50}%</span>
+                  </div>
+                )}
+                {currentVersion.map50_95 && (
+                  <div className="text-sm">
+                    <span className="text-muted">mAP50-95: </span>
+                    <span style={{ fontWeight: 600, color: C.success }}>{currentVersion.map50_95}%</span>
+                  </div>
+                )}
+              </div>
+              {currentVersion.description && (
+                <div className="text-sm text-muted" style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {currentVersion.description}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 基本信息卡片 */}
       <div className="card mb-4">
@@ -347,6 +505,35 @@ function ModelDetail({ model, datasets, onBack, onEdit }: ModelDetailProps) {
         </div>
       )}
 
+      {/* 参数文件列表 - 当有版本时显示 */}
+      {activeVersion && (
+        <div className="card mb-4">
+          <div className="card-header" style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 className="card-title">其它硬件模型参数</h3>
+            <button
+              onClick={() => setShowAddParam(true)}
+              className="btn btn-sm"
+              style={{ background: '#f59e0b', color: 'white', borderColor: '#f59e0b' }}
+            >
+              + 补充参数
+            </button>
+          </div>
+          <div className="card-body" style={{ padding: '16px 20px' }}>
+            {versionLoading ? (
+              <div style={{ textAlign: 'center', color: C.gray4, padding: '20px' }}>加载中...</div>
+            ) : (
+              <ParamList
+                params={currentParams}
+                onDelete={(paramId) => deleteParamMutation.mutate(paramId)}
+                onDownload={(paramId) => {
+                  window.open(`/api/model/${encodeURIComponent(model.name)}/versions/${encodeURIComponent(activeVersion)}/params/${paramId}/download`, '_blank')
+                }}
+              />
+            )}
+          </div>
+        </div>
+      )}
+
       {/* 图片预览弹窗 - 使用 Modal 组件 */}
       <Modal
         isOpen={!!previewImage}
@@ -363,6 +550,28 @@ function ModelDetail({ model, datasets, onBack, onEdit }: ModelDetailProps) {
           />
         </div>
       </Modal>
+
+      {/* 新建版本弹窗 */}
+      <CreateVersionModal
+        modelName={model.name}
+        isOpen={showCreateVersion}
+        onClose={() => setShowCreateVersion(false)}
+        onSubmit={async (data) => {
+          await createVersionMutation.mutateAsync(data)
+        }}
+        existingVersions={existingVersionNames}
+      />
+
+      {/* 补充参数弹窗 */}
+      <AddParamModal
+        modelName={model.name}
+        versionName={activeVersion}
+        isOpen={showAddParam}
+        onClose={() => setShowAddParam(false)}
+        onSubmit={async (data) => {
+          await uploadParamMutation.mutateAsync({ ...data, versionName: activeVersion })
+        }}
+      />
     </div>
   )
 }
