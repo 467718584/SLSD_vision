@@ -5,6 +5,7 @@ import { Modal } from './ui/Modal'
 import { ChevronLeftIcon, XIcon, EditIcon } from './Icons'
 import Skeleton from './ui/Skeleton'
 import { VersionSelector, ParamList, ModelVersion, ModelParam, CreateVersionModal, AddParamModal } from './VersionSelector'
+import { VersionTimeline, VersionDiff } from './VersionTimeline'
 import { CreateVersionData } from './CreateVersionModal'
 import { AddParamData } from './AddParamModal'
 
@@ -155,8 +156,10 @@ function AccuracyCurves({
 function ModelDetail({ model, datasets, onBack, onEdit }: ModelDetailProps) {
   const [previewImage, setPreviewImage] = useState<string | null>(null)
   const [activeVersion, setActiveVersion] = useState<string>('')
+  const [compareVersion, setCompareVersion] = useState<string | null>(null)
   const [showCreateVersion, setShowCreateVersion] = useState(false)
   const [showAddParam, setShowAddParam] = useState(false)
+  const [showVersionTimeline, setShowVersionTimeline] = useState(false)
   const queryClient = useQueryClient()
 
   // 获取模型版本列表
@@ -241,6 +244,21 @@ function ModelDetail({ model, datasets, onBack, onEdit }: ModelDetailProps) {
       return res.json()
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['versionDetail', model.name, activeVersion] })
+    }
+  })
+
+  // 设为默认版本mutation
+  const setDefaultVersionMutation = useMutation({
+    mutationFn: async (versionName: string) => {
+      const res = await fetch(`/api/model/${encodeURIComponent(model.name)}/versions/${encodeURIComponent(versionName)}/default`, {
+        method: 'PUT'
+      })
+      if (!res.ok) throw new Error('设置默认版本失败')
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['modelVersions', model.name] })
       queryClient.invalidateQueries({ queryKey: ['versionDetail', model.name, activeVersion] })
     }
   })
@@ -358,6 +376,56 @@ function ModelDetail({ model, datasets, onBack, onEdit }: ModelDetailProps) {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 版本历史时间线 - 可折叠 */}
+      {versions.length > 0 && (
+        <div className="card mb-4">
+          <div
+            className="card-header cursor-pointer"
+            style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+            onClick={() => setShowVersionTimeline(!showVersionTimeline)}
+          >
+            <div className="flex items-center gap-2">
+              <h3 className="card-title">版本历史</h3>
+              <span className="badge badge-primary">{versions.length}个版本</span>
+            </div>
+            <span style={{ transform: showVersionTimeline ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>▼</span>
+          </div>
+          {showVersionTimeline && (
+            <div className="card-body" style={{ padding: '16px 20px' }}>
+              <VersionTimeline
+                versions={versions}
+                activeVersion={activeVersion}
+                onVersionSelect={setActiveVersion}
+                onSetDefault={(versionName) => {
+                  setDefaultVersionMutation.mutate(versionName)
+                }}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 版本对比 - 当选中对比版本时显示 */}
+      {compareVersion && versions.length > 1 && (
+        <div className="card mb-4">
+          <div className="card-header" style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 className="card-title">版本对比</h3>
+            <button
+              onClick={() => setCompareVersion(null)}
+              className="btn btn-sm btn-secondary"
+            >
+              关闭对比
+            </button>
+          </div>
+          <div className="card-body" style={{ padding: '16px 20px' }}>
+            <VersionDiff
+              version1={currentVersion || versions[0]}
+              version2={versions.find(v => v.versionName === compareVersion)}
+            />
           </div>
         </div>
       )}
