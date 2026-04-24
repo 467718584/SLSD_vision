@@ -468,7 +468,44 @@ def get_all_models():
 
     models = []
     for row in rows:
-        models.append(dict(row))
+        model = dict(row)
+        model_name = model.get('name')
+        
+        # 获取模型的版本信息
+        try:
+            versions = get_model_versions(model_name)
+            if versions:
+                # 找出默认版本或最新版本
+                default_ver = next((v for v in versions if v.get('is_default')), None)
+                latest_ver = versions[0] if versions else None
+                selected_ver = default_ver or latest_ver
+                
+                model['version_count'] = len(versions)
+                model['latest_version'] = selected_ver.get('version_name') if selected_ver else None
+                model['latest_version_accuracy'] = selected_ver.get('accuracy') if selected_ver else None
+                model['latest_version_map50'] = selected_ver.get('map50') if selected_ver else None
+                model['latest_version_map50_95'] = selected_ver.get('map50_95') if selected_ver else None
+                model['latest_version_dataset'] = selected_ver.get('dataset_name') if selected_ver else None
+                model['latest_version_created'] = selected_ver.get('created_at') if selected_ver else None
+            else:
+                model['version_count'] = 0
+                model['latest_version'] = None
+                model['latest_version_accuracy'] = None
+                model['latest_version_map50'] = None
+                model['latest_version_map50_95'] = None
+                model['latest_version_dataset'] = None
+                model['latest_version_created'] = None
+        except Exception as e:
+            # 如果出错（比如表不存在），保持兼容
+            model['version_count'] = 0
+            model['latest_version'] = None
+            model['latest_version_accuracy'] = None
+            model['latest_version_map50'] = None
+            model['latest_version_map50_95'] = None
+            model['latest_version_dataset'] = None
+            model['latest_version_created'] = None
+        
+        models.append(model)
 
     return models
 

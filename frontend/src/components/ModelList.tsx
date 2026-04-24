@@ -42,6 +42,14 @@ interface Model {
   maintainer?: string
   maintainDate?: string
   description?: string
+  // 版本相关字段
+  version_count?: number
+  latest_version?: string
+  latest_version_accuracy?: number
+  latest_version_map50?: number
+  latest_version_map50_95?: number
+  latest_version_dataset?: string
+  latest_version_created?: string
 }
 
 interface Dataset {
@@ -700,6 +708,7 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload, i
                 <th style={th("100px")}>模型概述</th>
                 <th style={th("70px", true)}>曲线</th>
                 <th style={th("80px", true)}>精度</th>
+                <th style={th("100px", true)}>版本</th>
                 <th style={th("90px", true)}>应用现场</th>
                 <th style={th("120px")}>使用数据集</th>
                 <th style={th("80px", true)}>维护日期</th>
@@ -792,6 +801,22 @@ function ModelList({ models, datasets, onSelectModel, onRefresh, onShowUpload, i
                     </td>
                     <td style={td("80px", true)} className="td-base td-c">
                       <AccuracyBar value={m.accuracy} width={50} />
+                    </td>
+                    <td style={td("100px", true)} className="td-base td-c">
+                      <div className="flex flex-col items-center gap-1">
+                        {m.version_count > 0 ? (
+                          <>
+                            <span className="badge badge-primary" style={{ fontSize: '11px', padding: '2px 6px' }}>
+                              {m.latest_version || 'v1.0'}
+                            </span>
+                            <span className="text-xs text-muted">
+                              {m.version_count > 1 ? `${m.version_count}个版本` : '单版本'}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-xs text-muted">-</span>
+                        )}
+                      </div>
                     </td>
                     <td style={td("90px", true)} className="td-base td-c">
                       <MemoizedSiteTag site={m.site} />
