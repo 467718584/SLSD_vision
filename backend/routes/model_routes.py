@@ -356,3 +356,280 @@ def download_model(name):
             as_attachment=True
         )
     return jsonify({"error": "Model not found"}), 404
+
+
+# ==================== 模型版本管理 API ====================
+
+def get_model_versions_db(model_name):
+    from modules.database import get_model_versions as _get
+    return _get(model_name)
+
+
+def get_model_version_by_name_db(model_name, version_name):
+    from modules.database import get_model_version_by_name as _get
+    return _get(model_name, version_name)
+
+
+def add_model_version_db(data):
+    from modules.database import add_model_version as _add
+    return _add(data)
+
+
+def update_model_version_db(model_name, version_name, data):
+    from modules.database import update_model_version as _update
+    return _update(model_name, version_name, data)
+
+
+def delete_model_version_db(model_name, version_name):
+    from modules.database import delete_model_version as _del
+    return _del(model_name, version_name)
+
+
+def set_default_model_version_db(model_name, version_name):
+    from modules.database import set_default_model_version as _set
+    return _set(model_name, version_name)
+
+
+def get_default_model_version_db(model_name):
+    from modules.database import get_default_model_version as _get
+    return _get(model_name)
+
+
+@model_bp.route('/<name>/versions', methods=['GET'])
+def get_model_versions(name):
+    """获取模型的所有版本"""
+    try:
+        versions = get_model_versions_db(name)
+        return jsonify({"success": True, "versions": versions})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@model_bp.route('/<name>/versions', methods=['POST'])
+def create_model_version(name):
+    """创建新版本"""
+    try:
+        data = request.json or {}
+        version_name = data.get('version_name', '').strip()
+        
+        if not version_name:
+            return jsonify({"success": False, "error": "请输入版本名称"}), 400
+        
+        # 检查版本是否已存在
+        existing = get_model_version_by_name_db(name, version_name)
+        if existing:
+            return jsonify({"success": False, "error": "版本已存在"}), 400
+        
+        # 创建版本记录
+        storage_path = os.path.join(MODELS_DIR, name, 'versions', version_name)
+        os.makedirs(storage_path, exist_ok=True)
+        
+        version_data = {
+            'model_name': name,
+            'version_name': version_name,
+            'description': data.get('description', ''),
+            'dataset_name': data.get('dataset_name'),
+            'dataset_version': data.get('dataset_version'),
+            'accuracy': data.get('accuracy', 0),
+            'map50': data.get('map50', 0),
+            'map50_95': data.get('map50_95', 0),
+            'total_epochs': data.get('total_epochs', 0),
+            'storage_path': storage_path,
+            'created_by': data.get('created_by', '管理员')
+        }
+        
+        # 如果是第一个版本，设为默认
+        existing_versions = get_model_versions_db(name)
+        if not existing_versions:
+            version_data['is_default'] = 1
+        
+        version_id = add_model_version_db(version_data)
+        version_data['id'] = version_id
+        
+        return jsonify({"success": True, "version": version_data})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@model_bp.route('/<name>/versions/<version_name>', methods=['GET'])
+def get_version_detail(name, version_name):
+    """获取版本详情"""
+    try:
+        version = get_model_version_by_name_db(name, version_name)
+        if not version:
+            return jsonify({"success": False, "error": "版本不存在"}), 404
+        
+        # 获取该版本的参数文件
+        from modules.database import get_model_params
+        params = get_model_params(version['id'])
+        version['params'] = params
+        
+        return jsonify({"success": True, "version": version})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@model_bp.route('/<name>/versions/<version_name>', methods=['PUT'])
+def update_version(name, version_name):
+    """更新版本信息"""
+    try:
+        data = request.json or {}
+        success = update_model_version_db(name, version_name, data)
+        if success:
+            return jsonify({"success": True})
+        return jsonify({"success": False, "error": "版本不存在"}), 404
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@model_bp.route('/<name>/versions/<version_name>', methods=['DELETE'])
+def delete_version(name, version_name):
+    """删除版本"""
+    try:
+        success = delete_model_version_db(name, version_name)
+        if success:
+            return jsonify({"success": True, "message": "版本已删除"})
+        return jsonify({"success": False, "error": "版本不存在"}), 404
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@model_bp.route('/<name>/versions/<version_name>/default', methods=['PUT'])
+def set_default_version(name, version_name):
+    """设为默认版本"""
+    try:
+        success = set_default_model_version_db(name, version_name)
+        if success:
+            return jsonify({"success": True, "message": "已设为默认版本"})
+        return jsonify({"success": False, "error": "版本不存在"}), 404
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# ==================== 模型参数文件 API ====================
+
+def add_model_param_db(data):
+    from modules.database import add_model_param as _add
+    return _add(data)
+
+
+def get_model_params_db(version_id):
+    from modules.database import get_model_params as _get
+    return _get(version_id)
+
+
+def get_model_param_by_id_db(param_id):
+    from modules.database import get_model_param_by_id as _get
+    return _get(param_id)
+
+
+def delete_model_param_db(param_id):
+    from modules.database import delete_model_param as _del
+    return _del(param_id)
+
+
+@model_bp.route('/<name>/versions/<version_name>/params', methods=['GET'])
+def get_version_params(name, version_name):
+    """获取版本参数文件列表"""
+    try:
+        version = get_model_version_by_name_db(name, version_name)
+        if not version:
+            return jsonify({"success": False, "error": "版本不存在"}), 404
+        
+        params = get_model_params_db(version['id'])
+        return jsonify({"success": True, "params": params})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@model_bp.route('/<name>/versions/<version_name>/params', methods=['POST'])
+def add_version_param(name, version_name):
+    """补充参数文件"""
+    try:
+        version = get_model_version_by_name_db(name, version_name)
+        if not version:
+            return jsonify({"success": False, "error": "版本不存在"}), 404
+        
+        # 处理文件上传
+        file = request.files.get('file')
+        if not file:
+            return jsonify({"success": False, "error": "请选择文件"}), 400
+        
+        param_type = request.form.get('param_type', 'others')
+        description = request.form.get('description', '')
+        
+        # 验证参数类型
+        valid_types = ['onnx', 'om', 'rknn', 'tflite', 'saved_model', 'pb', 'others']
+        if param_type not in valid_types:
+            return jsonify({"success": False, "error": f"不支持的参数类型，可选: {', '.join(valid_types)}"}), 400
+        
+        # 创建参数目录
+        params_dir = os.path.join(MODELS_DIR, name, 'versions', version_name, 'params', param_type)
+        os.makedirs(params_dir, exist_ok=True)
+        
+        # 保存文件
+        file_name = file.filename
+        file_path = os.path.join(params_dir, file_name)
+        file.save(file_path)
+        file_size = os.path.getsize(file_path)
+        
+        # 写入数据库
+        param_data = {
+            'version_id': version['id'],
+            'param_type': param_type,
+            'file_name': file_name,
+            'file_path': file_path,
+            'file_size': file_size,
+            'description': description,
+            'is_primary': 0
+        }
+        
+        param_id = add_model_param_db(param_data)
+        param_data['id'] = param_id
+        
+        return jsonify({"success": True, "param": param_data})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@model_bp.route('/<name>/versions/<version_name>/params/<int:param_id>', methods=['DELETE'])
+def delete_version_param(name, version_name, param_id):
+    """删除参数文件"""
+    try:
+        # 获取参数文件信息
+        param = get_model_param_by_id_db(param_id)
+        if not param:
+            return jsonify({"success": False, "error": "参数文件不存在"}), 404
+        
+        # 删除物理文件
+        if os.path.exists(param['file_path']):
+            os.remove(param['file_path'])
+        
+        # 删除数据库记录
+        delete_model_param_db(param_id)
+        
+        return jsonify({"success": True, "message": "参数文件已删除"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@model_bp.route('/<name>/versions/<version_name>/params/<int:param_id>/download', methods=['GET'])
+def download_param(name, version_name, param_id):
+    """下载参数文件"""
+    from flask import send_from_directory
+    
+    try:
+        param = get_model_param_by_id_db(param_id)
+        if not param:
+            return jsonify({"error": "参数文件不存在"}), 404
+        
+        file_path = param['file_path']
+        if os.path.exists(file_path):
+            return send_from_directory(
+                os.path.dirname(file_path),
+                os.path.basename(file_path),
+                as_attachment=True
+            )
+        return jsonify({"error": "文件不存在"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

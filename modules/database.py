@@ -109,6 +109,65 @@ def init_database():
         )
     ''')
 
+    # 模型版本表
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS model_versions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            model_name TEXT NOT NULL,
+            version_name TEXT NOT NULL,
+            description TEXT,
+            dataset_name TEXT,
+            dataset_version TEXT,
+            accuracy REAL DEFAULT 0,
+            map50 REAL DEFAULT 0,
+            map50_95 REAL DEFAULT 0,
+            total_epochs INTEGER DEFAULT 0,
+            file_count INTEGER DEFAULT 0,
+            file_hash TEXT,
+            parent_version TEXT,
+            storage_path TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            created_by TEXT,
+            is_active BOOLEAN DEFAULT 1,
+            is_default BOOLEAN DEFAULT 0
+        )
+    ''')
+    
+    # 创建唯一索引：同一模型下版本号唯一
+    cursor.execute('''
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_model_version 
+        ON model_versions(model_name, version_name)
+    ''')
+    
+    # 创建索引：按模型名查询
+    cursor.execute('''
+        CREATE INDEX IF NOT EXISTS idx_model_versions_model 
+        ON model_versions(model_name)
+    ''')
+
+    # 模型参数文件表
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS model_params (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            version_id INTEGER NOT NULL,
+            param_type TEXT NOT NULL,
+            file_name TEXT NOT NULL,
+            file_path TEXT NOT NULL,
+            file_size INTEGER DEFAULT 0,
+            file_hash TEXT,
+            description TEXT,
+            is_primary BOOLEAN DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (version_id) REFERENCES model_versions(id)
+        )
+    ''')
+    
+    # 创建索引：按版本ID查询参数
+    cursor.execute('''
+        CREATE INDEX IF NOT EXISTS idx_model_params_version 
+        ON model_params(version_id)
+    ''')
+
     # 原始数据表
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS raw_data (
@@ -573,6 +632,219 @@ def delete_model_by_name(name):
     affected = cursor.rowcount
     conn.close()
 
+    return affected > 0
+
+
+# ==================== 模型版本管理 ====================
+
+def add_model_version(data):
+    """创建模型版本"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        INSERT INTO model_versions 
+        (model_name, version_name, description, dataset_name, dataset_version,
+         accuracy, map50, map50_95, total_epochs, storage_path, created_by, is_default)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (
+        data.get('model_name'),
+        data.get('version_name'),
+        data.get('description'),
+        data.get('dataset_name'),
+        data.get('dataset_version'),
+        data.get('accuracy', 0),
+        data.get('map50', 0),
+        data.get('map50_95', 0),
+        data.get('total_epochs', 0),
+        data.get('storage_path'),
+        data.get('created_by'),
+        data.get('is_default', 0)
+    ))
+    conn.commit()
+    version_id = cursor.lastrowid
+    conn.close()
+    return version_id
+
+
+def get_model_versions(model_name):
+    """获取模型的所有版本"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT * FROM model_versions 
+        WHERE model_name = ? AND is_active = 1
+        ORDER BY created_at DESC
+    ''', (model_name,))
+    
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+
+def get_model_version_by_name(model_name, version_name):
+    """根据模型名和版本名获取版本详情"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT * FROM model_versions 
+        WHERE model_name = ? AND version_name = ? AND is_active = 1
+    ''', (model_name, version_name))
+    
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def get_model_version_by_id(version_id):
+    """根据ID获取版本详情"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('SELECT * FROM model_versions WHERE id = ?', (version_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def update_model_version(model_name, version_name, data):
+    """更新模型版本信息"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # 构建更新字段
+    updates = []
+    params = []
+    
+    for field in ['description', 'dataset_name', 'dataset_version', 'accuracy', 
+                  'map50', 'map50_95', 'total_epochs']:
+        if field in data:
+            updates.append(f'{field} = ?')
+            params.append(data[field])
+    
+    if updates:
+        params.extend([model_name, version_name])
+        cursor.execute(
+            f"UPDATE model_versions SET {', '.join(updates)} "
+            f"WHERE model_name = ? AND version_name = ? AND is_active = 1",
+            params
+        )
+        conn.commit()
+    
+    affected = cursor.rowcount
+    conn.close()
+    return affected > 0
+
+
+def delete_model_version(model_name, version_name):
+    """软删除模型版本"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        UPDATE model_versions SET is_active = 0
+        WHERE model_name = ? AND version_name = ?
+    ''', (model_name, version_name))
+    conn.commit()
+    affected = cursor.rowcount
+    conn.close()
+    return affected > 0
+
+
+def set_default_model_version(model_name, version_name):
+    """设置默认版本"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # 先取消该模型的所有默认标记
+    cursor.execute('UPDATE model_versions SET is_default = 0 WHERE model_name = ?', (model_name,))
+    
+    # 设置新的默认版本
+    cursor.execute('''
+        UPDATE model_versions SET is_default = 1
+        WHERE model_name = ? AND version_name = ? AND is_active = 1
+    ''', (model_name, version_name))
+    conn.commit()
+    affected = cursor.rowcount
+    conn.close()
+    return affected > 0
+
+
+def get_default_model_version(model_name):
+    """获取模型的默认版本"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT * FROM model_versions 
+        WHERE model_name = ? AND is_default = 1 AND is_active = 1
+    ''', (model_name,))
+    
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+# ==================== 模型参数文件管理 ====================
+
+def add_model_param(data):
+    """添加模型参数文件"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        INSERT INTO model_params 
+        (version_id, param_type, file_name, file_path, file_size, file_hash, description, is_primary)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (
+        data.get('version_id'),
+        data.get('param_type'),
+        data.get('file_name'),
+        data.get('file_path'),
+        data.get('file_size', 0),
+        data.get('file_hash'),
+        data.get('description'),
+        data.get('is_primary', 0)
+    ))
+    conn.commit()
+    param_id = cursor.lastrowid
+    conn.close()
+    return param_id
+
+
+def get_model_params(version_id):
+    """获取版本的所有参数文件"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('SELECT * FROM model_params WHERE version_id = ? ORDER BY created_at DESC', (version_id,))
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+
+def get_model_param_by_id(param_id):
+    """根据ID获取参数文件"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('SELECT * FROM model_params WHERE id = ?', (param_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def delete_model_param(param_id):
+    """删除参数文件"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('DELETE FROM model_params WHERE id = ?', (param_id,))
+    conn.commit()
+    affected = cursor.rowcount
+    conn.close()
     return affected > 0
 
 
